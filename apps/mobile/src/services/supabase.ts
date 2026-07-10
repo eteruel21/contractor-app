@@ -2,10 +2,12 @@ import "react-native-url-polyfill/auto";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createClient,
-    processLock,
+  createClient,
+  processLock,
 } from "@supabase/supabase-js";
 import { AppState, Platform } from "react-native";
+
+import type { Database } from "@/types/database";
 
 const supabaseUrl =
   process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -25,7 +27,7 @@ if (!supabasePublishableKey) {
   );
 }
 
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   supabaseUrl,
   supabasePublishableKey,
   {

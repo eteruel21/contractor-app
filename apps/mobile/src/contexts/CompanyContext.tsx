@@ -1,19 +1,19 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
-    createContext,
-    type PropsWithChildren,
-    useCallback,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  type PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/services/supabase";
 import type {
-    Company,
-    CompanyMembership,
+  Company,
+  CompanyMembership,
 } from "@/types/company";
 
 const ACTIVE_COMPANY_KEY =
@@ -265,9 +265,9 @@ export function CompanyProvider({
     const { data, error } =
       await supabase.rpc("create_company", {
         company_name: cleanName,
-        company_phone: phone.trim() || null,
+        company_phone: phone.trim() || undefined,
         company_email:
-          email.trim().toLowerCase() || null,
+          email.trim().toLowerCase() || undefined,
       });
 
     if (error) {
