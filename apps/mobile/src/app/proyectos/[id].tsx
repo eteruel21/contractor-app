@@ -1,45 +1,56 @@
+import {
+  createBudgetFromProject,
+  listBudgetsByProject,
+} from "@/services/budget-service";
+import type { Budget } from "@/types/budget";
+import {
+  formatMoney,
+  getBudgetStatusLabel,
+} from "@/types/budget";
 import { Ionicons } from "@expo/vector-icons";
 import {
-    Stack,
-    useLocalSearchParams,
+  type Href,
+  router,
+  Stack,
+  useLocalSearchParams,
 } from "expo-router";
 import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    colors,
-    radius,
+  colors,
+  radius,
 } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
-    getProjectById,
-    updateProjectProgress,
-    updateProjectStatus,
+  getProjectById,
+  updateProjectProgress,
+  updateProjectStatus,
 } from "@/services/project-service";
 import { getClientDisplayName } from "@/types/client";
 import type {
-    ProjectStatus,
-    ProjectWithDetails,
+  ProjectStatus,
+  ProjectWithDetails,
 } from "@/types/project";
 import {
-    getProjectStatusLabel,
-    PROJECT_STATUS_OPTIONS,
+  getProjectStatusLabel,
+  PROJECT_STATUS_OPTIONS,
 } from "@/types/project";
 
 export default function ProjectDetailScreen() {
@@ -55,6 +66,11 @@ export default function ProjectDetailScreen() {
 
   const [project, setProject] =
     useState<ProjectWithDetails | null>(null);
+    const [budgets, setBudgets] = useState<
+      Budget[]
+    >([]);
+    const [creatingBudget, setCreatingBudget] =
+      useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] =
     useState(false);
@@ -83,24 +99,40 @@ export default function ProjectDetailScreen() {
         setLoading(true);
       }
 
-      const { project: loadedProject, error } =
-        await getProjectById(
-          activeCompany.id,
-          projectId,
-        );
+      const [projectResult, budgetsResult] =
+        await Promise.all([
+          getProjectById(
+            activeCompany.id,
+            projectId,
+          ),
+          listBudgetsByProject(
+            activeCompany.id,
+            projectId,
+          ),
+        ]);
 
-      if (error) {
+      if (projectResult.error) {
         Alert.alert(
           "No fue posible cargar el proyecto",
-          error,
+          projectResult.error,
         );
       } else {
-        setProject(loadedProject);
+        setProject(projectResult.project);
         setProgressInput(
           String(
-            loadedProject?.progress_percentage ?? 0,
+            projectResult.project
+              ?.progress_percentage ?? 0,
           ),
         );
+      }
+
+      if (budgetsResult.error) {
+        Alert.alert(
+          "No fue posible cargar los presupuestos",
+          budgetsResult.error,
+        );
+      } else {
+        setBudgets(budgetsResult.budgets);
       }
 
       setLoading(false);
@@ -221,6 +253,39 @@ export default function ProjectDetailScreen() {
         </Text>
       </View>
     );
+  }
+
+  async function handleCreateBudget() {
+    if (!activeCompany || !project) return;
+
+    try {
+      setCreatingBudget(true);
+
+      const { budgetId, error } =
+        await createBudgetFromProject({
+          companyId: activeCompany.id,
+          projectId: project.id,
+          title: project.name,
+        });
+
+      if (error || !budgetId) {
+        Alert.alert(
+          "No fue posible crear el presupuesto",
+          error ||
+            "No se recibió el ID del presupuesto.",
+        );
+        return;
+      }
+
+      router.push({
+        pathname: "/presupuestos/[id]",
+        params: {
+          id: budgetId,
+        },
+      } as Href);
+    } finally {
+      setCreatingBudget(false);
+    }
   }
 
   return (
@@ -415,13 +480,60 @@ export default function ProjectDetailScreen() {
           />
         </InfoSection>
 
-        <InfoSection title="Próximos módulos">
-          <ActionPlaceholder
-            icon="calculator-outline"
-            title="Crear presupuesto"
-            text="Este proyecto podrá generar presupuestos y versiones."
-          />
+        <InfoSection title="Presupuestos">
+          <Pressable
+            onPress={() => void handleCreateBudget()}
+            disabled={creatingBudget}
+            style={({ pressed }) => [
+              styles.createBudgetButton,
+              creatingBudget && styles.disabledButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            {creatingBudget ? (
+              <ActivityIndicator
+                color={colors.textLight}
+              />
+            ) : (
+              <>
+                <Ionicons
+                  name="receipt-outline"
+                  size={21}
+                  color={colors.textLight}
+                />
 
+                <Text style={styles.createBudgetText}>
+                  Crear presupuesto
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {budgets.length === 0 ? (
+            <View style={styles.emptyBudgetBox}>
+              <Text style={styles.emptyBudgetText}>
+                Este proyecto todavía no tiene presupuestos.
+              </Text>
+            </View>
+          ) : (
+            budgets.map((budget) => (
+              <BudgetCard
+                key={budget.id}
+                budget={budget}
+                onPress={() =>
+                  router.push({
+                    pathname: "/presupuestos/[id]",
+                    params: {
+                      id: budget.id,
+                    },
+                  } as Href)
+                }
+              />
+            ))
+          )}
+        </InfoSection>
+
+        <InfoSection title="Próximos módulos">
           <ActionPlaceholder
             icon="calendar-outline"
             title="Agenda"
@@ -436,6 +548,52 @@ export default function ProjectDetailScreen() {
         </InfoSection>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function BudgetCard({
+  budget,
+  onPress,
+}: {
+  budget: Budget;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.budgetCard,
+        pressed && styles.pressed,
+      ]}
+    >
+      <View style={styles.budgetCardTop}>
+        <View>
+          <Text style={styles.budgetNumber}>
+            {budget.budget_number}
+          </Text>
+
+          <Text style={styles.budgetTitle}>
+            {budget.title}
+          </Text>
+        </View>
+
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.primary}
+        />
+      </View>
+
+      <View style={styles.budgetCardBottom}>
+        <Text style={styles.budgetStatus}>
+          {getBudgetStatusLabel(budget.status)}
+        </Text>
+
+        <Text style={styles.budgetTotal}>
+          {formatMoney(budget.total)}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -525,13 +683,6 @@ function ActionPlaceholder({
       </View>
     </View>
   );
-}
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("es-PA", {
-    style: "currency",
-    currency: "USD",
-  }).format(value || 0);
 }
 
 const styles = StyleSheet.create({
@@ -776,5 +927,80 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.78,
     transform: [{ scale: 0.99 }],
+  },
+
+  createBudgetButton: {
+    minHeight: 52,
+    marginBottom: 12,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  createBudgetText: {
+    color: colors.textLight,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  emptyBudgetBox: {
+    padding: 14,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+  },
+
+  emptyBudgetText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    textAlign: "center",
+  },
+
+  budgetCard: {
+    marginTop: 10,
+    padding: 13,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+  },
+
+  budgetCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+
+  budgetNumber: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  budgetTitle: {
+    marginTop: 3,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  budgetCardBottom: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  budgetStatus: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  budgetTotal: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900",
   },
 });

@@ -35,9 +35,13 @@ apps/mobile
     │   │   │   ├── _layout.tsx
     │   │   │   └── [id].tsx
     │   │   ├── presupuestos
+    │   │   │   ├── [id].tsx
     │   │   │   ├── _layout.tsx
     │   │   │   ├── index.tsx
     │   │   │   └── seleccionar-cliente.tsx
+    │   │   ├── proyectos
+    │   │   │   ├── _layout.tsx
+    │   │   │   └── [id].tsx
     │   │   ├── empresa
     │   │   │   ├── _layout.tsx
     │   │   │   ├── index.tsx
@@ -52,10 +56,13 @@ apps/mobile
     │   │   ├── CompanyContext.tsx
     │   │   └── AuthContext.tsx
     │   ├── services
+    │   │   ├── budget-service.ts
     │   │   ├── Project-service.ts
     │   │   ├── client-service.ts
     │   │   └── supabase.ts
     │   ├── types
+    │   │   ├── budget.ts
+    │   │   ├── client-service.ts
     │   │   ├── project.ts
     │   │   ├── client.ts
     │   │   ├── client-service.ts

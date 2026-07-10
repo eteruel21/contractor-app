@@ -1,26 +1,23 @@
-import { Platform } from "react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
-import type {
-  BudgetDraft,
-  BudgetItem,
-} from "./budget-storage";
+import {
+  formatMoney,
+  getBudgetStatusLabel,
+  type BudgetItem,
+  type BudgetSection,
+  type BudgetWithDetails,
+} from "@/types/budget";
+import { getClientDisplayName } from "@/types/client";
+import type { Company } from "@/types/company";
 
-export type BudgetTotals = {
-  directCost: number;
-  overhead: number;
-  costWithOverhead: number;
-  profit: number;
-  saleBeforeDiscount: number;
-  discount: number;
-  taxable: number;
-  tax: number;
-  total: number;
+type BudgetPdfInput = {
+  company: Company;
+  budget: BudgetWithDetails;
 };
 
-function escapeHtml(value: string): string {
-  return value
+function escapeHtml(value: string | null | undefined) {
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -28,458 +25,515 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#039;");
 }
 
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("es-PA", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatNumber(
-  value: number,
-  maximumFractionDigits = 3,
-): string {
-  return new Intl.NumberFormat("es-PA", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits,
-  }).format(value);
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value);
+function formatDate(value: string | null | undefined) {
+  if (!value) return "No definido";
 
   return new Intl.DateTimeFormat("es-PA", {
+    day: "2-digit",
+    month: "2-digit",
     year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+  }).format(new Date(value));
 }
 
-function createItemRows(
+function renderItems(
+  section: BudgetSection | null,
   items: BudgetItem[],
-): string {
-  return items
-    .map((item, index) => {
-      const total =
-        item.quantity * item.unitPrice;
+) {
+  const sectionName = section?.name ?? "Sin sección";
 
-      return `
-        <tr>
-          <td class="number">${index + 1}</td>
-          <td>
-            <strong>${escapeHtml(
-              item.description || "Partida",
-            )}</strong>
-            ${
-              item.details
-                ? `<div class="details">${escapeHtml(
-                    item.details,
-                  )}</div>`
-                : ""
-            }
-          </td>
-          <td class="right">
-            ${formatNumber(item.quantity)}
-          </td>
-          <td>${escapeHtml(item.unit)}</td>
-          <td class="right">
-            ${formatMoney(item.unitPrice)}
-          </td>
-          <td class="right strong">
-            ${formatMoney(total)}
-          </td>
-        </tr>
-      `;
-    })
-    .join("");
-}
-
-export function createBudgetHtml(
-  draft: BudgetDraft,
-  totals: BudgetTotals,
-): string {
-  const safeTitle = escapeHtml(
-    draft.title || "Presupuesto",
-  );
-
-  const safeClient = escapeHtml(
-    draft.clientName || "Cliente no especificado",
-  );
-
-  const safeClientCompany = escapeHtml(
-    draft.clientCompany || "",
-  );
-
-  const safeClientContact = escapeHtml(
-    [draft.clientPhone, draft.clientEmail]
-      .filter(Boolean)
-      .join(" · "),
-  );
-
-  const safeClientIdentification = escapeHtml(
-    draft.clientIdentification || "",
-  );
-
-  const safeClientAddress = escapeHtml(
-    draft.clientAddress || "",
-  );
-
-  const safeNotes = draft.notes
-    ? escapeHtml(draft.notes).replaceAll(
-        "\n",
-        "<br />",
-      )
-    : "Sin observaciones adicionales.";
+  if (items.length === 0) {
+    return `
+      <tr>
+        <td colspan="5" class="empty-row">
+          No hay partidas en esta sección.
+        </td>
+      </tr>
+    `;
+  }
 
   return `
-    <!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="utf-8" />
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1"
-        />
+    <tr>
+      <td colspan="5" class="section-title">
+        ${escapeHtml(sectionName)}
+      </td>
+    </tr>
 
-        <style>
-          @page {
-            size: A4;
-            margin: 24px;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-
-          body {
-            margin: 0;
-            color: #0f172a;
-            font-family:
-              -apple-system,
-              BlinkMacSystemFont,
-              "Segoe UI",
-              Arial,
-              sans-serif;
-            font-size: 12px;
-            line-height: 1.45;
-          }
-
-          .header {
-            padding: 24px;
-            border-radius: 16px;
-            color: #ffffff;
-            background: #0f172a;
-          }
-
-          .brand {
-            color: #4ade80;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-          }
-
-          h1 {
-            margin: 7px 0 0;
-            font-size: 26px;
-          }
-
-          .metadata {
-            display: flex;
-            justify-content: space-between;
-            gap: 24px;
-            margin-top: 22px;
-          }
-
-          .metadata-block {
-            flex: 1;
-          }
-
-          .label {
-            margin-bottom: 3px;
-            color: #64748b;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.7px;
-            text-transform: uppercase;
-          }
-
-          .value {
-            font-size: 13px;
-            font-weight: 700;
-          }
-
-          .section {
-            margin-top: 24px;
-          }
-
-          .section-title {
-            margin-bottom: 10px;
-            font-size: 15px;
-            font-weight: 900;
-          }
-
-          table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          th {
-            padding: 10px 8px;
-            color: #475569;
-            background: #f1f5f9;
-            border-bottom: 1px solid #cbd5e1;
-            font-size: 10px;
-            text-align: left;
-            text-transform: uppercase;
-          }
-
-          td {
-            padding: 11px 8px;
-            border-bottom: 1px solid #e2e8f0;
-            vertical-align: top;
-          }
-
-          .number {
-            width: 30px;
-            color: #64748b;
-          }
-
-          .right {
-            text-align: right;
-            white-space: nowrap;
-          }
-
-          .strong {
-            font-weight: 800;
-          }
-
-          .details {
-            margin-top: 4px;
-            color: #64748b;
-            font-size: 10px;
-          }
-
-          .summary {
-            width: 310px;
-            margin-top: 22px;
-            margin-left: auto;
-            padding: 18px;
-            border-radius: 14px;
-            background: #f8fafc;
-          }
-
-          .summary-row {
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            padding: 5px 0;
-          }
-
-          .summary-total {
-            margin-top: 9px;
-            padding-top: 12px;
-            border-top: 1px solid #cbd5e1;
-            font-size: 17px;
-            font-weight: 900;
-          }
-
-          .notes {
-            padding: 16px;
-            border-radius: 12px;
-            color: #334155;
-            background: #f8fafc;
-          }
-
-          .footer {
-            margin-top: 28px;
-            padding-top: 12px;
-            border-top: 1px solid #e2e8f0;
-            color: #64748b;
-            font-size: 9px;
-            text-align: center;
-          }
-        </style>
-      </head>
-
-      <body>
-        <header class="header">
-          <div class="brand">Contractor Pro</div>
-          <h1>${safeTitle}</h1>
-        </header>
-
-        <section class="metadata">
-          <div class="metadata-block">
-            <div class="label">Cliente</div>
-            <div class="value">${safeClient}</div>
-            ${
-              safeClientCompany
-                ? `<div class="details">${safeClientCompany}</div>`
-                : ""
-            }
-            ${
-              safeClientContact
-                ? `<div class="details">${safeClientContact}</div>`
-                : ""
-            }
-            ${
-              safeClientIdentification
-                ? `<div class="details">Cédula/RUC: ${safeClientIdentification}</div>`
-                : ""
-            }
-            ${
-              safeClientAddress
-                ? `<div class="details">${safeClientAddress}</div>`
-                : ""
-            }
-          </div>
-
-          <div class="metadata-block">
-            <div class="label">Fecha</div>
-            <div class="value">
-              ${formatDate(draft.updatedAt)}
-            </div>
-          </div>
-
-          <div class="metadata-block">
-            <div class="label">Referencia</div>
-            <div class="value">
-              ${escapeHtml(
-                draft.id.slice(-12).toUpperCase(),
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-title">
-            Desglose del presupuesto
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Descripción</th>
-                <th class="right">Cantidad</th>
-                <th>Unidad</th>
-                <th class="right">P. unitario</th>
-                <th class="right">Total</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              ${createItemRows(draft.items)}
-            </tbody>
-          </table>
-
-          <div class="summary">
-            <div class="summary-row">
-              <span>Costo directo</span>
-              <strong>
-                ${formatMoney(totals.directCost)}
-              </strong>
-            </div>
-
-            <div class="summary-row">
-              <span>
-                Costos indirectos
-                (${formatNumber(
-                  draft.overheadPercentage,
-                  2,
-                )}%)
-              </span>
-              <strong>
-                ${formatMoney(totals.overhead)}
-              </strong>
-            </div>
-
-            <div class="summary-row">
-              <span>
-                Utilidad
-                (${formatNumber(
-                  draft.profitPercentage,
-                  2,
-                )}%)
-              </span>
-              <strong>
-                ${formatMoney(totals.profit)}
-              </strong>
-            </div>
-
-            <div class="summary-row">
-              <span>Descuento</span>
-              <strong>
-                - ${formatMoney(totals.discount)}
-              </strong>
-            </div>
-
-            <div class="summary-row">
-              <span>
-                ITBMS
-                (${formatNumber(
-                  draft.taxPercentage,
-                  2,
-                )}%)
-              </span>
-              <strong>
-                ${formatMoney(totals.tax)}
-              </strong>
-            </div>
-
-            <div class="summary-row summary-total">
-              <span>Total</span>
-              <span>${formatMoney(totals.total)}</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="section">
-          <div class="section-title">
-            Notas y condiciones
-          </div>
-
-          <div class="notes">${safeNotes}</div>
-        </section>
-
-        <footer class="footer">
-          Documento generado con Contractor Pro.
-          Este presupuesto está sujeto a las condiciones
-          indicadas y a la vigencia acordada con el cliente.
-        </footer>
-      </body>
-    </html>
+    ${items
+      .map(
+        (item) => `
+          <tr>
+            <td>
+              <strong>${escapeHtml(item.description)}</strong>
+              ${
+                item.notes
+                  ? `<div class="item-note">${escapeHtml(item.notes)}</div>`
+                  : ""
+              }
+            </td>
+            <td class="center">
+              ${escapeHtml(item.unit_name)}
+            </td>
+            <td class="right">
+              ${Number(item.quantity).toLocaleString("es-PA")}
+            </td>
+            <td class="right">
+              ${formatMoney(item.unit_price)}
+            </td>
+            <td class="right strong">
+              ${formatMoney(item.subtotal)}
+            </td>
+          </tr>
+        `,
+      )
+      .join("")}
   `;
 }
 
-export async function generateAndShareBudgetPdf(
-  draft: BudgetDraft,
-  totals: BudgetTotals,
-): Promise<void> {
-  const html = createBudgetHtml(draft, totals);
+export function buildBudgetHtml({
+  company,
+  budget,
+}: BudgetPdfInput) {
+  const clientName = budget.client
+    ? getClientDisplayName(budget.client)
+    : "Cliente no registrado";
 
-  if (Platform.OS === "web") {
-    await Print.printAsync({ html });
-    return;
+  const address =
+    budget.address?.address ||
+    company.address ||
+    "Sin dirección registrada";
+
+  const sectionsHtml = budget.sections
+    .map((section) => {
+      const items = budget.items.filter(
+        (item) => item.section_id === section.id,
+      );
+
+      return renderItems(section, items);
+    })
+    .join("");
+
+  const orphanItems = budget.items.filter(
+    (item) => !item.section_id,
+  );
+
+  const orphanHtml =
+    orphanItems.length > 0
+      ? renderItems(null, orphanItems)
+      : "";
+
+  return `
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      font-size: 12px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 18px;
+      margin-bottom: 22px;
+    }
+
+    .company-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 5px;
+    }
+
+    .company-meta {
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .doc-box {
+      min-width: 210px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f1f5f9;
+      text-align: right;
+    }
+
+    .doc-label {
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .doc-number {
+      margin-top: 5px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #2563eb;
+    }
+
+    .status {
+      margin-top: 6px;
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      background: #ffffff;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .main-text {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+
+    th {
+      background: #0f172a;
+      color: #ffffff;
+      text-align: left;
+      font-size: 11px;
+      padding: 10px 8px;
+    }
+
+    td {
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 8px;
+      vertical-align: top;
+    }
+
+    .section-title {
+      background: #e0ecff;
+      color: #1d4ed8;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .strong {
+      font-weight: 900;
+    }
+
+    .item-note {
+      color: #64748b;
+      margin-top: 4px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .empty-row {
+      text-align: center;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .totals {
+      width: 300px;
+      margin-left: auto;
+      margin-top: 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .total-row:last-child {
+      border-bottom: none;
+    }
+
+    .total-final {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .terms {
+      margin-top: 24px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .footer {
+      margin-top: 28px;
+      padding-top: 12px;
+      border-top: 1px solid #e2e8f0;
+      color: #64748b;
+      font-size: 11px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div>
+      <div class="company-name">
+        ${escapeHtml(company.name)}
+      </div>
+
+      <div class="company-meta">
+        ${escapeHtml(company.phone || "Sin teléfono")}<br />
+        ${escapeHtml(company.email || "Sin correo")}<br />
+        ${escapeHtml(company.address || "Sin dirección fiscal")}
+      </div>
+    </div>
+
+    <div class="doc-box">
+      <div class="doc-label">Presupuesto</div>
+      <div class="doc-number">
+        ${escapeHtml(budget.budget_number)}
+      </div>
+      <div class="status">
+        ${escapeHtml(getBudgetStatusLabel(budget.status))}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-title">Cliente</div>
+      <div class="main-text">${escapeHtml(clientName)}</div>
+      <div class="muted">
+        ${escapeHtml(budget.client?.phone || "Sin teléfono")}<br />
+        ${escapeHtml(budget.client?.email || "Sin correo")}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Proyecto</div>
+      <div class="main-text">
+        ${escapeHtml(budget.project?.name || budget.title)}
+      </div>
+      <div class="muted">
+        ${escapeHtml(address)}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fecha</div>
+      <div class="main-text">
+        ${formatDate(budget.created_at)}
+      </div>
+      <div class="muted">
+        Válido hasta: ${formatDate(budget.valid_until)}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Moneda e impuesto</div>
+      <div class="main-text">
+        ${escapeHtml(budget.currency_code)}
+      </div>
+      <div class="muted">
+        ITBMS: ${Number(budget.tax_rate).toFixed(2)}%
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th class="center">Unidad</th>
+        <th class="right">Cantidad</th>
+        <th class="right">Precio</th>
+        <th class="right">Subtotal</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      ${sectionsHtml}
+      ${orphanHtml}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="total-row">
+      <span>Subtotal</span>
+      <strong>${formatMoney(budget.subtotal)}</strong>
+    </div>
+
+    <div class="total-row">
+      <span>Descuento</span>
+      <strong>${formatMoney(budget.discount_amount)}</strong>
+    </div>
+
+    <div class="total-row">
+      <span>ITBMS ${Number(budget.tax_rate).toFixed(2)}%</span>
+      <strong>${formatMoney(budget.tax_amount)}</strong>
+    </div>
+
+    <div class="total-row total-final">
+      <span>Total</span>
+      <span>${formatMoney(budget.total)}</span>
+    </div>
+  </div>
+
+  <div class="terms">
+    <strong>Condiciones:</strong><br />
+    ${escapeHtml(budget.terms || "Sin condiciones registradas.")}
+  </div>
+
+  <div class="footer">
+    Documento generado desde Contractor Pro.
+  </div>
+</body>
+</html>
+`;
+}
+
+export async function generateBudgetPdf({
+  company,
+  budget,
+}: BudgetPdfInput): Promise<{
+  uri: string | null;
+  error: string | null;
+}> {
+  try {
+    const html = buildBudgetHtml({
+      company,
+      budget,
+    });
+
+    const { uri } = await Print.printToFileAsync({
+      html,
+      base64: false,
+    });
+
+    return {
+      uri,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      uri: null,
+      error:
+        error instanceof Error
+          ? error.message
+          : "No fue posible generar el PDF.",
+    };
   }
+}
 
-  const { uri } = await Print.printToFileAsync({
-    html,
-    base64: false,
+export async function shareBudgetPdf({
+  company,
+  budget,
+}: BudgetPdfInput): Promise<{
+  uri: string | null;
+  error: string | null;
+}> {
+  const { uri, error } = await generateBudgetPdf({
+    company,
+    budget,
   });
 
-  const canShare =
-    await Sharing.isAvailableAsync();
+  if (error || !uri) {
+    return {
+      uri: null,
+      error:
+        error ||
+        "No fue posible generar el archivo PDF.",
+    };
+  }
+
+  const canShare = await Sharing.isAvailableAsync();
 
   if (!canShare) {
-    await Print.printAsync({ uri });
-    return;
+    return {
+      uri,
+      error:
+        "Este dispositivo no permite compartir archivos desde la app.",
+    };
   }
 
   await Sharing.shareAsync(uri, {
     mimeType: "application/pdf",
-    dialogTitle: "Compartir presupuesto",
+    dialogTitle: `Compartir ${budget.budget_number}`,
     UTI: "com.adobe.pdf",
   });
+
+  return {
+    uri,
+    error: null,
+  };
+}
+
+export async function generateAndShareBudgetPdf(
+  budget: unknown,
+  totals?: unknown,
+) {
+  console.warn(
+    "generateAndShareBudgetPdf está usando compatibilidad temporal. La pantalla vieja de presupuestos debe migrarse luego al nuevo flujo.",
+    {
+      budget,
+      totals,
+    },
+  );
+
+  return {
+    uri: null,
+    error:
+      "Esta pantalla usa el sistema anterior de presupuestos. Abre el presupuesto desde Proyecto → Presupuestos para generar el PDF nuevo.",
+  };
 }

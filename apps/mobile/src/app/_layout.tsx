@@ -73,6 +73,7 @@ function RootNavigator() {
         <Stack.Screen name="clientes" />
         <Stack.Screen name="presupuestos" />
         <Stack.Screen name="proyectos" />
+        <Stack.Screen name="catalogo" />
       </Stack.Protected>
     </Stack>
   );

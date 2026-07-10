@@ -1,5 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import {
+  type Href,
+  router,
+} from "expo-router";
 import {
   Pressable,
   ScrollView,
@@ -18,7 +21,7 @@ const options = [
     description:
       "Partidas, descuentos, ITBMS y totales.",
     icon: "document-text-outline" as const,
-    onPress: () => router.push("/presupuestos"),
+    onPress: () => router.push("/presupuestos" as Href),
   },
   {
     id: "projects",
@@ -36,10 +39,11 @@ const options = [
   },
   {
     id: "catalog",
-    title: "Catálogo de precios",
+    title: "Catálogo",
     description:
-      "Materiales, mano de obra y rendimientos.",
-    icon: "pricetags-outline" as const,
+      "Editar precios de materiales, mano de obra y servicios.",
+    icon: "cube-outline" as const,
+    onPress: () => router.push("/catalogo" as Href),
   },
 ];
 
