@@ -36,6 +36,7 @@ import {
   addClientAddress,
   getClientById,
   setPrimaryClientAddress,
+  updateClient,
 } from "@/services/client-service";
 import {
   createProject,
@@ -67,6 +68,8 @@ export default function ClientDetailScreen() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] =
+    useState(false);
+  const [editModalVisible, setEditModalVisible] =
     useState(false);
   const [addressModalVisible, setAddressModalVisible] =
     useState(false);
@@ -229,7 +232,11 @@ export default function ClientDetailScreen() {
           </View>
         </View>
 
-        <InfoSection title="Información">
+        <InfoSection
+          title="Información"
+          actionLabel="Editar"
+          onAction={() => setEditModalVisible(true)}
+        >
           <InfoRow
             icon="call-outline"
             label="Teléfono"
@@ -307,6 +314,14 @@ export default function ClientDetailScreen() {
           )}
         </InfoSection>
       </ScrollView>
+
+      <EditClientModal
+        visible={editModalVisible}
+        companyId={activeCompany.id}
+        client={client}
+        onClose={() => setEditModalVisible(false)}
+        onUpdated={() => void loadData(true)}
+      />
 
       <AddAddressModal
         visible={addressModalVisible}
@@ -506,6 +521,151 @@ function EmptySmall({ text }: { text: string }) {
         {text}
       </Text>
     </View>
+  );
+}
+
+function EditClientModal({
+  visible,
+  companyId,
+  client,
+  onClose,
+  onUpdated,
+}: {
+  visible: boolean;
+  companyId: string;
+  client: ClientWithDetails;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [documentType, setDocumentType] = useState("");
+  const [documentNumber, setDocumentNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [secondaryPhone, setSecondaryPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    setFirstName(client.first_name ?? "");
+    setLastName(client.last_name ?? "");
+    setBusinessName(client.business_name ?? "");
+    setDocumentType(client.document_type ?? "");
+    setDocumentNumber(client.document_number ?? "");
+    setEmail(client.email ?? "");
+    setPhone(client.phone ?? "");
+    setSecondaryPhone(client.secondary_phone ?? "");
+    setNotes(client.notes ?? "");
+  }, [client, visible]);
+
+  async function handleSave() {
+    try {
+      setSubmitting(true);
+
+      const { error } = await updateClient({
+        companyId,
+        clientId: client.id,
+        clientType: client.client_type,
+        firstName,
+        lastName,
+        businessName,
+        documentType,
+        documentNumber,
+        email,
+        phone,
+        secondaryPhone,
+        notes,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible actualizar el cliente",
+          error,
+        );
+        return;
+      }
+
+      onClose();
+      onUpdated();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <FormModal
+      visible={visible}
+      title="Editar cliente"
+      onClose={onClose}
+      onSave={() => void handleSave()}
+      submitting={submitting}
+    >
+      {client.client_type === "business" ? (
+        <FormField
+          label="Nombre de la empresa"
+          value={businessName}
+          onChangeText={setBusinessName}
+          placeholder="Nombre comercial"
+        />
+      ) : (
+        <>
+          <FormField
+            label="Nombre"
+            value={firstName}
+            onChangeText={setFirstName}
+            placeholder="Nombre"
+          />
+          <FormField
+            label="Apellido"
+            value={lastName}
+            onChangeText={setLastName}
+            placeholder="Apellido"
+          />
+        </>
+      )}
+
+      <FormField
+        label="Tipo de documento"
+        value={documentType}
+        onChangeText={setDocumentType}
+        placeholder="Cédula, RUC, pasaporte..."
+      />
+      <FormField
+        label="Número de documento"
+        value={documentNumber}
+        onChangeText={setDocumentNumber}
+        placeholder="Número"
+      />
+      <FormField
+        label="Teléfono"
+        value={phone}
+        onChangeText={setPhone}
+        placeholder="Teléfono principal"
+      />
+      <FormField
+        label="Teléfono secundario"
+        value={secondaryPhone}
+        onChangeText={setSecondaryPhone}
+        placeholder="Opcional"
+      />
+      <FormField
+        label="Correo"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="correo@ejemplo.com"
+      />
+      <FormField
+        label="Notas"
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Información adicional"
+        multiline
+      />
+    </FormModal>
   );
 }
 
