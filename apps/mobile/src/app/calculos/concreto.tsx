@@ -2,7 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -14,16 +18,25 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "../../constants/theme";
-import {
-  loadLocalData,
-  saveLocalData,
-} from "../../utils/local-storage";
+import { useCompany } from "../../contexts/CompanyContext";
+import { listCatalogItems } from "../../services/catalog-service";
+import type { CatalogItemWithDetails } from "../../types/catalog";
 import { addBudgetItem } from "../../utils/budget-storage";
 import {
   calculateConcrete,
   type AggregatePriceMode,
   type ConcreteResult,
 } from "../../utils/calculations";
+import {
+  loadLocalData,
+  saveLocalData,
+} from "../../utils/local-storage";
+
+type CatalogPriceTarget =
+  | "cement"
+  | "sand"
+  | "gravel"
+  | "labor";
 
 type FormState = {
   length: string;
@@ -124,6 +137,7 @@ function formatMoney(value: number): string {
 }
 
 export default function ConcreteCalculatorScreen() {
+  const { activeCompany } = useCompany();
   const [form, setForm] = useState<FormState>(initialForm);
   const [sandPriceMode, setSandPriceMode] =
     useState<AggregatePriceMode>("cubicMeter");
@@ -135,6 +149,46 @@ export default function ConcreteCalculatorScreen() {
   const [settingsLoaded, setSettingsLoaded] =
     useState(false);
   const [budgetMessage, setBudgetMessage] = useState("");
+  const [catalogItems, setCatalogItems] = useState<
+    CatalogItemWithDetails[]
+  >([]);
+  const [catalogLoading, setCatalogLoading] =
+    useState(false);
+  const [catalogTarget, setCatalogTarget] =
+    useState<CatalogPriceTarget | null>(null);
+  const [selectedCatalogNames, setSelectedCatalogNames] =
+    useState<Partial<Record<CatalogPriceTarget, string>>>({});
+
+  useEffect(() => {
+    const companyId = activeCompany?.id;
+
+    if (!companyId) {
+      setCatalogItems([]);
+      return;
+    }
+
+    async function loadCatalog(id: string) {
+      setCatalogLoading(true);
+
+      const {
+        items,
+        error: catalogError,
+      } = await listCatalogItems(id);
+
+      if (catalogError) {
+        Alert.alert(
+          "No fue posible cargar el catálogo",
+          catalogError,
+        );
+      } else {
+        setCatalogItems(items);
+      }
+
+      setCatalogLoading(false);
+    }
+
+    void loadCatalog(companyId);
+  }, [activeCompany]);
 
   useEffect(() => {
     async function loadSavedSettings() {
@@ -262,6 +316,62 @@ export default function ConcreteCalculatorScreen() {
     }));
 
     setError("");
+  }
+
+  function handleCatalogItemSelected(
+    item: CatalogItemWithDetails,
+  ) {
+    if (!catalogTarget) return;
+
+    const price =
+      item.sale_price > 0
+        ? item.sale_price
+        : item.unit_cost;
+    const priceText = String(price);
+    const unitCode = (
+      item.unit?.code ??
+      item.unit?.symbol ??
+      ""
+    ).toLowerCase();
+    const isCubicMeter =
+      unitCode === "m3" ||
+      unitCode === "m³" ||
+      unitCode.includes("metro cub");
+
+    setSelectedCatalogNames((current) => ({
+      ...current,
+      [catalogTarget]: item.name,
+    }));
+
+    if (catalogTarget === "cement") {
+      updateField("cementPrice", priceText);
+    }
+
+    if (catalogTarget === "sand") {
+      if (isCubicMeter) {
+        setSandPriceMode("cubicMeter");
+        updateField("sandCubicMeterPrice", priceText);
+      } else {
+        setSandPriceMode("bag");
+        updateField("sandBagPrice", priceText);
+      }
+    }
+
+    if (catalogTarget === "gravel") {
+      if (isCubicMeter) {
+        setGravelPriceMode("cubicMeter");
+        updateField("gravelCubicMeterPrice", priceText);
+      } else {
+        setGravelPriceMode("bag");
+        updateField("gravelBagPrice", priceText);
+      }
+    }
+
+    if (catalogTarget === "labor") {
+      updateField("laborPrice", priceText);
+    }
+
+    setCatalogTarget(null);
   }
 
   function handleCalculate() {
@@ -580,6 +690,12 @@ export default function ConcreteCalculatorScreen() {
               y se guardan automáticamente en este dispositivo.
             </Text>
 
+            <CatalogPriceButton
+              label="Cemento del catálogo"
+              value={selectedCatalogNames.cement}
+              onPress={() => setCatalogTarget("cement")}
+            />
+
             <FormInput
               label="Precio del saco de cemento"
               value={form.cementPrice}
@@ -589,6 +705,12 @@ export default function ConcreteCalculatorScreen() {
               unit="B/."
               placeholder="0.00"
               fullWidth
+            />
+
+            <CatalogPriceButton
+              label="Arena del catálogo"
+              value={selectedCatalogNames.sand}
+              onPress={() => setCatalogTarget("sand")}
             />
 
             <AggregatePriceSection
@@ -603,6 +725,12 @@ export default function ConcreteCalculatorScreen() {
               onChangeBagPrice={(value) =>
                 updateField("sandBagPrice", value)
               }
+            />
+
+            <CatalogPriceButton
+              label="Gravilla del catálogo"
+              value={selectedCatalogNames.gravel}
+              onPress={() => setCatalogTarget("gravel")}
             />
 
             <AggregatePriceSection
@@ -622,6 +750,12 @@ export default function ConcreteCalculatorScreen() {
               onChangeBagPrice={(value) =>
                 updateField("gravelBagPrice", value)
               }
+            />
+
+            <CatalogPriceButton
+              label="Mano de obra del catálogo"
+              value={selectedCatalogNames.labor}
+              onPress={() => setCatalogTarget("labor")}
             />
 
             <FormInput
@@ -732,7 +866,205 @@ export default function ConcreteCalculatorScreen() {
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <CatalogPricePicker
+        visible={Boolean(catalogTarget)}
+        target={catalogTarget}
+        items={catalogItems}
+        loading={catalogLoading}
+        onClose={() => setCatalogTarget(null)}
+        onSelect={handleCatalogItemSelected}
+      />
     </SafeAreaView>
+  );
+}
+
+function CatalogPriceButton({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value?: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.catalogPriceButton,
+        pressed && styles.buttonPressed,
+      ]}
+    >
+      <View style={styles.catalogPriceButtonText}>
+        <Text style={styles.catalogPriceLabel}>{label}</Text>
+        <Text style={styles.catalogPriceValue}>
+          {value || "Seleccionar del catálogo"}
+        </Text>
+      </View>
+
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={colors.primary}
+      />
+    </Pressable>
+  );
+}
+
+function CatalogPricePicker({
+  visible,
+  target,
+  items,
+  loading,
+  onClose,
+  onSelect,
+}: {
+  visible: boolean;
+  target: CatalogPriceTarget | null;
+  items: CatalogItemWithDetails[];
+  loading: boolean;
+  onClose: () => void;
+  onSelect: (item: CatalogItemWithDetails) => void;
+}) {
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (visible) setSearch("");
+  }, [visible, target]);
+
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return items.filter((item) => {
+      const validType =
+        target === "labor"
+          ? item.item_type === "labor" ||
+            item.item_type === "service"
+          : item.item_type === "material";
+
+      if (!validType) return false;
+      if (!query) return true;
+
+      return (
+        item.name.toLowerCase().includes(query) ||
+        (item.sku?.toLowerCase().includes(query) ?? false) ||
+        (item.category?.name
+          .toLowerCase()
+          .includes(query) ?? false)
+      );
+    });
+  }, [items, search, target]);
+
+  const title =
+    target === "cement"
+      ? "Seleccionar cemento"
+      : target === "sand"
+        ? "Seleccionar arena"
+        : target === "gravel"
+          ? "Seleccionar gravilla"
+          : "Seleccionar mano de obra";
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.catalogModal}>
+        <View style={styles.catalogModalHeader}>
+          <Pressable onPress={onClose}>
+            <Text style={styles.catalogCloseText}>Cerrar</Text>
+          </Pressable>
+
+          <Text style={styles.catalogModalTitle}>{title}</Text>
+
+          <View style={styles.catalogHeaderSpacer} />
+        </View>
+
+        <View style={styles.catalogModalContent}>
+          <View style={styles.catalogSearchBox}>
+            <Ionicons
+              name="search-outline"
+              size={19}
+              color={colors.textSecondary}
+            />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar por nombre, SKU o categoría"
+              placeholderTextColor="#94A3B8"
+              style={styles.catalogSearchInput}
+            />
+          </View>
+
+          {loading ? (
+            <View style={styles.catalogLoading}>
+              <ActivityIndicator
+                size="large"
+                color={colors.primary}
+              />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredItems}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.catalogList}
+              ListEmptyComponent={
+                <View style={styles.catalogEmpty}>
+                  <Ionicons
+                    name="cube-outline"
+                    size={42}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.catalogEmptyTitle}>
+                    No hay ítems compatibles
+                  </Text>
+                  <Text style={styles.catalogEmptyText}>
+                    Crea primero el material o la mano de obra en el catálogo.
+                  </Text>
+                </View>
+              }
+              renderItem={({ item }) => {
+                const price =
+                  item.sale_price > 0
+                    ? item.sale_price
+                    : item.unit_cost;
+
+                return (
+                  <Pressable
+                    onPress={() => onSelect(item)}
+                    style={({ pressed }) => [
+                      styles.catalogItem,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <View style={styles.catalogItemInfo}>
+                      <Text style={styles.catalogItemName}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.catalogItemMeta}>
+                        {item.unit?.symbol ||
+                          item.unit?.name ||
+                          "unidad"}
+                        {item.category?.name
+                          ? ` · ${item.category.name}`
+                          : ""}
+                      </Text>
+                    </View>
+
+                    <Text style={styles.catalogItemPrice}>
+                      {formatMoney(price)}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -1562,6 +1894,157 @@ const styles = StyleSheet.create({
   viewBudgetButtonText: {
     color: colors.primary,
     fontSize: 13,
+    fontWeight: "900",
+  },
+
+  catalogPriceButton: {
+    minHeight: 58,
+    marginBottom: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  catalogPriceButtonText: {
+    flex: 1,
+  },
+
+  catalogPriceLabel: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  catalogPriceValue: {
+    marginTop: 3,
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  catalogModal: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
+  catalogModalHeader: {
+    minHeight: 56,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  catalogCloseText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  catalogModalTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "900",
+  },
+
+  catalogHeaderSpacer: {
+    width: 50,
+  },
+
+  catalogModalContent: {
+    flex: 1,
+    padding: 20,
+  },
+
+  catalogSearchBox: {
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+
+  catalogSearchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 13,
+  },
+
+  catalogLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  catalogList: {
+    paddingTop: 14,
+    paddingBottom: 40,
+  },
+
+  catalogEmpty: {
+    marginTop: 80,
+    alignItems: "center",
+  },
+
+  catalogEmptyTitle: {
+    marginTop: 12,
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  catalogEmptyText: {
+    maxWidth: 280,
+    marginTop: 6,
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
+
+  catalogItem: {
+    marginBottom: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  catalogItemInfo: {
+    flex: 1,
+  },
+
+  catalogItemName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  catalogItemMeta: {
+    marginTop: 4,
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+
+  catalogItemPrice: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: "900",
   },
 
