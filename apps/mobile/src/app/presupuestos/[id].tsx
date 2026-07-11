@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 
 import {
+  type Href,
+  router,
   Stack,
   useLocalSearchParams,
 } from "expo-router";
@@ -321,6 +323,29 @@ export default function BudgetDetailScreen() {
             </Text>
 
             <View style={styles.addButtonsRow}>
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/calculos/concreto",
+                    params: { budgetId },
+                  } as Href)
+                }
+                style={({ pressed }) => [
+                  styles.catalogButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons
+                  name="calculator-outline"
+                  size={18}
+                  color={colors.primary}
+                />
+
+                <Text style={styles.catalogButtonText}>
+                  Concreto
+                </Text>
+              </Pressable>
+
               <Pressable
                 onPress={() =>
                   setCatalogModalVisible(true)
@@ -1406,6 +1431,8 @@ const styles = StyleSheet.create({
 
   addButtonsRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
     gap: 8,
   },
 

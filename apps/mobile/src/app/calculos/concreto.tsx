@@ -1,5 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import {
+  type Href,
+  router,
+  useLocalSearchParams,
+} from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -19,9 +23,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "../../constants/theme";
 import { useCompany } from "../../contexts/CompanyContext";
+import { addBudgetItem } from "../../services/budget-service";
 import { listCatalogItems } from "../../services/catalog-service";
 import type { CatalogItemWithDetails } from "../../types/catalog";
-import { addBudgetItem } from "../../utils/budget-storage";
 import {
   calculateConcrete,
   type AggregatePriceMode,
@@ -137,6 +141,13 @@ function formatMoney(value: number): string {
 }
 
 export default function ConcreteCalculatorScreen() {
+  const params = useLocalSearchParams<{
+    budgetId?: string | string[];
+  }>();
+  const budgetId = Array.isArray(params.budgetId)
+    ? params.budgetId[0]
+    : params.budgetId;
+
   const { activeCompany } = useCompany();
   const [form, setForm] = useState<FormState>(initialForm);
   const [sandPriceMode, setSandPriceMode] =
@@ -471,7 +482,20 @@ export default function ConcreteCalculatorScreen() {
 
 
   async function handleAddToBudget() {
-    if (!result) {
+    if (!result) return;
+
+    if (!activeCompany || !budgetId) {
+      Alert.alert(
+        "Selecciona un presupuesto",
+        "Abre la calculadora desde un presupuesto para guardar esta partida.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Ver presupuestos",
+            onPress: () => router.push("/presupuestos"),
+          },
+        ],
+      );
       return;
     }
 
@@ -480,21 +504,35 @@ export default function ConcreteCalculatorScreen() {
         ? result.totalCost / result.volumeWithWaste
         : 0;
 
-    await addBudgetItem({
+    const details = [
+      `${formatNumber(result.cementBags, 2)} sacos de cemento`,
+      `${formatNumber(result.sandVolume, 3)} m³ de arena`,
+      `${formatNumber(result.gravelVolume, 3)} m³ de gravilla`,
+    ].join(" · ");
+
+    const { error: budgetError } = await addBudgetItem({
+      companyId: activeCompany.id,
+      budgetId,
+      itemType: "service",
       description: `Concreto mezcla ${form.cementRatio}:${form.sandRatio}:${form.gravelRatio}`,
-      details: [
-        `${formatNumber(result.cementBags, 2)} sacos de cemento`,
-        `${formatNumber(result.sandVolume, 3)} m³ de arena`,
-        `${formatNumber(result.gravelVolume, 3)} m³ de gravilla`,
-      ].join(" · "),
+      unitName: "m³",
       quantity: result.volumeWithWaste,
-      unit: "m³",
+      unitCost: unitPrice,
       unitPrice,
-      source: "concrete-calculator",
+      taxable: true,
+      notes: details,
     });
 
+    if (budgetError) {
+      Alert.alert(
+        "No fue posible agregar la partida",
+        budgetError,
+      );
+      return;
+    }
+
     setBudgetMessage(
-      "La partida fue agregada al presupuesto en borrador.",
+      "La partida fue guardada en el presupuesto.",
     );
   }
 
@@ -848,7 +886,12 @@ export default function ConcreteCalculatorScreen() {
 
               <Pressable
                 onPress={() =>
-                  router.push("/presupuestos")
+                  budgetId
+                    ? router.push({
+                        pathname: "/presupuestos/[id]",
+                        params: { id: budgetId },
+                      } as Href)
+                    : router.push("/presupuestos")
                 }
                 style={styles.viewBudgetButton}
               >
