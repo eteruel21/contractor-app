@@ -213,3 +213,61 @@ export async function createCatalogItem(input: {
   };
 }
 
+export async function createCatalogCategory(input: {
+  companyId: string;
+  name: string;
+  description?: string;
+}): Promise<{
+  category: CatalogCategory | null;
+  error: string | null;
+}> {
+  const name = input.name.trim();
+
+  if (name.length < 2) {
+    return {
+      category: null,
+      error: "Introduce un nombre de categoría válido.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("catalog_categories")
+    .insert({
+      company_id: input.companyId,
+      name,
+      description: input.description?.trim() || null,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    return {
+      category: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    category: data,
+    error: null,
+  };
+}
+
+export async function deactivateCatalogCategory(input: {
+  companyId: string;
+  categoryId: string;
+}): Promise<{
+  error: string | null;
+}> {
+  const { error } = await supabase
+    .from("catalog_categories")
+    .update({ active: false })
+    .eq("company_id", input.companyId)
+    .eq("id", input.categoryId);
+
+  return {
+    error: error?.message ?? null,
+  };
+}
+
+

@@ -29,7 +29,9 @@ import {
 } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
+    createCatalogCategory,
     createCatalogItem,
+    deactivateCatalogCategory,
     deactivateCatalogItem,
     listCatalogCategories,
     listCatalogItems,
@@ -93,6 +95,10 @@ export default function CatalogScreen() {
     );
   const [createModalVisible, setCreateModalVisible] =
     useState(false);
+  const [
+    categoriesModalVisible,
+    setCategoriesModalVisible,
+  ] = useState(false);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -268,20 +274,41 @@ export default function CatalogScreen() {
                 </Text>
               </View>
 
-              <Pressable
-                onPress={() => setCreateModalVisible(true)}
-                style={({ pressed }) => [
-                  styles.newButton,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <Ionicons
-                  name="add-outline"
-                  size={20}
-                  color={colors.textLight}
-                />
-                <Text style={styles.newButtonText}>Nuevo</Text>
-              </Pressable>
+              <View style={styles.headerActions}>
+                <Pressable
+                  onPress={() =>
+                    setCategoriesModalVisible(true)
+                  }
+                  style={({ pressed }) => [
+                    styles.categoriesButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons
+                    name="folder-outline"
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.categoriesButtonText}>
+                    Categorías
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setCreateModalVisible(true)}
+                  style={({ pressed }) => [
+                    styles.newButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons
+                    name="add-outline"
+                    size={20}
+                    color={colors.textLight}
+                  />
+                  <Text style={styles.newButtonText}>Nuevo</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.searchBox}>
@@ -370,6 +397,14 @@ export default function CatalogScreen() {
             }
           />
         )}
+      />
+
+      <ManageCategoriesModal
+        visible={categoriesModalVisible}
+        companyId={activeCompany.id}
+        categories={categories}
+        onClose={() => setCategoriesModalVisible(false)}
+        onChanged={() => void loadCatalog(true)}
       />
 
       <CreateCatalogItemModal
@@ -522,6 +557,213 @@ function PriceBox({
         {value}
       </Text>
     </View>
+  );
+}
+
+function ManageCategoriesModal({
+  visible,
+  companyId,
+  categories,
+  onClose,
+  onChanged,
+}: {
+  visible: boolean;
+  companyId: string;
+  categories: CatalogCategory[];
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deactivatingId, setDeactivatingId] =
+    useState<string | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    setName("");
+    setDescription("");
+  }, [visible]);
+
+  async function handleCreate() {
+    try {
+      setSaving(true);
+
+      const { error } = await createCatalogCategory({
+        companyId,
+        name,
+        description,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible crear la categoría",
+          error,
+        );
+        return;
+      }
+
+      setName("");
+      setDescription("");
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function confirmDeactivate(category: CatalogCategory) {
+    Alert.alert(
+      "Desactivar categoría",
+      `¿Deseas desactivar “${category.name}”?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Desactivar",
+          style: "destructive",
+          onPress: () => void handleDeactivate(category),
+        },
+      ],
+    );
+  }
+
+  async function handleDeactivate(
+    category: CatalogCategory,
+  ) {
+    try {
+      setDeactivatingId(category.id);
+
+      const { error } = await deactivateCatalogCategory({
+        companyId,
+        categoryId: category.id,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible desactivar la categoría",
+          error,
+        );
+        return;
+      }
+
+      onChanged();
+    } finally {
+      setDeactivatingId(null);
+    }
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalHeader}>
+          <Pressable onPress={onClose}>
+            <Text style={styles.cancelText}>Cerrar</Text>
+          </Pressable>
+
+          <Text style={styles.modalTitle}>Categorías</Text>
+
+          <View style={styles.modalHeaderSpacer} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.modalContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.categoryCreateCard}>
+            <Text style={styles.categoryCreateTitle}>
+              Nueva categoría
+            </Text>
+
+            <FormField
+              label="Nombre"
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej. Materiales de concreto"
+              keyboardType="default"
+            />
+
+            <FormField
+              label="Descripción"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Opcional"
+              keyboardType="default"
+            />
+
+            <Pressable
+              onPress={() => void handleCreate()}
+              disabled={saving}
+              style={({ pressed }) => [
+                styles.fullSaveButton,
+                saving && styles.disabledButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.textLight} />
+              ) : (
+                <Text style={styles.fullSaveText}>
+                  Crear categoría
+                </Text>
+              )}
+            </Pressable>
+          </View>
+
+          <Text style={styles.categoryListTitle}>
+            Categorías activas
+          </Text>
+
+          {categories.length === 0 ? (
+            <View style={styles.emptyCategoryBox}>
+              <Text style={styles.emptyText}>
+                Todavía no hay categorías.
+              </Text>
+            </View>
+          ) : (
+            categories.map((category) => (
+              <View
+                key={category.id}
+                style={styles.categoryRow}
+              >
+                <View style={styles.categoryRowInfo}>
+                  <Text style={styles.categoryRowName}>
+                    {category.name}
+                  </Text>
+                  {category.description ? (
+                    <Text style={styles.categoryRowDescription}>
+                      {category.description}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <Pressable
+                  onPress={() => confirmDeactivate(category)}
+                  disabled={deactivatingId === category.id}
+                  hitSlop={10}
+                >
+                  {deactivatingId === category.id ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.danger}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={colors.danger}
+                    />
+                  )}
+                </Pressable>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -1083,6 +1325,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  categoriesButton: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  categoriesButtonText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
   newButton: {
     minHeight: 44,
     paddingHorizontal: 15,
@@ -1303,6 +1569,67 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
     paddingBottom: 40,
+  },
+
+  modalHeaderSpacer: {
+    width: 50,
+  },
+
+  categoryCreateCard: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
+
+  categoryCreateTitle: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  categoryListTitle: {
+    marginTop: 22,
+    marginBottom: 10,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  emptyCategoryBox: {
+    padding: 18,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+
+  categoryRow: {
+    marginBottom: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  categoryRowInfo: {
+    flex: 1,
+  },
+
+  categoryRowName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  categoryRowDescription: {
+    marginTop: 4,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   modalItemHeader: {
