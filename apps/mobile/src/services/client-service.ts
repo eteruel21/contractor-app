@@ -340,3 +340,90 @@ export async function setPrimaryClientAddress(input: {
     error: error?.message ?? null,
   };
 }
+
+export async function updateClient(input: {
+  companyId: string;
+  clientId: string;
+  clientType: ClientType;
+  firstName?: string;
+  lastName?: string;
+  businessName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  email?: string;
+  phone?: string;
+  secondaryPhone?: string;
+  notes?: string;
+}): Promise<{
+  client: Client | null;
+  error: string | null;
+}> {
+  const firstName = input.firstName?.trim() ?? "";
+  const lastName = input.lastName?.trim() ?? "";
+  const businessName =
+    input.businessName?.trim() ?? "";
+
+  if (
+    input.clientType === "person" &&
+    `${firstName} ${lastName}`.trim().length < 2
+  ) {
+    return {
+      client: null,
+      error: "Introduce el nombre del cliente.",
+    };
+  }
+
+  if (
+    input.clientType === "business" &&
+    businessName.length < 2
+  ) {
+    return {
+      client: null,
+      error: "Introduce el nombre de la empresa.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("clients")
+    .update({
+      client_type: input.clientType,
+      first_name:
+        input.clientType === "person"
+          ? firstName || null
+          : null,
+      last_name:
+        input.clientType === "person"
+          ? lastName || null
+          : null,
+      business_name:
+        input.clientType === "business"
+          ? businessName
+          : null,
+      document_type:
+        input.documentType?.trim() || null,
+      document_number:
+        input.documentNumber?.trim() || null,
+      email:
+        input.email?.trim().toLowerCase() || null,
+      phone: input.phone?.trim() || null,
+      secondary_phone:
+        input.secondaryPhone?.trim() || null,
+      notes: input.notes?.trim() || null,
+    })
+    .eq("company_id", input.companyId)
+    .eq("id", input.clientId)
+    .select("*")
+    .single();
+
+  if (error) {
+    return {
+      client: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    client: data,
+    error: null,
+  };
+}
