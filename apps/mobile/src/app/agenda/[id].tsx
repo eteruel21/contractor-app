@@ -19,6 +19,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "../../constants/theme";
+import { useCompany } from "../../contexts/CompanyContext";
+import { listClients } from "../../services/client-service";
+import type { ClientWithDetails } from "../../types/client";
+import { getClientDisplayName } from "../../types/client";
 import {
   getAppointmentById,
   saveAppointment,
@@ -29,10 +33,6 @@ import {
   cancelScheduledNotification,
   scheduleAppointmentNotification,
 } from "../../utils/appointment-notifications";
-import {
-  getClients,
-  type Client,
-} from "../../utils/client-storage";
 
 type FormState = {
   title: string;
@@ -95,10 +95,13 @@ function parseAppointmentDate(
 export default function AppointmentFormScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
+  const { activeCompany } = useCompany();
   const isNew = id === "nuevo";
 
   const [form, setForm] = useState<FormState>(initialForm);
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<
+    ClientWithDetails[]
+  >([]);
   const [showClients, setShowClients] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -109,8 +112,6 @@ export default function AppointmentFormScreen() {
   }, [isNew, navigation]);
 
   useEffect(() => {
-    void getClients().then(setClients);
-
     if (isNew || !id) return;
 
     void getAppointmentById(id).then((item) => {
@@ -133,6 +134,39 @@ export default function AppointmentFormScreen() {
     });
   }, [id, isNew]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadCompanyClients() {
+      if (!activeCompany) {
+        setClients([]);
+        return;
+      }
+
+      const { clients: loadedClients, error } =
+        await listClients(activeCompany.id);
+
+      if (!active) return;
+
+      if (error) {
+        Alert.alert(
+          "No fue posible cargar los clientes",
+          error,
+        );
+        setClients([]);
+        return;
+      }
+
+      setClients(loadedClients);
+    }
+
+    void loadCompanyClients();
+
+    return () => {
+      active = false;
+    };
+  }, [activeCompany]);
+
   function updateField<K extends keyof FormState>(
     field: K,
     value: FormState[K],
@@ -143,12 +177,18 @@ export default function AppointmentFormScreen() {
     }));
   }
 
-  function selectClient(client: Client) {
+  function selectClient(client: ClientWithDetails) {
+    const primaryAddress =
+      client.addresses.find(
+        (address) => address.is_primary,
+      ) ?? client.addresses[0] ?? null;
+
     setForm((current) => ({
       ...current,
       clientId: client.id,
-      clientName: client.name,
-      address: current.address || client.address,
+      clientName: getClientDisplayName(client),
+      address:
+        current.address || primaryAddress?.address || "",
     }));
     setShowClients(false);
   }
@@ -293,10 +333,12 @@ export default function AppointmentFormScreen() {
                       style={styles.clientOption}
                     >
                       <Text style={styles.clientOptionName}>
-                        {client.name}
+                        {getClientDisplayName(client)}
                       </Text>
                       <Text style={styles.clientOptionMeta}>
-                        {client.company || client.phone}
+                        {client.phone ||
+                          client.email ||
+                          "Sin contacto"}
                       </Text>
                     </Pressable>
                   ))
