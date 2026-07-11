@@ -92,7 +92,7 @@ export async function createBudgetFromProject(input: {
     {
       requested_company_id: input.companyId,
       requested_project_id: input.projectId,
-      budget_title: input.title?.trim() || null,
+      budget_title: input.title?.trim() || undefined,
     },
   );
 

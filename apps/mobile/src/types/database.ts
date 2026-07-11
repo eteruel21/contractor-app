@@ -14,6 +14,507 @@ export type Database = {
   }
   public: {
     Tables: {
+      budget_items: {
+        Row: {
+          budget_id: string
+          calculation_run_id: string | null
+          catalog_item_id: string | null
+          company_id: string
+          created_at: string
+          description: string
+          discount_percentage: number
+          id: string
+          item_type: Database["public"]["Enums"]["budget_item_type"]
+          notes: string | null
+          quantity: number
+          section_id: string | null
+          sort_order: number
+          subtotal: number
+          taxable: boolean
+          unit_cost: number
+          unit_name: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          calculation_run_id?: string | null
+          catalog_item_id?: string | null
+          company_id: string
+          created_at?: string
+          description: string
+          discount_percentage?: number
+          id?: string
+          item_type?: Database["public"]["Enums"]["budget_item_type"]
+          notes?: string | null
+          quantity?: number
+          section_id?: string | null
+          sort_order?: number
+          subtotal?: number
+          taxable?: boolean
+          unit_cost?: number
+          unit_name?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          calculation_run_id?: string | null
+          catalog_item_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string
+          discount_percentage?: number
+          id?: string
+          item_type?: Database["public"]["Enums"]["budget_item_type"]
+          notes?: string | null
+          quantity?: number
+          section_id?: string | null
+          sort_order?: number
+          subtotal?: number
+          taxable?: boolean
+          unit_cost?: number
+          unit_name?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_budget_fk"
+            columns: ["budget_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "budget_items_catalog_item_fk"
+            columns: ["catalog_item_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "budget_items_section_fk"
+            columns: ["section_id", "budget_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "budget_sections"
+            referencedColumns: ["id", "budget_id", "company_id"]
+          },
+        ]
+      }
+      budget_sections: {
+        Row: {
+          budget_id: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_sections_budget_fk"
+            columns: ["budget_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      budget_versions: {
+        Row: {
+          budget_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          snapshot_data: Json
+          version_number: number
+        }
+        Insert: {
+          budget_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          snapshot_data?: Json
+          version_number: number
+        }
+        Update: {
+          budget_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          snapshot_data?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_versions_budget_fk"
+            columns: ["budget_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "budgets"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          approved_at: string | null
+          budget_number: string
+          client_id: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          description: string | null
+          discount_amount: number
+          discount_type: Database["public"]["Enums"]["budget_discount_type"]
+          discount_value: number
+          id: string
+          notes: string | null
+          project_id: string
+          status: Database["public"]["Enums"]["budget_status"]
+          subtotal: number
+          tax_amount: number
+          tax_rate: number
+          terms: string | null
+          title: string
+          total: number
+          updated_at: string
+          valid_until: string | null
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          budget_number: string
+          client_id: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          discount_amount?: number
+          discount_type?: Database["public"]["Enums"]["budget_discount_type"]
+          discount_value?: number
+          id?: string
+          notes?: string | null
+          project_id: string
+          status?: Database["public"]["Enums"]["budget_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          title: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          budget_number?: string
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          discount_amount?: number
+          discount_type?: Database["public"]["Enums"]["budget_discount_type"]
+          discount_value?: number
+          id?: string
+          notes?: string | null
+          project_id?: string
+          status?: Database["public"]["Enums"]["budget_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_rate?: number
+          terms?: string | null
+          title?: string
+          total?: number
+          updated_at?: string
+          valid_until?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_client_fk"
+            columns: ["client_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "budgets_project_fk"
+            columns: ["project_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      catalog_categories: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_categories_parent_fk"
+            columns: ["parent_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_categories"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      catalog_items: {
+        Row: {
+          active: boolean
+          category_id: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          item_type: Database["public"]["Enums"]["catalog_item_type"]
+          name: string
+          sale_price: number
+          sku: string | null
+          unit_cost: number
+          unit_id: string
+          updated_at: string
+          waste_percentage: number
+        }
+        Insert: {
+          active?: boolean
+          category_id?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["catalog_item_type"]
+          name: string
+          sale_price?: number
+          sku?: string | null
+          unit_cost?: number
+          unit_id: string
+          updated_at?: string
+          waste_percentage?: number
+        }
+        Update: {
+          active?: boolean
+          category_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["catalog_item_type"]
+          name?: string
+          sale_price?: number
+          sku?: string | null
+          unit_cost?: number
+          unit_id?: string
+          updated_at?: string
+          waste_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_items_category_fk"
+            columns: ["category_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_categories"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "catalog_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_items_unit_fk"
+            columns: ["unit_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      catalog_price_history: {
+        Row: {
+          catalog_item_id: string
+          changed_by: string | null
+          company_id: string
+          created_at: string
+          effective_at: string
+          id: string
+          notes: string | null
+          sale_price: number
+          source: string | null
+          unit_cost: number
+        }
+        Insert: {
+          catalog_item_id: string
+          changed_by?: string | null
+          company_id: string
+          created_at?: string
+          effective_at?: string
+          id?: string
+          notes?: string | null
+          sale_price: number
+          source?: string | null
+          unit_cost: number
+        }
+        Update: {
+          catalog_item_id?: string
+          changed_by?: string | null
+          company_id?: string
+          created_at?: string
+          effective_at?: string
+          id?: string
+          notes?: string | null
+          sale_price?: number
+          source?: string | null
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_price_history_item_fk"
+            columns: ["catalog_item_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      catalog_yields: {
+        Row: {
+          active: boolean
+          catalog_item_id: string
+          company_id: string
+          created_at: string
+          crew_size: number
+          id: string
+          labor_hours: number
+          name: string
+          notes: string | null
+          output_quantity: number
+          output_unit_id: string
+          updated_at: string
+          waste_percentage: number
+        }
+        Insert: {
+          active?: boolean
+          catalog_item_id: string
+          company_id: string
+          created_at?: string
+          crew_size?: number
+          id?: string
+          labor_hours?: number
+          name: string
+          notes?: string | null
+          output_quantity?: number
+          output_unit_id: string
+          updated_at?: string
+          waste_percentage?: number
+        }
+        Update: {
+          active?: boolean
+          catalog_item_id?: string
+          company_id?: string
+          created_at?: string
+          crew_size?: number
+          id?: string
+          labor_hours?: number
+          name?: string
+          notes?: string | null
+          output_quantity?: number
+          output_unit_id?: string
+          updated_at?: string
+          waste_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_yields_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "catalog_yields_item_fk"
+            columns: ["catalog_item_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "catalog_yields_output_unit_fk"
+            columns: ["output_unit_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
       client_addresses: {
         Row: {
           address: string
@@ -524,6 +1025,160 @@ export type Database = {
           },
         ]
       }
+      supplier_prices: {
+        Row: {
+          catalog_item_id: string
+          company_id: string
+          created_at: string
+          currency_code: string
+          effective_date: string
+          expires_at: string | null
+          id: string
+          notes: string | null
+          price: number
+          supplier_id: string
+        }
+        Insert: {
+          catalog_item_id: string
+          company_id: string
+          created_at?: string
+          currency_code?: string
+          effective_date?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          price?: number
+          supplier_id: string
+        }
+        Update: {
+          catalog_item_id?: string
+          company_id?: string
+          created_at?: string
+          currency_code?: string
+          effective_date?: string
+          expires_at?: string | null
+          id?: string
+          notes?: string | null
+          price?: number
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_prices_catalog_item_fk"
+            columns: ["catalog_item_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_items"
+            referencedColumns: ["id", "company_id"]
+          },
+          {
+            foreignKeyName: "supplier_prices_supplier_fk"
+            columns: ["supplier_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          active: boolean
+          address: string | null
+          company_id: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          tax_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          company_id: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          company_id?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          tax_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      units: {
+        Row: {
+          active: boolean
+          code: string
+          company_id: string
+          conversion_factor: number
+          created_at: string
+          id: string
+          name: string
+          symbol: string
+          unit_type: Database["public"]["Enums"]["unit_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          company_id: string
+          conversion_factor?: number
+          created_at?: string
+          id?: string
+          name: string
+          symbol: string
+          unit_type?: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          company_id?: string
+          conversion_factor?: number
+          created_at?: string
+          id?: string
+          name?: string
+          symbol?: string
+          unit_type?: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -534,6 +1189,14 @@ export type Database = {
           company_email?: string
           company_name: string
           company_phone?: string
+        }
+        Returns: string
+      }
+      create_project_budget: {
+        Args: {
+          budget_title?: string
+          requested_company_id: string
+          requested_project_id: string
         }
         Returns: string
       }
@@ -556,8 +1219,42 @@ export type Database = {
         }
         Returns: string
       }
+      recalculate_budget_totals: {
+        Args: { requested_budget_id: string; requested_company_id: string }
+        Returns: undefined
+      }
+      seed_default_catalog: {
+        Args: { requested_company_id: string }
+        Returns: undefined
+      }
+      seed_default_units: {
+        Args: { requested_company_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
+      budget_discount_type: "none" | "percent" | "fixed"
+      budget_item_type:
+        | "material"
+        | "labor"
+        | "equipment"
+        | "service"
+        | "subcontract"
+        | "manual"
+      budget_status:
+        | "draft"
+        | "sent"
+        | "viewed"
+        | "approved"
+        | "rejected"
+        | "expired"
+        | "cancelled"
+      catalog_item_type:
+        | "material"
+        | "labor"
+        | "equipment"
+        | "service"
+        | "subcontract"
       client_type: "person" | "business"
       company_role:
         | "owner"
@@ -577,6 +1274,15 @@ export type Database = {
         | "paused"
         | "completed"
         | "cancelled"
+      unit_type:
+        | "length"
+        | "area"
+        | "volume"
+        | "weight"
+        | "unit"
+        | "time"
+        | "package"
+        | "service"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -704,6 +1410,31 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      budget_discount_type: ["none", "percent", "fixed"],
+      budget_item_type: [
+        "material",
+        "labor",
+        "equipment",
+        "service",
+        "subcontract",
+        "manual",
+      ],
+      budget_status: [
+        "draft",
+        "sent",
+        "viewed",
+        "approved",
+        "rejected",
+        "expired",
+        "cancelled",
+      ],
+      catalog_item_type: [
+        "material",
+        "labor",
+        "equipment",
+        "service",
+        "subcontract",
+      ],
       client_type: ["person", "business"],
       company_role: [
         "owner",
@@ -724,6 +1455,16 @@ export const Constants = {
         "paused",
         "completed",
         "cancelled",
+      ],
+      unit_type: [
+        "length",
+        "area",
+        "volume",
+        "weight",
+        "unit",
+        "time",
+        "package",
+        "service",
       ],
     },
   },
