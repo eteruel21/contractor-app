@@ -2,6 +2,7 @@ import { supabase } from "@/services/supabase";
 import type {
   CatalogCategory,
   CatalogItem,
+  CatalogItemType,
   CatalogItemWithDetails,
   Unit,
 } from "@/types/catalog";
@@ -106,3 +107,109 @@ export async function deactivateCatalogItem(input: {
     error: error?.message ?? null,
   };
 }
+export async function listCatalogUnits(
+  companyId: string,
+): Promise<{
+  units: Unit[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("units")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  return {
+    units: error ? [] : data,
+    error: error?.message ?? null,
+  };
+}
+
+export async function listCatalogCategories(
+  companyId: string,
+): Promise<{
+  categories: CatalogCategory[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("catalog_categories")
+    .select("*")
+    .eq("company_id", companyId)
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  return {
+    categories: error ? [] : data,
+    error: error?.message ?? null,
+  };
+}
+
+export async function createCatalogItem(input: {
+  companyId: string;
+  itemType: CatalogItemType;
+  categoryId?: string | null;
+  sku?: string;
+  name: string;
+  description?: string;
+  unitId: string;
+  unitCost?: number;
+  salePrice?: number;
+  wastePercentage?: number;
+}): Promise<{
+  item: CatalogItem | null;
+  error: string | null;
+}> {
+  const name = input.name.trim();
+
+  if (name.length < 2) {
+    return {
+      item: null,
+      error: "Introduce un nombre válido.",
+    };
+  }
+
+  if (!input.unitId) {
+    return {
+      item: null,
+      error: "Selecciona una unidad.",
+    };
+  }
+
+  const unitCost = Math.max(input.unitCost ?? 0, 0);
+  const salePrice = Math.max(input.salePrice ?? 0, 0);
+  const wastePercentage = Math.min(
+    Math.max(input.wastePercentage ?? 0, 0),
+    100,
+  );
+
+  const { data, error } = await supabase
+    .from("catalog_items")
+    .insert({
+      company_id: input.companyId,
+      item_type: input.itemType,
+      category_id: input.categoryId ?? null,
+      sku: input.sku?.trim() || null,
+      name,
+      description: input.description?.trim() || null,
+      unit_id: input.unitId,
+      unit_cost: unitCost,
+      sale_price: salePrice,
+      waste_percentage: wastePercentage,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    return {
+      item: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    item: data,
+    error: null,
+  };
+}
+

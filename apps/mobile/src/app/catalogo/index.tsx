@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import {
     useCallback,
+    useEffect,
     useMemo,
     useState,
 } from "react";
@@ -28,14 +29,19 @@ import {
 } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
+    createCatalogItem,
     deactivateCatalogItem,
+    listCatalogCategories,
     listCatalogItems,
+    listCatalogUnits,
     updateCatalogItemPricing,
 } from "@/services/catalog-service";
 import { formatMoney } from "@/types/budget";
 import type {
+    CatalogCategory,
     CatalogItemType,
     CatalogItemWithDetails,
+    Unit,
 } from "@/types/catalog";
 import { getCatalogItemTypeLabel } from "@/types/catalog";
 
@@ -71,6 +77,10 @@ export default function CatalogScreen() {
   const [items, setItems] = useState<
     CatalogItemWithDetails[]
   >([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [categories, setCategories] = useState<
+    CatalogCategory[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] =
     useState(false);
@@ -81,6 +91,8 @@ export default function CatalogScreen() {
     useState<CatalogItemWithDetails | null>(
       null,
     );
+  const [createModalVisible, setCreateModalVisible] =
+    useState(false);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -121,16 +133,41 @@ export default function CatalogScreen() {
         setLoading(true);
       }
 
-      const { items: loadedItems, error } =
-        await listCatalogItems(activeCompany.id);
+      const [
+        itemsResult,
+        unitsResult,
+        categoriesResult,
+      ] = await Promise.all([
+        listCatalogItems(activeCompany.id),
+        listCatalogUnits(activeCompany.id),
+        listCatalogCategories(activeCompany.id),
+      ]);
 
-      if (error) {
+      if (itemsResult.error) {
         Alert.alert(
           "No fue posible cargar el catálogo",
-          error,
+          itemsResult.error,
         );
       } else {
-        setItems(loadedItems);
+        setItems(itemsResult.items);
+      }
+
+      if (unitsResult.error) {
+        Alert.alert(
+          "No fue posible cargar las unidades",
+          unitsResult.error,
+        );
+      } else {
+        setUnits(unitsResult.units);
+      }
+
+      if (categoriesResult.error) {
+        Alert.alert(
+          "No fue posible cargar las categorías",
+          categoriesResult.error,
+        );
+      } else {
+        setCategories(categoriesResult.categories);
       }
 
       setLoading(false);
@@ -231,13 +268,20 @@ export default function CatalogScreen() {
                 </Text>
               </View>
 
-              <View style={styles.iconBox}>
+              <Pressable
+                onPress={() => setCreateModalVisible(true)}
+                style={({ pressed }) => [
+                  styles.newButton,
+                  pressed && styles.pressed,
+                ]}
+              >
                 <Ionicons
-                  name="cube-outline"
-                  size={24}
+                  name="add-outline"
+                  size={20}
                   color={colors.textLight}
                 />
-              </View>
+                <Text style={styles.newButtonText}>Nuevo</Text>
+              </Pressable>
             </View>
 
             <View style={styles.searchBox}>
@@ -326,6 +370,15 @@ export default function CatalogScreen() {
             }
           />
         )}
+      />
+
+      <CreateCatalogItemModal
+        visible={createModalVisible}
+        companyId={activeCompany.id}
+        units={units}
+        categories={categories}
+        onClose={() => setCreateModalVisible(false)}
+        onCreated={() => void loadCatalog(true)}
       />
 
       <EditCatalogItemModal
@@ -469,6 +522,294 @@ function PriceBox({
         {value}
       </Text>
     </View>
+  );
+}
+
+function CreateCatalogItemModal({
+  visible,
+  companyId,
+  units,
+  categories,
+  onClose,
+  onCreated,
+}: {
+  visible: boolean;
+  companyId: string;
+  units: Unit[];
+  categories: CatalogCategory[];
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [itemType, setItemType] =
+    useState<CatalogItemType>("material");
+  const [categoryId, setCategoryId] =
+    useState<string | null>(null);
+  const [unitId, setUnitId] = useState("");
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [description, setDescription] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [wastePercentage, setWastePercentage] =
+    useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    setItemType("material");
+    setCategoryId(null);
+    setUnitId(units[0]?.id ?? "");
+    setName("");
+    setSku("");
+    setDescription("");
+    setUnitCost("");
+    setSalePrice("");
+    setWastePercentage("");
+  }, [units, visible]);
+
+  async function handleSave() {
+    const { error } = await createCatalogItem({
+      companyId,
+      itemType,
+      categoryId,
+      sku,
+      name,
+      description,
+      unitId,
+      unitCost: parseMoney(unitCost),
+      salePrice: parseMoney(salePrice),
+      wastePercentage: parseMoney(wastePercentage),
+    });
+
+    if (error) {
+      Alert.alert(
+        "No fue posible crear el ítem",
+        error,
+      );
+      return;
+    }
+
+    onClose();
+    onCreated();
+  }
+
+  const createTypes = FILTERS.filter(
+    (
+      option,
+    ): option is {
+      label: string;
+      value: CatalogItemType;
+    } => option.value !== "all",
+  );
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalSafeArea}>
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={
+            Platform.OS === "ios" ? "padding" : undefined
+          }
+        >
+          <View style={styles.modalHeader}>
+            <Pressable onPress={onClose}>
+              <Text style={styles.cancelText}>Cancelar</Text>
+            </Pressable>
+
+            <Text style={styles.modalTitle}>Nuevo ítem</Text>
+
+            <Pressable
+              onPress={() => void handleSave()}
+              disabled={saving}
+            >
+              <Text style={styles.saveText}>Guardar</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.selectionLabel}>Tipo</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectionRow}
+            >
+              {createTypes.map((option) => (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setItemType(option.value)}
+                  style={[
+                    styles.filterChip,
+                    itemType === option.value &&
+                      styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      itemType === option.value &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <FormField
+              label="Nombre"
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej. Cemento de uso general"
+              keyboardType="default"
+            />
+            <FormField
+              label="SKU o código"
+              value={sku}
+              onChangeText={setSku}
+              placeholder="Opcional"
+              keyboardType="default"
+            />
+            <FormField
+              label="Descripción"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Opcional"
+              keyboardType="default"
+            />
+
+            <Text style={styles.selectionLabel}>Unidad</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectionRow}
+            >
+              {units.map((unit) => (
+                <Pressable
+                  key={unit.id}
+                  onPress={() => setUnitId(unit.id)}
+                  style={[
+                    styles.filterChip,
+                    unitId === unit.id &&
+                      styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      unitId === unit.id &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
+                    {unit.symbol} · {unit.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            {categories.length > 0 ? (
+              <>
+                <Text style={styles.selectionLabel}>
+                  Categoría opcional
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.selectionRow}
+                >
+                  <Pressable
+                    onPress={() => setCategoryId(null)}
+                    style={[
+                      styles.filterChip,
+                      categoryId === null &&
+                        styles.filterChipActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        categoryId === null &&
+                          styles.filterChipTextActive,
+                      ]}
+                    >
+                      Sin categoría
+                    </Text>
+                  </Pressable>
+
+                  {categories.map((category) => (
+                    <Pressable
+                      key={category.id}
+                      onPress={() => setCategoryId(category.id)}
+                      style={[
+                        styles.filterChip,
+                        categoryId === category.id &&
+                          styles.filterChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          categoryId === category.id &&
+                            styles.filterChipTextActive,
+                        ]}
+                      >
+                        {category.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </>
+            ) : null}
+
+            <FormField
+              label="Costo unitario"
+              value={unitCost}
+              onChangeText={setUnitCost}
+              placeholder="0.00"
+            />
+            <FormField
+              label="Precio de venta"
+              value={salePrice}
+              onChangeText={setSalePrice}
+              placeholder="0.00"
+            />
+            <FormField
+              label="Desperdicio %"
+              value={wastePercentage}
+              onChangeText={setWastePercentage}
+              placeholder="0"
+            />
+
+            <Pressable
+              onPress={() => void handleSave()}
+              disabled={saving}
+              style={({ pressed }) => [
+                styles.fullSaveButton,
+                saving && styles.disabledButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.textLight} />
+              ) : (
+                <Text style={styles.fullSaveText}>
+                  Crear ítem
+                </Text>
+              )}
+            </Pressable>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -657,11 +998,13 @@ function FormField({
   value,
   onChangeText,
   placeholder,
+  keyboardType = "decimal-pad",
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
+  keyboardType?: "default" | "decimal-pad";
 }) {
   return (
     <View style={styles.field}>
@@ -672,7 +1015,7 @@ function FormField({
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor="#94A3B8"
-        keyboardType="decimal-pad"
+        keyboardType={keyboardType}
         style={styles.input}
       />
     </View>
@@ -738,6 +1081,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  newButton: {
+    minHeight: 44,
+    paddingHorizontal: 15,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+
+  newButtonText: {
+    color: colors.textLight,
+    fontSize: 13,
+    fontWeight: "900",
   },
 
   searchBox: {
@@ -952,6 +1312,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     flexDirection: "row",
     gap: 12,
+  },
+
+  selectionLabel: {
+    marginBottom: 8,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  selectionRow: {
+    paddingBottom: 16,
+    gap: 8,
   },
 
   field: {
