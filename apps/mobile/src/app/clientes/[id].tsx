@@ -34,9 +34,11 @@ import {
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   addClientAddress,
+  deleteClientAddress,
   getClientById,
   setPrimaryClientAddress,
   updateClient,
+  updateClientAddress,
 } from "@/services/client-service";
 import {
   createProject,
@@ -71,6 +73,8 @@ export default function ClientDetailScreen() {
     useState(false);
   const [editModalVisible, setEditModalVisible] =
     useState(false);
+  const [editingAddress, setEditingAddress] =
+    useState<ClientAddress | null>(null);
   const [addressModalVisible, setAddressModalVisible] =
     useState(false);
   const [projectModalVisible, setProjectModalVisible] =
@@ -132,6 +136,43 @@ export default function ClientDetailScreen() {
   useEffect(() => {
     void loadData();
   }, [loadData]);
+
+  function handleDeleteAddress(address: ClientAddress) {
+    Alert.alert(
+      "Eliminar dirección",
+      `¿Deseas eliminar “${address.label}”?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => void confirmDeleteAddress(address),
+        },
+      ],
+    );
+  }
+
+  async function confirmDeleteAddress(
+    address: ClientAddress,
+  ) {
+    if (!activeCompany || !client) return;
+
+    const { error } = await deleteClientAddress({
+      companyId: activeCompany.id,
+      clientId: client.id,
+      addressId: address.id,
+    });
+
+    if (error) {
+      Alert.alert(
+        "No fue posible eliminar la dirección",
+        error,
+      );
+      return;
+    }
+
+    await loadData(true);
+  }
 
   async function handleSetPrimaryAddress(
     address: ClientAddress,
@@ -282,6 +323,8 @@ export default function ClientDetailScreen() {
                 onMakePrimary={() =>
                   void handleSetPrimaryAddress(address)
                 }
+                onEdit={() => setEditingAddress(address)}
+                onDelete={() => handleDeleteAddress(address)}
               />
             ))
           )}
@@ -320,6 +363,15 @@ export default function ClientDetailScreen() {
         companyId={activeCompany.id}
         client={client}
         onClose={() => setEditModalVisible(false)}
+        onUpdated={() => void loadData(true)}
+      />
+
+      <EditAddressModal
+        visible={Boolean(editingAddress)}
+        companyId={activeCompany.id}
+        clientId={client.id}
+        address={editingAddress}
+        onClose={() => setEditingAddress(null)}
         onUpdated={() => void loadData(true)}
       />
 
@@ -422,9 +474,13 @@ function InfoRow({
 function AddressCard({
   address,
   onMakePrimary,
+  onEdit,
+  onDelete,
 }: {
   address: ClientAddress;
   onMakePrimary: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
     <View style={styles.addressCard}>
@@ -457,6 +513,16 @@ function AddressCard({
           Ref: {address.reference}
         </Text>
       ) : null}
+
+      <View style={styles.addressActions}>
+        <Pressable onPress={onEdit}>
+          <Text style={styles.linkText}>Editar</Text>
+        </Pressable>
+
+        <Pressable onPress={onDelete}>
+          <Text style={styles.dangerText}>Eliminar</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -663,6 +729,124 @@ function EditClientModal({
         value={notes}
         onChangeText={setNotes}
         placeholder="Información adicional"
+        multiline
+      />
+    </FormModal>
+  );
+}
+
+function EditAddressModal({
+  visible,
+  companyId,
+  clientId,
+  address,
+  onClose,
+  onUpdated,
+}: {
+  visible: boolean;
+  companyId: string;
+  clientId: string;
+  address: ClientAddress | null;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [label, setLabel] = useState("");
+  const [addressText, setAddressText] = useState("");
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
+  const [township, setTownship] = useState("");
+  const [reference, setReference] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!address || !visible) return;
+
+    setLabel(address.label);
+    setAddressText(address.address);
+    setProvince(address.province ?? "");
+    setDistrict(address.district ?? "");
+    setTownship(address.township ?? "");
+    setReference(address.reference ?? "");
+  }, [address, visible]);
+
+  async function handleSave() {
+    if (!address) return;
+
+    try {
+      setSubmitting(true);
+
+      const { error } = await updateClientAddress({
+        companyId,
+        clientId,
+        addressId: address.id,
+        label,
+        address: addressText,
+        province,
+        district,
+        township,
+        reference,
+        isPrimary: address.is_primary,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible actualizar la dirección",
+          error,
+        );
+        return;
+      }
+
+      onClose();
+      onUpdated();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <FormModal
+      visible={visible}
+      title="Editar dirección"
+      onClose={onClose}
+      onSave={() => void handleSave()}
+      submitting={submitting}
+    >
+      <FormField
+        label="Etiqueta"
+        value={label}
+        onChangeText={setLabel}
+        placeholder="Casa, oficina, proyecto..."
+      />
+      <FormField
+        label="Dirección"
+        value={addressText}
+        onChangeText={setAddressText}
+        placeholder="Dirección completa"
+        multiline
+      />
+      <FormField
+        label="Provincia"
+        value={province}
+        onChangeText={setProvince}
+        placeholder="Provincia"
+      />
+      <FormField
+        label="Distrito"
+        value={district}
+        onChangeText={setDistrict}
+        placeholder="Distrito"
+      />
+      <FormField
+        label="Corregimiento"
+        value={township}
+        onChangeText={setTownship}
+        placeholder="Corregimiento"
+      />
+      <FormField
+        label="Referencia"
+        value={reference}
+        onChangeText={setReference}
+        placeholder="Punto de referencia"
         multiline
       />
     </FormModal>
@@ -1161,6 +1345,22 @@ const styles = StyleSheet.create({
 
   linkText: {
     color: colors.primary,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  addressActions: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 18,
+  },
+
+  dangerText: {
+    color: "#DC2626",
     fontSize: 12,
     fontWeight: "900",
   },

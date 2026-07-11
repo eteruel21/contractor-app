@@ -427,3 +427,136 @@ export async function updateClient(input: {
     error: null,
   };
 }
+export async function updateClientAddress(input: {
+  companyId: string;
+  clientId: string;
+  addressId: string;
+  label: string;
+  address: string;
+  province?: string;
+  district?: string;
+  township?: string;
+  reference?: string;
+  isPrimary: boolean;
+}): Promise<{
+  address: ClientAddress | null;
+  error: string | null;
+}> {
+  const cleanAddress = input.address.trim();
+
+  if (cleanAddress.length < 3) {
+    return {
+      address: null,
+      error: "Introduce una dirección válida.",
+    };
+  }
+
+  if (input.isPrimary) {
+    const { error: resetError } = await supabase
+      .from("client_addresses")
+      .update({ is_primary: false })
+      .eq("company_id", input.companyId)
+      .eq("client_id", input.clientId);
+
+    if (resetError) {
+      return {
+        address: null,
+        error: resetError.message,
+      };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("client_addresses")
+    .update({
+      label: input.label.trim() || "Dirección",
+      address: cleanAddress,
+      province: input.province?.trim() || null,
+      district: input.district?.trim() || null,
+      township: input.township?.trim() || null,
+      reference: input.reference?.trim() || null,
+      is_primary: input.isPrimary,
+    })
+    .eq("company_id", input.companyId)
+    .eq("client_id", input.clientId)
+    .eq("id", input.addressId)
+    .select("*")
+    .single();
+
+  if (error) {
+    return {
+      address: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    address: data,
+    error: null,
+  };
+}
+
+export async function deleteClientAddress(input: {
+  companyId: string;
+  clientId: string;
+  addressId: string;
+}): Promise<{
+  error: string | null;
+}> {
+  const { data: target, error: targetError } =
+    await supabase
+      .from("client_addresses")
+      .select("is_primary")
+      .eq("company_id", input.companyId)
+      .eq("client_id", input.clientId)
+      .eq("id", input.addressId)
+      .single();
+
+  if (targetError) {
+    return { error: targetError.message };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("client_addresses")
+    .delete()
+    .eq("company_id", input.companyId)
+    .eq("client_id", input.clientId)
+    .eq("id", input.addressId);
+
+  if (deleteError) {
+    return { error: deleteError.message };
+  }
+
+  if (target.is_primary) {
+    const { data: replacement, error: replacementError } =
+      await supabase
+        .from("client_addresses")
+        .select("id")
+        .eq("company_id", input.companyId)
+        .eq("client_id", input.clientId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+    if (replacementError) {
+      return { error: replacementError.message };
+    }
+
+    if (replacement) {
+      const { error: promoteError } = await supabase
+        .from("client_addresses")
+        .update({ is_primary: true })
+        .eq("company_id", input.companyId)
+        .eq("client_id", input.clientId)
+        .eq("id", replacement.id);
+
+      if (promoteError) {
+        return { error: promoteError.message };
+      }
+    }
+  }
+
+  return { error: null };
+}
+
+
