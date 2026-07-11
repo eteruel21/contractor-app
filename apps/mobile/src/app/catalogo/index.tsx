@@ -31,11 +31,14 @@ import { useCompany } from "@/contexts/CompanyContext";
 import {
     createCatalogCategory,
     createCatalogItem,
+    createCatalogYield,
     deactivateCatalogCategory,
+    deactivateCatalogYield,
     deactivateCatalogItem,
     listCatalogCategories,
     listCatalogItems,
     listCatalogUnits,
+    listCatalogYields,
     updateCatalogItemPricing,
 } from "@/services/catalog-service";
 import { formatMoney } from "@/types/budget";
@@ -43,6 +46,7 @@ import type {
     CatalogCategory,
     CatalogItemType,
     CatalogItemWithDetails,
+    CatalogYieldWithDetails,
     Unit,
 } from "@/types/catalog";
 import { getCatalogItemTypeLabel } from "@/types/catalog";
@@ -99,6 +103,8 @@ export default function CatalogScreen() {
     categoriesModalVisible,
     setCategoriesModalVisible,
   ] = useState(false);
+  const [yieldItem, setYieldItem] =
+    useState<CatalogItemWithDetails | null>(null);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -392,11 +398,20 @@ export default function CatalogScreen() {
           <CatalogCard
             item={item}
             onEdit={() => setEditingItem(item)}
+            onYields={() => setYieldItem(item)}
             onDeactivate={() =>
               void handleDeactivate(item)
             }
           />
         )}
+      />
+
+      <ManageYieldsModal
+        visible={Boolean(yieldItem)}
+        companyId={activeCompany.id}
+        item={yieldItem}
+        units={units}
+        onClose={() => setYieldItem(null)}
       />
 
       <ManageCategoriesModal
@@ -430,10 +445,12 @@ export default function CatalogScreen() {
 function CatalogCard({
   item,
   onEdit,
+  onYields,
   onDeactivate,
 }: {
   item: CatalogItemWithDetails;
   onEdit: () => void;
+  onYields: () => void;
   onDeactivate: () => void;
 }) {
   const price =
@@ -512,23 +529,42 @@ function CatalogCard({
         />
       </View>
 
-      <Pressable
-        onPress={onEdit}
-        style={({ pressed }) => [
-          styles.editButton,
-          pressed && styles.pressed,
-        ]}
-      >
-        <Ionicons
-          name="create-outline"
-          size={18}
-          color={colors.primary}
-        />
+      <View style={styles.itemActionsRow}>
+        <Pressable
+          onPress={onYields}
+          style={({ pressed }) => [
+            styles.secondaryItemButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name="speedometer-outline"
+            size={18}
+            color={colors.primary}
+          />
+          <Text style={styles.editButtonText}>
+            Rendimientos
+          </Text>
+        </Pressable>
 
-        <Text style={styles.editButtonText}>
-          Editar precios
-        </Text>
-      </Pressable>
+        <Pressable
+          onPress={onEdit}
+          style={({ pressed }) => [
+            styles.editButton,
+            pressed && styles.pressed,
+          ]}
+        >
+          <Ionicons
+            name="create-outline"
+            size={18}
+            color={colors.primary}
+          />
+
+          <Text style={styles.editButtonText}>
+            Precios
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -557,6 +593,335 @@ function PriceBox({
         {value}
       </Text>
     </View>
+  );
+}
+
+function ManageYieldsModal({
+  visible,
+  companyId,
+  item,
+  units,
+  onClose,
+}: {
+  visible: boolean;
+  companyId: string;
+  item: CatalogItemWithDetails | null;
+  units: Unit[];
+  onClose: () => void;
+}) {
+  const [yields, setYields] = useState<
+    CatalogYieldWithDetails[]
+  >([]);
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [outputUnitId, setOutputUnitId] = useState("");
+  const [outputQuantity, setOutputQuantity] = useState("1");
+  const [laborHours, setLaborHours] = useState("8");
+  const [crewSize, setCrewSize] = useState("1");
+  const [wastePercentage, setWastePercentage] =
+    useState("0");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deactivatingId, setDeactivatingId] =
+    useState<string | null>(null);
+
+  async function loadYields() {
+    if (!item) return;
+
+    setLoading(true);
+
+    const { yields: loadedYields, error } =
+      await listCatalogYields({
+        companyId,
+        catalogItemId: item.id,
+      });
+
+    if (error) {
+      Alert.alert(
+        "No fue posible cargar los rendimientos",
+        error,
+      );
+    } else {
+      setYields(loadedYields);
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (!visible || !item) return;
+
+    setName("");
+    setOutputUnitId(item.unit_id || units[0]?.id || "");
+    setOutputQuantity("1");
+    setLaborHours("8");
+    setCrewSize("1");
+    setWastePercentage("0");
+    setNotes("");
+    void loadYields();
+  }, [item, units, visible]);
+
+  async function handleCreate() {
+    if (!item) return;
+
+    try {
+      setSaving(true);
+
+      const { error } = await createCatalogYield({
+        companyId,
+        catalogItemId: item.id,
+        outputUnitId,
+        name,
+        outputQuantity: parseMoney(outputQuantity),
+        laborHours: parseMoney(laborHours),
+        crewSize: parseMoney(crewSize),
+        wastePercentage: parseMoney(wastePercentage),
+        notes,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible crear el rendimiento",
+          error,
+        );
+        return;
+      }
+
+      setName("");
+      setNotes("");
+      await loadYields();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function confirmDeactivate(
+    catalogYield: CatalogYieldWithDetails,
+  ) {
+    Alert.alert(
+      "Desactivar rendimiento",
+      `¿Deseas desactivar “${catalogYield.name}”?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Desactivar",
+          style: "destructive",
+          onPress: () =>
+            void handleDeactivate(catalogYield),
+        },
+      ],
+    );
+  }
+
+  async function handleDeactivate(
+    catalogYield: CatalogYieldWithDetails,
+  ) {
+    try {
+      setDeactivatingId(catalogYield.id);
+
+      const { error } = await deactivateCatalogYield({
+        companyId,
+        yieldId: catalogYield.id,
+      });
+
+      if (error) {
+        Alert.alert(
+          "No fue posible desactivar el rendimiento",
+          error,
+        );
+        return;
+      }
+
+      await loadYields();
+    } finally {
+      setDeactivatingId(null);
+    }
+  }
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalHeader}>
+          <Pressable onPress={onClose}>
+            <Text style={styles.cancelText}>Cerrar</Text>
+          </Pressable>
+
+          <Text style={styles.modalTitle}>Rendimientos</Text>
+
+          <View style={styles.modalHeaderSpacer} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.modalContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.yieldItemHeader}>
+            <Text style={styles.yieldItemName}>
+              {item?.name}
+            </Text>
+            <Text style={styles.yieldItemHint}>
+              Define cuánto trabajo se produce con esta actividad.
+            </Text>
+          </View>
+
+          <View style={styles.categoryCreateCard}>
+            <Text style={styles.categoryCreateTitle}>
+              Nuevo rendimiento
+            </Text>
+
+            <FormField
+              label="Nombre"
+              value={name}
+              onChangeText={setName}
+              placeholder="Ej. Cuadrilla por jornada"
+              keyboardType="default"
+            />
+
+            <Text style={styles.selectionLabel}>
+              Unidad producida
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectionRow}
+            >
+              {units.map((unit) => (
+                <Pressable
+                  key={unit.id}
+                  onPress={() => setOutputUnitId(unit.id)}
+                  style={[
+                    styles.filterChip,
+                    outputUnitId === unit.id &&
+                      styles.filterChipActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      outputUnitId === unit.id &&
+                        styles.filterChipTextActive,
+                    ]}
+                  >
+                    {unit.symbol} · {unit.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <FormField
+              label="Producción"
+              value={outputQuantity}
+              onChangeText={setOutputQuantity}
+              placeholder="Ej. 20"
+            />
+            <FormField
+              label="Horas de trabajo"
+              value={laborHours}
+              onChangeText={setLaborHours}
+              placeholder="Ej. 8"
+            />
+            <FormField
+              label="Tamaño de cuadrilla"
+              value={crewSize}
+              onChangeText={setCrewSize}
+              placeholder="Ej. 3"
+            />
+            <FormField
+              label="Desperdicio %"
+              value={wastePercentage}
+              onChangeText={setWastePercentage}
+              placeholder="0"
+            />
+            <FormField
+              label="Notas"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Opcional"
+              keyboardType="default"
+            />
+
+            <Pressable
+              onPress={() => void handleCreate()}
+              disabled={saving}
+              style={({ pressed }) => [
+                styles.fullSaveButton,
+                saving && styles.disabledButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.textLight} />
+              ) : (
+                <Text style={styles.fullSaveText}>
+                  Guardar rendimiento
+                </Text>
+              )}
+            </Pressable>
+          </View>
+
+          <Text style={styles.categoryListTitle}>
+            Rendimientos activos
+          </Text>
+
+          {loading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : yields.length === 0 ? (
+            <View style={styles.emptyCategoryBox}>
+              <Text style={styles.emptyText}>
+                Este ítem todavía no tiene rendimientos.
+              </Text>
+            </View>
+          ) : (
+            yields.map((catalogYield) => (
+              <View
+                key={catalogYield.id}
+                style={styles.yieldRow}
+              >
+                <View style={styles.categoryRowInfo}>
+                  <Text style={styles.categoryRowName}>
+                    {catalogYield.name}
+                  </Text>
+                  <Text style={styles.yieldSummary}>
+                    {catalogYield.output_quantity}{" "}
+                    {catalogYield.output_unit?.symbol || "ud"} en{" "}
+                    {catalogYield.labor_hours} h · Cuadrilla{" "}
+                    {catalogYield.crew_size}
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() =>
+                    confirmDeactivate(catalogYield)
+                  }
+                  disabled={
+                    deactivatingId === catalogYield.id
+                  }
+                  hitSlop={10}
+                >
+                  {deactivatingId === catalogYield.id ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.danger}
+                    />
+                  ) : (
+                    <Ionicons
+                      name="trash-outline"
+                      size={20}
+                      color={colors.danger}
+                    />
+                  )}
+                </Pressable>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
   );
 }
 
@@ -1513,9 +1878,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  itemActionsRow: {
+    marginTop: 14,
+    flexDirection: "row",
+    gap: 8,
+  },
+
+  secondaryItemButton: {
+    minHeight: 42,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+
   editButton: {
     minHeight: 42,
-    marginTop: 14,
+    flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
@@ -1573,6 +1957,45 @@ const styles = StyleSheet.create({
 
   modalHeaderSpacer: {
     width: 50,
+  },
+
+  yieldItemHeader: {
+    marginBottom: 14,
+    padding: 14,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceDark,
+  },
+
+  yieldItemName: {
+    color: colors.textLight,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  yieldItemHint: {
+    marginTop: 4,
+    color: "#CBD5E1",
+    fontSize: 12,
+    lineHeight: 17,
+  },
+
+  yieldRow: {
+    marginBottom: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  yieldSummary: {
+    marginTop: 4,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
 
   categoryCreateCard: {

@@ -4,6 +4,8 @@ import type {
   CatalogItem,
   CatalogItemType,
   CatalogItemWithDetails,
+  CatalogYield,
+  CatalogYieldWithDetails,
   Unit,
 } from "@/types/catalog";
 
@@ -264,6 +266,141 @@ export async function deactivateCatalogCategory(input: {
     .update({ active: false })
     .eq("company_id", input.companyId)
     .eq("id", input.categoryId);
+
+  return {
+    error: error?.message ?? null,
+  };
+}
+
+export async function listCatalogYields(input: {
+  companyId: string;
+  catalogItemId: string;
+}): Promise<{
+  yields: CatalogYieldWithDetails[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("catalog_yields")
+    .select(`
+      *,
+      output_unit:units (*)
+    `)
+    .eq("company_id", input.companyId)
+    .eq("catalog_item_id", input.catalogItemId)
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return {
+      yields: [],
+      error: error.message,
+    };
+  }
+
+  const yields = (data ?? []).map((row) => {
+    const outputUnit = Array.isArray(row.output_unit)
+      ? row.output_unit[0]
+      : row.output_unit;
+
+    return {
+      ...(row as CatalogYield),
+      output_unit: (outputUnit ?? null) as Unit | null,
+    };
+  });
+
+  return {
+    yields,
+    error: null,
+  };
+}
+
+export async function createCatalogYield(input: {
+  companyId: string;
+  catalogItemId: string;
+  outputUnitId: string;
+  name: string;
+  outputQuantity: number;
+  laborHours: number;
+  crewSize: number;
+  wastePercentage?: number;
+  notes?: string;
+}): Promise<{
+  yield: CatalogYield | null;
+  error: string | null;
+}> {
+  const name = input.name.trim();
+
+  if (name.length < 2) {
+    return {
+      yield: null,
+      error: "Introduce un nombre de rendimiento válido.",
+    };
+  }
+
+  if (!input.outputUnitId) {
+    return {
+      yield: null,
+      error: "Selecciona la unidad de producción.",
+    };
+  }
+
+  if (input.outputQuantity <= 0) {
+    return {
+      yield: null,
+      error: "La producción debe ser mayor que cero.",
+    };
+  }
+
+  if (input.laborHours < 0 || input.crewSize <= 0) {
+    return {
+      yield: null,
+      error: "Revisa las horas y el tamaño de la cuadrilla.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("catalog_yields")
+    .insert({
+      company_id: input.companyId,
+      catalog_item_id: input.catalogItemId,
+      output_unit_id: input.outputUnitId,
+      name,
+      output_quantity: input.outputQuantity,
+      labor_hours: input.laborHours,
+      crew_size: input.crewSize,
+      waste_percentage: Math.min(
+        Math.max(input.wastePercentage ?? 0, 0),
+        100,
+      ),
+      notes: input.notes?.trim() || null,
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    return {
+      yield: null,
+      error: error.message,
+    };
+  }
+
+  return {
+    yield: data,
+    error: null,
+  };
+}
+
+export async function deactivateCatalogYield(input: {
+  companyId: string;
+  yieldId: string;
+}): Promise<{
+  error: string | null;
+}> {
+  const { error } = await supabase
+    .from("catalog_yields")
+    .update({ active: false })
+    .eq("company_id", input.companyId)
+    .eq("id", input.yieldId);
 
   return {
     error: error?.message ?? null,

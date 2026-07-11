@@ -61,6 +61,26 @@ export type CatalogItemWithDetails = CatalogItem & {
   category: CatalogCategory | null;
 };
 
+export type CatalogYield = {
+  id: string;
+  company_id: string;
+  catalog_item_id: string;
+  output_unit_id: string;
+  name: string;
+  output_quantity: number;
+  labor_hours: number;
+  crew_size: number;
+  waste_percentage: number;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CatalogYieldWithDetails = CatalogYield & {
+  output_unit: Unit | null;
+};
+
 export function getCatalogItemTypeLabel(
   itemType: CatalogItemType,
 ): string {
