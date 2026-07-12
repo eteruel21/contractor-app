@@ -678,3 +678,81 @@ export function calculatePvcCeiling(
     materialsCost, laborCost, totalCost: materialsCost + laborCost,
   };
 }
+
+export type PaintInput = {
+  grossArea: number;
+  openingsArea: number;
+  coats: number;
+  coveragePerGallon: number;
+  wastePercentage: number;
+  primerEnabled: boolean;
+  primerCoats: number;
+  primerCoveragePerGallon: number;
+};
+
+export type PaintPrices = {
+  paintGallon: number;
+  primerGallon: number;
+  supplies: number;
+  laborSquareMeter: number;
+};
+
+export type PaintResult = {
+  grossArea: number;
+  netArea: number;
+  paintApplicationArea: number;
+  paintGallonsExact: number;
+  paintGallonsToBuy: number;
+  primerApplicationArea: number;
+  primerGallonsExact: number;
+  primerGallonsToBuy: number;
+  paintCost: number;
+  primerCost: number;
+  suppliesCost: number;
+  materialsCost: number;
+  laborCost: number;
+  totalCost: number;
+};
+
+export function calculatePaint(
+  input: PaintInput,
+  prices: PaintPrices,
+): PaintResult {
+  const grossArea = sanitizeNumber(input.grossArea);
+  const netArea = Math.max(
+    grossArea - sanitizeNumber(input.openingsArea),
+    0,
+  );
+  const coats = Math.max(Math.round(sanitizeNumber(input.coats)), 1);
+  const coverage = sanitizeNumber(input.coveragePerGallon);
+  const wasteFactor =
+    1 + sanitizeNumber(input.wastePercentage) / 100;
+  const paintApplicationArea = netArea * coats;
+  const paintGallonsExact = coverage
+    ? (paintApplicationArea / coverage) * wasteFactor : 0;
+  const paintGallonsToBuy = Math.ceil(paintGallonsExact);
+
+  const primerCoats = input.primerEnabled
+    ? Math.max(Math.round(sanitizeNumber(input.primerCoats)), 1) : 0;
+  const primerApplicationArea = netArea * primerCoats;
+  const primerCoverage = sanitizeNumber(input.primerCoveragePerGallon);
+  const primerGallonsExact = primerCoverage
+    ? (primerApplicationArea / primerCoverage) * wasteFactor : 0;
+  const primerGallonsToBuy = Math.ceil(primerGallonsExact);
+
+  const paintCost =
+    paintGallonsToBuy * sanitizeNumber(prices.paintGallon);
+  const primerCost =
+    primerGallonsToBuy * sanitizeNumber(prices.primerGallon);
+  const suppliesCost = sanitizeNumber(prices.supplies);
+  const materialsCost = paintCost + primerCost + suppliesCost;
+  const laborCost =
+    netArea * sanitizeNumber(prices.laborSquareMeter);
+
+  return {
+    grossArea, netArea, paintApplicationArea, paintGallonsExact,
+    paintGallonsToBuy, primerApplicationArea, primerGallonsExact,
+    primerGallonsToBuy, paintCost, primerCost, suppliesCost,
+    materialsCost, laborCost, totalCost: materialsCost + laborCost,
+  };
+}

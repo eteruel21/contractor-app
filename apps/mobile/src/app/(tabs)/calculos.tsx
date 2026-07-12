@@ -21,7 +21,8 @@ type CalculationCategory = {
     | "/calculos/concreto"
     | "/calculos/bloques-repello"
     | "/calculos/gypsum"
-    | "/calculos/cielo-raso-pvc";
+    | "/calculos/cielo-raso-pvc"
+    | "/calculos/pintura";
 };
 
 const categories: CalculationCategory[] = [
@@ -67,7 +68,8 @@ const categories: CalculationCategory[] = [
     description:
       "Área, galones, manos de pintura y mano de obra.",
     icon: "color-palette-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/pintura",
   },
   {
     id: "flooring",

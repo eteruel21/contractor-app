@@ -39,6 +39,7 @@ export default function CalculationsLayout() {
         name="cielo-raso-pvc"
         options={{ title: "Cielo raso PVC" }}
       />
+      <Stack.Screen name="pintura" options={{ title: "Cálculo de pintura" }} />
     </Stack>
   );
 }
