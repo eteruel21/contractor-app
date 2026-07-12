@@ -376,3 +376,165 @@ export function calculateMasonry(
     totalCost,
   };
 }
+
+export type GypsumBoardSides = 1 | 2;
+
+export type GypsumInput = {
+  wallLength: number;
+  wallHeight: number;
+  openingsArea: number;
+  boardSides: GypsumBoardSides;
+  boardWidth: number;
+  boardHeight: number;
+  wastePercentage: number;
+  studSpacing: number;
+  studPieceLength: number;
+  trackPieceLength: number;
+  screwsPerBoard: number;
+  screwsPerBox: number;
+  tapePerSquareMeter: number;
+  tapeRollLength: number;
+  compoundKgPerSquareMeter: number;
+  compoundPackageKg: number;
+};
+
+export type GypsumPrices = {
+  boardUnit: number;
+  studPiece: number;
+  trackPiece: number;
+  screwBox: number;
+  tapeRoll: number;
+  compoundPackage: number;
+  laborSquareMeter: number;
+};
+
+export type GypsumResult = {
+  grossWallArea: number;
+  netWallArea: number;
+  finishedArea: number;
+  boardsExact: number;
+  boardsToBuy: number;
+  studPositions: number;
+  studLinearMeters: number;
+  studPieces: number;
+  trackLinearMeters: number;
+  trackPieces: number;
+  screws: number;
+  screwBoxes: number;
+  tapeLinearMeters: number;
+  tapeRolls: number;
+  compoundKilograms: number;
+  compoundPackages: number;
+  boardCost: number;
+  studCost: number;
+  trackCost: number;
+  screwCost: number;
+  tapeCost: number;
+  compoundCost: number;
+  materialsCost: number;
+  laborCost: number;
+  totalCost: number;
+};
+
+function emptyGypsumResult(): GypsumResult {
+  return {
+    grossWallArea: 0, netWallArea: 0, finishedArea: 0,
+    boardsExact: 0, boardsToBuy: 0, studPositions: 0,
+    studLinearMeters: 0, studPieces: 0, trackLinearMeters: 0,
+    trackPieces: 0, screws: 0, screwBoxes: 0,
+    tapeLinearMeters: 0, tapeRolls: 0, compoundKilograms: 0,
+    compoundPackages: 0, boardCost: 0, studCost: 0,
+    trackCost: 0, screwCost: 0, tapeCost: 0,
+    compoundCost: 0, materialsCost: 0, laborCost: 0,
+    totalCost: 0,
+  };
+}
+
+export function calculateGypsum(
+  input: GypsumInput,
+  prices: GypsumPrices,
+): GypsumResult {
+  const length = sanitizeNumber(input.wallLength);
+  const height = sanitizeNumber(input.wallHeight);
+  const boardWidth = sanitizeNumber(input.boardWidth);
+  const boardHeight = sanitizeNumber(input.boardHeight);
+  const spacing = sanitizeNumber(input.studSpacing);
+  const studLength = sanitizeNumber(input.studPieceLength);
+  const trackLength = sanitizeNumber(input.trackPieceLength);
+
+  if (!length || !height || !boardWidth || !boardHeight ||
+      !spacing || !studLength || !trackLength) {
+    return emptyGypsumResult();
+  }
+
+  const grossWallArea = length * height;
+  const netWallArea = Math.max(
+    grossWallArea - sanitizeNumber(input.openingsArea),
+    0,
+  );
+  if (!netWallArea) {
+    return { ...emptyGypsumResult(), grossWallArea };
+  }
+
+  const sides = Math.min(
+    Math.max(Math.round(sanitizeNumber(input.boardSides)), 1),
+    2,
+  );
+  const finishedArea = netWallArea * sides;
+  const wasteFactor =
+    1 + sanitizeNumber(input.wastePercentage) / 100;
+  const boardsExact =
+    (finishedArea / (boardWidth * boardHeight)) * wasteFactor;
+  const boardsToBuy = Math.ceil(boardsExact);
+
+  const studPositions = Math.ceil(length / spacing) + 1;
+  const studLinearMeters = studPositions * height * wasteFactor;
+  const piecesPerStud = Math.ceil(height / studLength);
+  const studPieces = Math.ceil(
+    studPositions * piecesPerStud * wasteFactor,
+  );
+  const trackLinearMeters = length * 2 * wasteFactor;
+  const trackPieces = Math.ceil(trackLinearMeters / trackLength);
+
+  const screws = Math.ceil(
+    boardsToBuy * sanitizeNumber(input.screwsPerBoard),
+  );
+  const screwBoxes = Math.ceil(
+    screws / (sanitizeNumber(input.screwsPerBox) || 1),
+  );
+  const tapeLinearMeters =
+    finishedArea * sanitizeNumber(input.tapePerSquareMeter) * wasteFactor;
+  const tapeRolls = Math.ceil(
+    tapeLinearMeters / (sanitizeNumber(input.tapeRollLength) || 1),
+  );
+  const compoundKilograms =
+    finishedArea *
+    sanitizeNumber(input.compoundKgPerSquareMeter) *
+    wasteFactor;
+  const compoundPackages = Math.ceil(
+    compoundKilograms /
+      (sanitizeNumber(input.compoundPackageKg) || 1),
+  );
+
+  const boardCost = boardsToBuy * sanitizeNumber(prices.boardUnit);
+  const studCost = studPieces * sanitizeNumber(prices.studPiece);
+  const trackCost = trackPieces * sanitizeNumber(prices.trackPiece);
+  const screwCost = screwBoxes * sanitizeNumber(prices.screwBox);
+  const tapeCost = tapeRolls * sanitizeNumber(prices.tapeRoll);
+  const compoundCost =
+    compoundPackages * sanitizeNumber(prices.compoundPackage);
+  const materialsCost = boardCost + studCost + trackCost +
+    screwCost + tapeCost + compoundCost;
+  const laborCost =
+    finishedArea * sanitizeNumber(prices.laborSquareMeter);
+
+  return {
+    grossWallArea, netWallArea, finishedArea, boardsExact,
+    boardsToBuy, studPositions, studLinearMeters, studPieces,
+    trackLinearMeters, trackPieces, screws, screwBoxes,
+    tapeLinearMeters, tapeRolls, compoundKilograms,
+    compoundPackages, boardCost, studCost, trackCost,
+    screwCost, tapeCost, compoundCost, materialsCost,
+    laborCost, totalCost: materialsCost + laborCost,
+  };
+}

@@ -31,6 +31,10 @@ export default function CalculationsLayout() {
           title: "Bloques y repello",
         }}
       />
+      <Stack.Screen
+        name="gypsum"
+        options={{ title: "Cálculo de gypsum" }}
+      />
     </Stack>
   );
 }

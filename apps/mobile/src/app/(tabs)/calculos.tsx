@@ -19,7 +19,8 @@ type CalculationCategory = {
   enabled: boolean;
   route?:
     | "/calculos/concreto"
-    | "/calculos/bloques-repello";
+    | "/calculos/bloques-repello"
+    | "/calculos/gypsum";
 };
 
 const categories: CalculationCategory[] = [
@@ -47,7 +48,8 @@ const categories: CalculationCategory[] = [
     description:
       "Láminas, perfiles, tornillos y compuesto.",
     icon: "layers-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/gypsum",
   },
   {
     id: "pvc",
