@@ -35,6 +35,10 @@ export default function CalculationsLayout() {
         name="gypsum"
         options={{ title: "Cálculo de gypsum" }}
       />
+      <Stack.Screen
+        name="cielo-raso-pvc"
+        options={{ title: "Cielo raso PVC" }}
+      />
     </Stack>
   );
 }

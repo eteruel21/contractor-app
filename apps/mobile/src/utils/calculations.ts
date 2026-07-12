@@ -538,3 +538,143 @@ export function calculateGypsum(
     laborCost, totalCost: materialsCost + laborCost,
   };
 }
+
+export type PvcCeilingInput = {
+  area: number;
+  perimeter: number;
+  panelWidth: number;
+  panelLength: number;
+  wastePercentage: number;
+  supportSpacing: number;
+  supportPieceLength: number;
+  carrierSpacing: number;
+  carrierPieceLength: number;
+  trackPieceLength: number;
+  hangerSpacing: number;
+  screwsPerSquareMeter: number;
+  screwsPerBox: number;
+};
+
+export type PvcCeilingPrices = {
+  panelPiece: number;
+  trackPiece: number;
+  supportPiece: number;
+  carrierPiece: number;
+  hangerUnit: number;
+  screwBox: number;
+  laborSquareMeter: number;
+};
+
+export type PvcCeilingResult = {
+  netArea: number;
+  areaWithWaste: number;
+  panelCoverage: number;
+  panelsExact: number;
+  panelsToBuy: number;
+  trackLinearMeters: number;
+  trackPieces: number;
+  supportLinearMeters: number;
+  supportPieces: number;
+  carrierLinearMeters: number;
+  carrierPieces: number;
+  hangers: number;
+  screws: number;
+  screwBoxes: number;
+  panelCost: number;
+  trackCost: number;
+  supportCost: number;
+  carrierCost: number;
+  hangerCost: number;
+  screwCost: number;
+  materialsCost: number;
+  laborCost: number;
+  totalCost: number;
+};
+
+function emptyPvcCeilingResult(): PvcCeilingResult {
+  return {
+    netArea: 0, areaWithWaste: 0, panelCoverage: 0,
+    panelsExact: 0, panelsToBuy: 0, trackLinearMeters: 0,
+    trackPieces: 0, supportLinearMeters: 0, supportPieces: 0,
+    carrierLinearMeters: 0, carrierPieces: 0, hangers: 0,
+    screws: 0, screwBoxes: 0, panelCost: 0, trackCost: 0,
+    supportCost: 0, carrierCost: 0, hangerCost: 0,
+    screwCost: 0, materialsCost: 0, laborCost: 0,
+    totalCost: 0,
+  };
+}
+
+export function calculatePvcCeiling(
+  input: PvcCeilingInput,
+  prices: PvcCeilingPrices,
+): PvcCeilingResult {
+  const area = sanitizeNumber(input.area);
+  const perimeter = sanitizeNumber(input.perimeter);
+  const panelWidth = sanitizeNumber(input.panelWidth);
+  const panelLength = sanitizeNumber(input.panelLength);
+  const supportSpacing = sanitizeNumber(input.supportSpacing);
+  const supportPieceLength = sanitizeNumber(input.supportPieceLength);
+  const carrierSpacing = sanitizeNumber(input.carrierSpacing);
+  const carrierPieceLength = sanitizeNumber(input.carrierPieceLength);
+  const trackPieceLength = sanitizeNumber(input.trackPieceLength);
+  const hangerSpacing = sanitizeNumber(input.hangerSpacing);
+
+  if (!area || !perimeter || !panelWidth || !panelLength ||
+      !supportSpacing || !supportPieceLength || !carrierSpacing ||
+      !carrierPieceLength || !trackPieceLength || !hangerSpacing) {
+    return emptyPvcCeilingResult();
+  }
+
+  const wasteFactor =
+    1 + sanitizeNumber(input.wastePercentage) / 100;
+  const areaWithWaste = area * wasteFactor;
+  const panelCoverage = panelWidth * panelLength;
+  const panelsExact = areaWithWaste / panelCoverage;
+  const panelsToBuy = Math.ceil(panelsExact);
+
+  const trackLinearMeters = perimeter * wasteFactor;
+  const trackPieces = Math.ceil(trackLinearMeters / trackPieceLength);
+  const supportLinearMeters =
+    (area / supportSpacing) * wasteFactor;
+  const supportPieces = Math.ceil(
+    supportLinearMeters / supportPieceLength,
+  );
+  const carrierLinearMeters =
+    (area / carrierSpacing) * wasteFactor;
+  const carrierPieces = Math.ceil(
+    carrierLinearMeters / carrierPieceLength,
+  );
+  const hangers = Math.ceil(carrierLinearMeters / hangerSpacing);
+  const screws = Math.ceil(
+    area * sanitizeNumber(input.screwsPerSquareMeter) * wasteFactor,
+  );
+  const screwBoxes = Math.ceil(
+    screws / (sanitizeNumber(input.screwsPerBox) || 1),
+  );
+
+  const panelCost =
+    panelsToBuy * sanitizeNumber(prices.panelPiece);
+  const trackCost =
+    trackPieces * sanitizeNumber(prices.trackPiece);
+  const supportCost =
+    supportPieces * sanitizeNumber(prices.supportPiece);
+  const carrierCost =
+    carrierPieces * sanitizeNumber(prices.carrierPiece);
+  const hangerCost =
+    hangers * sanitizeNumber(prices.hangerUnit);
+  const screwCost =
+    screwBoxes * sanitizeNumber(prices.screwBox);
+  const materialsCost = panelCost + trackCost + supportCost +
+    carrierCost + hangerCost + screwCost;
+  const laborCost =
+    area * sanitizeNumber(prices.laborSquareMeter);
+
+  return {
+    netArea: area, areaWithWaste, panelCoverage, panelsExact,
+    panelsToBuy, trackLinearMeters, trackPieces,
+    supportLinearMeters, supportPieces, carrierLinearMeters,
+    carrierPieces, hangers, screws, screwBoxes, panelCost,
+    trackCost, supportCost, carrierCost, hangerCost, screwCost,
+    materialsCost, laborCost, totalCost: materialsCost + laborCost,
+  };
+}

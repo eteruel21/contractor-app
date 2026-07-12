@@ -20,7 +20,8 @@ type CalculationCategory = {
   route?:
     | "/calculos/concreto"
     | "/calculos/bloques-repello"
-    | "/calculos/gypsum";
+    | "/calculos/gypsum"
+    | "/calculos/cielo-raso-pvc";
 };
 
 const categories: CalculationCategory[] = [
@@ -57,7 +58,8 @@ const categories: CalculationCategory[] = [
     description:
       "Láminas, tracks, studs, cargadores y accesorios.",
     icon: "apps-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/cielo-raso-pvc",
   },
   {
     id: "paint",
