@@ -23,7 +23,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "../../constants/theme";
 import { useCompany } from "../../contexts/CompanyContext";
-import { useFormulaParameters } from "../../hooks/useFormulaParameters";
 import { addBudgetItem } from "../../services/budget-service";
 import { listCatalogItems } from "../../services/catalog-service";
 import type { CatalogItemWithDetails } from "../../types/catalog";
@@ -36,9 +35,6 @@ import {
   loadLocalData,
   saveLocalData,
 } from "../../utils/local-storage";
-import {
-  getFormulaNumber,
-} from "../../utils/formula-parameters";
 import {
   formatMoney as formatMoneyUtil,
   formatDecimal as formatDecimalUtil,
@@ -130,7 +126,7 @@ function parseNumber(value: string): number {
   return Number.isFinite(result) ? result : 0;
 }
 
-// Las funciones de formato se definen dinÃƒÂ¡micamente dentro del componente para usar la moneda de la empresa
+// Las funciones de formato se definen dinÃ¡micamente dentro del componente para usar la moneda de la empresa
 
 export default function ConcreteCalculatorScreen() {
   const params = useLocalSearchParams<{
@@ -141,12 +137,6 @@ export default function ConcreteCalculatorScreen() {
     : params.budgetId;
 
   const { activeCompany } = useCompany();
-  const {
-    parameters: formulaParameters,
-  } = useFormulaParameters(
-    activeCompany?.id,
-    "concrete_standard",
-  );
 
   const formatNumber = (val: number, maxDigits = 2) => {
     return formatDecimalUtil(val, maxDigits, activeCompany?.currency_code);
@@ -194,7 +184,7 @@ export default function ConcreteCalculatorScreen() {
 
       if (catalogError) {
         Alert.alert(
-          "No fue posible cargar el catÃƒÂ¡logo",
+          "No fue posible cargar el catÃ¡logo",
           catalogError,
         );
       } else {
@@ -352,7 +342,7 @@ export default function ConcreteCalculatorScreen() {
     ).toLowerCase();
     const isCubicMeter =
       unitCode === "m3" ||
-      unitCode === "mÃ‚Â³" ||
+      unitCode === "mÂ³" ||
       unitCode.includes("metro cub");
 
     setSelectedCatalogNames((current) => ({
@@ -410,7 +400,7 @@ export default function ConcreteCalculatorScreen() {
       parseNumber(form.gravelRatio);
 
     if (ratioTotal <= 0) {
-      setError("La proporciÃƒÂ³n de mezcla no es vÃƒÂ¡lida.");
+      setError("La proporciÃ³n de mezcla no es vÃ¡lida.");
       setResult(null);
       return;
     }
@@ -530,16 +520,16 @@ export default function ConcreteCalculatorScreen() {
 
     const details = [
       `${formatNumber(result.cementBags, 2)} sacos de cemento`,
-      `${formatNumber(result.sandVolume, 3)} mÃ‚Â³ de arena`,
-      `${formatNumber(result.gravelVolume, 3)} mÃ‚Â³ de gravilla`,
-    ].join(" Ã‚Â· ");
+      `${formatNumber(result.sandVolume, 3)} mÂ³ de arena`,
+      `${formatNumber(result.gravelVolume, 3)} mÂ³ de gravilla`,
+    ].join(" Â· ");
 
     const { error: budgetError } = await addBudgetItem({
       companyId: activeCompany.id,
       budgetId,
       itemType: "service",
       description: `Concreto mezcla ${form.cementRatio}:${form.sandRatio}:${form.gravelRatio}`,
-      unitName: "mÃ‚Â³",
+      unitName: "mÂ³",
       quantity: result.volumeWithWaste,
       unitCost: unitPrice,
       unitPrice,
@@ -601,7 +591,7 @@ export default function ConcreteCalculatorScreen() {
 
               <Text style={styles.introductionDescription}>
                 Introduce las medidas en metros. El espesor
-                tambiÃƒÂ©n debe colocarse en metros.
+                tambiÃ©n debe colocarse en metros.
               </Text>
             </View>
           </View>
@@ -669,12 +659,12 @@ export default function ConcreteCalculatorScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>
-              ProporciÃƒÂ³n de mezcla
+              ProporciÃ³n de mezcla
             </Text>
 
             <Text style={styles.sectionDescription}>
-              La proporciÃƒÂ³n inicial es 1:2:3. Puedes cambiarla
-              segÃƒÂºn el diseÃƒÂ±o o especificaciÃƒÂ³n del proyecto.
+              La proporciÃ³n inicial es 1:2:3. Puedes cambiarla
+              segÃºn el diseÃ±o o especificaciÃ³n del proyecto.
             </Text>
 
             <View style={styles.ratioRow}>
@@ -724,7 +714,7 @@ export default function ConcreteCalculatorScreen() {
                 onChangeText={(value) =>
                   updateField("sandBagVolume", value)
                 }
-                unit="mÃ‚Â³"
+                unit="mÂ³"
                 placeholder="0.0142"
               />
 
@@ -734,7 +724,7 @@ export default function ConcreteCalculatorScreen() {
                 onChangeText={(value) =>
                   updateField("gravelBagVolume", value)
                 }
-                unit="mÃ‚Â³"
+                unit="mÂ³"
                 placeholder="0.0142"
                 fullWidth
               />
@@ -748,12 +738,12 @@ export default function ConcreteCalculatorScreen() {
 
             <Text style={styles.sectionDescription}>
               Puedes cotizar la arena y la gravilla por metro
-              cÃƒÂºbico o por saco. Todos los valores son editables
-              y se guardan automÃƒÂ¡ticamente en este dispositivo.
+              cÃºbico o por saco. Todos los valores son editables
+              y se guardan automÃ¡ticamente en este dispositivo.
             </Text>
 
             <CatalogPriceButton
-              label="Cemento del catÃƒÂ¡logo"
+              label="Cemento del catÃ¡logo"
               value={selectedCatalogNames.cement}
               onPress={() => setCatalogTarget("cement")}
             />
@@ -770,7 +760,7 @@ export default function ConcreteCalculatorScreen() {
             />
 
             <CatalogPriceButton
-              label="Arena del catÃƒÂ¡logo"
+              label="Arena del catÃ¡logo"
               value={selectedCatalogNames.sand}
               onPress={() => setCatalogTarget("sand")}
             />
@@ -790,7 +780,7 @@ export default function ConcreteCalculatorScreen() {
             />
 
             <CatalogPriceButton
-              label="Gravilla del catÃƒÂ¡logo"
+              label="Gravilla del catÃ¡logo"
               value={selectedCatalogNames.gravel}
               onPress={() => setCatalogTarget("gravel")}
             />
@@ -815,13 +805,13 @@ export default function ConcreteCalculatorScreen() {
             />
 
             <CatalogPriceButton
-              label="Mano de obra del catÃƒÂ¡logo"
+              label="Mano de obra del catÃ¡logo"
               value={selectedCatalogNames.labor}
               onPress={() => setCatalogTarget("labor")}
             />
 
             <FormInput
-              label="Mano de obra por mÃ‚Â³"
+              label="Mano de obra por mÂ³"
               value={form.laborPrice}
               onChangeText={(value) =>
                 updateField("laborPrice", value)
@@ -968,7 +958,7 @@ function CatalogPriceButton({
       <View style={styles.catalogPriceButtonText}>
         <Text style={styles.catalogPriceLabel}>{label}</Text>
         <Text style={styles.catalogPriceValue}>
-          {value || "Seleccionar del catÃƒÂ¡logo"}
+          {value || "Seleccionar del catÃ¡logo"}
         </Text>
       </View>
 
@@ -1064,7 +1054,7 @@ function CatalogPricePicker({
             <TextInput
               value={search}
               onChangeText={setSearch}
-              placeholder="Buscar por nombre, SKU o categorÃƒÂ­a"
+              placeholder="Buscar por nombre, SKU o categorÃ­a"
               placeholderTextColor="#94A3B8"
               style={styles.catalogSearchInput}
             />
@@ -1090,10 +1080,10 @@ function CatalogPricePicker({
                     color={colors.textSecondary}
                   />
                   <Text style={styles.catalogEmptyTitle}>
-                    No hay ÃƒÂ­tems compatibles
+                    No hay Ã­tems compatibles
                   </Text>
                   <Text style={styles.catalogEmptyText}>
-                    Crea primero el material o la mano de obra en el catÃƒÂ¡logo.
+                    Crea primero el material o la mano de obra en el catÃ¡logo.
                   </Text>
                 </View>
               }
@@ -1120,7 +1110,7 @@ function CatalogPricePicker({
                           item.unit?.name ||
                           "unidad"}
                         {item.category?.name
-                          ? ` Ã‚Â· ${item.category.name}`
+                          ? ` Â· ${item.category.name}`
                           : ""}
                       </Text>
                     </View>
@@ -1251,7 +1241,7 @@ function AggregatePriceSection({
                 styles.modeButtonTextActive,
             ]}
           >
-            Por mÃ‚Â³
+            Por mÂ³
           </Text>
         </Pressable>
 
@@ -1283,7 +1273,7 @@ function AggregatePriceSection({
           ]}
         >
           <FormInput
-            label={`Precio de ${title.toLowerCase()} por mÃ‚Â³`}
+            label={`Precio de ${title.toLowerCase()} por mÂ³`}
             value={cubicMeterPrice}
             onChangeText={onChangeCubicMeterPrice}
             unit="B/."
@@ -1311,8 +1301,8 @@ function AggregatePriceSection({
       </View>
 
       <Text style={styles.selectedPriceText}>
-        El costo se calcularÃƒÂ¡ usando el precio{" "}
-        {mode === "bag" ? "por saco" : "por metro cÃƒÂºbico"}.
+        El costo se calcularÃ¡ usando el precio{" "}
+        {mode === "bag" ? "por saco" : "por metro cÃºbico"}.
       </Text>
     </View>
   );
@@ -1341,7 +1331,7 @@ function Results({
           </Text>
 
           <Text style={styles.resultsVolume}>
-            {formatNumber(result.volumeWithWaste, 3)} mÃ‚Â³
+            {formatNumber(result.volumeWithWaste, 3)} mÂ³
           </Text>
         </View>
 
@@ -1356,7 +1346,7 @@ function Results({
 
       <ResultRow
         label="Volumen neto"
-        value={`${formatNumber(result.netVolume, 3)} mÃ‚Â³`}
+        value={`${formatNumber(result.netVolume, 3)} mÂ³`}
       />
 
       <ResultRow
@@ -1364,7 +1354,7 @@ function Results({
         value={`${formatNumber(
           result.volumeWithWaste,
           3,
-        )} mÃ‚Â³`}
+        )} mÂ³`}
       />
 
       <View style={styles.resultDivider} />
@@ -1382,7 +1372,7 @@ function Results({
         detail={`${formatNumber(
           result.cementKilograms,
           1,
-        )} kg Ã‚Â· Comprar ${formatNumber(
+        )} kg Â· Comprar ${formatNumber(
           Math.ceil(result.cementBags),
           0,
         )} sacos`}
@@ -1393,11 +1383,11 @@ function Results({
         value={`${formatNumber(
           result.sandVolume,
           3,
-        )} mÃ‚Â³`}
+        )} mÂ³`}
         detail={`${formatNumber(
           result.sandBags,
           2,
-        )} sacos Ã‚Â· Comprar ${formatNumber(
+        )} sacos Â· Comprar ${formatNumber(
           Math.ceil(result.sandBags),
           0,
         )} sacos`}
@@ -1408,11 +1398,11 @@ function Results({
         value={`${formatNumber(
           result.gravelVolume,
           3,
-        )} mÃ‚Â³`}
+        )} mÂ³`}
         detail={`${formatNumber(
           result.gravelBags,
           2,
-        )} sacos Ã‚Â· Comprar ${formatNumber(
+        )} sacos Â· Comprar ${formatNumber(
           Math.ceil(result.gravelBags),
           0,
         )} sacos`}
@@ -1483,7 +1473,7 @@ function Results({
         />
 
         <Text style={styles.warningText}>
-          Este cÃƒÂ¡lculo es orientativo. La dosificaciÃƒÂ³n final debe
+          Este cÃ¡lculo es orientativo. La dosificaciÃ³n final debe
           ajustarse a la resistencia requerida, especificaciones
           estructurales, humedad de los agregados y condiciones de
           obra.

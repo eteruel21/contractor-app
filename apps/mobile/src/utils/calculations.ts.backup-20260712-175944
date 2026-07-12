@@ -16,10 +16,6 @@ export type ConcreteInput = {
 
   sandPriceMode: AggregatePriceMode;
   gravelPriceMode: AggregatePriceMode;
-
-  cementDensityKgM3?: number;
-  dryVolumeFactor?: number;
-  defaultAggregateBagVolume?: number;
 };
 
 export type ConcretePrices = {
