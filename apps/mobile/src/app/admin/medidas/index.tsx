@@ -26,7 +26,7 @@ import {
   updateMeasurementUnit,
 } from "@/services/measurements-service";
 import type { Unit, UnitType } from "@/types/catalog";
-import { formatDecimal } from "@/types/budget";
+import { formatDecimal } from "@/utils/number-format";
 
 const UNIT_TYPES: { value: UnitType; label: string }[] = [
   { value: "length", label: "Longitud" },

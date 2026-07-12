@@ -46,10 +46,17 @@ const activeModules = [
     icon: "resize-outline" as const,
     route: "/admin/medidas" as Href,
   },
+  {
+    id: "formulas",
+    title: "Fórmulas",
+    description:
+      "Producción, cuadrillas, tiempos y desperdicios.",
+    icon: "calculator-outline" as const,
+    route: "/admin/formulas" as Href,
+  },
 ];
 
 const pendingModules = [
-  "Fórmulas",
   "Usuarios",
   "Configuración",
 ];
@@ -99,10 +106,10 @@ export default function AdminDashboardScreen() {
               Estado del sistema
             </Text>
             <Text style={styles.summaryValue}>
-              4 módulos funcionales
+              5 módulos funcionales
             </Text>
             <Text style={styles.summaryDescription}>
-              Catálogo, precios, clientes y medidas están conectados a pantallas reales.
+              Catálogo, precios, clientes, medidas y fórmulas están conectados a pantallas reales.
             </Text>
           </View>
           <View style={styles.statusDot} />
