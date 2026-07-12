@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+﻿import { Ionicons } from "@expo/vector-icons";
 import {
   type Href,
   router,
@@ -12,9 +12,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius } from "../../constants/theme";
+import { colors, radius } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
 
-const options = [
+const baseOptions = [
   {
     id: "budgets",
     title: "Presupuestos",
@@ -27,7 +28,7 @@ const options = [
     id: "projects",
     title: "Proyectos",
     description:
-      "Programación y seguimiento de trabajos.",
+      "ProgramaciÃ³n y seguimiento de trabajos.",
     icon: "business-outline" as const,
     onPress: () => router.push("/proyectos" as Href),
   },
@@ -40,25 +41,39 @@ const options = [
   },
   {
     id: "catalog",
-    title: "Catálogo",
+    title: "CatÃ¡logo",
     description:
-      "Editar precios de materiales, mano de obra y servicios.",
+      "Consultar materiales, mano de obra y servicios.",
     icon: "cube-outline" as const,
     onPress: () => router.push("/catalogo" as Href),
   },
 ];
 
+const adminOption = {
+  id: "administration",
+  title: "AdministraciÃ³n",
+  description:
+    "Control de catÃ¡logo, precios, medidas, usuarios y configuraciÃ³n.",
+  icon: "shield-checkmark-outline" as const,
+  onPress: () => router.push("/admin" as Href),
+};
+
 export default function MoreScreen() {
+  const { isAdmin } = useAuth();
+  const options = isAdmin
+    ? [...baseOptions, adminOption]
+    : baseOptions;
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>
-            Más herramientas
+            MÃ¡s herramientas
           </Text>
 
           <Text style={styles.subtitle}>
-            Administración general de la empresa.
+            AdministraciÃ³n general de la empresa.
           </Text>
         </View>
 
@@ -104,7 +119,7 @@ export default function MoreScreen() {
                 />
               ) : (
                 <Text style={styles.soonText}>
-                  Próximamente
+                  PrÃ³ximamente
                 </Text>
               )}
             </Pressable>

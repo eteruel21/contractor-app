@@ -11,10 +11,19 @@ import { colors } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 
 export default function CompanyIndexScreen() {
-  const { companies, loading } = useCompany();
+  const {
+    companies,
+    activeCompany,
+    loading,
+  } = useCompany();
 
   useEffect(() => {
     if (loading) return;
+
+    if (activeCompany) {
+      router.replace("/(tabs)" as Href);
+      return;
+    }
 
     if (companies.length === 0) {
       router.replace("/empresa/crear" as Href);
@@ -22,7 +31,7 @@ export default function CompanyIndexScreen() {
     }
 
     router.replace("/empresa/seleccionar" as Href);
-  }, [companies.length, loading]);
+  }, [activeCompany, companies.length, loading]);
 
   return (
     <View style={styles.container}>

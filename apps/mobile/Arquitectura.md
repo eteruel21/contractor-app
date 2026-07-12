@@ -14,6 +14,29 @@ apps/mobile
     │        └── tablcons
     ├── src
     │   ├── app
+    │   │   ├── admin/
+    │   │   │   ├── _layout.tsx
+    │   │   │   ├── index.tsx
+    │   │   │   ├── catalogo/
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   ├── categorias.tsx
+    │   │   │   │   ├── crear.tsx
+    │   │   │   │   └── [id].tsx
+    │   │   │   ├── precios/
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── historial.tsx
+    │   │   │   ├── medidas/
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── [id].tsx
+    │   │   │   ├── formulas/
+    │   │   │   │   ├── index.tsx
+    │   │   │   │   └── [id].tsx
+    │   │   │   ├── clientes/
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── usuarios/
+    │   │   │   │   └── index.tsx
+    │   │   │   ├── configuracion/
+    │   │   │   │   └── index.tsx
     │   │   ├── (auth)
     │   │   │   ├── _layout.tsx
     │   │   │   ├── login.tsx
@@ -56,10 +79,17 @@ apps/mobile
     │   │   ├── CompanyContext.tsx
     │   │   └── AuthContext.tsx
     │   ├── services
-    │   │   ├── budget-service.ts
-    │   │   ├── Project-service.ts
+    │   │   ├── supabase.ts
     │   │   ├── client-service.ts
-    │   │   └── supabase.ts
+    │   │   ├── budget-service.ts
+    │   │   ├── project-service.ts
+    │   │   ├── admin-service.ts
+    │   │   ├── catalog-service.ts
+    │   │   ├── pricing-service.ts
+    │   │   ├── measurements-service.ts
+    │   │   ├── formulas-service.ts
+    │   │   ├── users-service.ts
+    │   │   └── realtime-service.ts
     │   ├── types
     │   │   ├── budget.ts
     │   │   ├── client-service.ts
@@ -82,7 +112,7 @@ apps/mobile
     ├── CLAUDE.md
     ├── expo-env.d.ts
     ├── LICENSE
-    ├── packages-lock.json
-    ├── packages.json
+    ├── package-lock.json
+    ├── package.json
     ├── README.md
     └── tsconfig.json

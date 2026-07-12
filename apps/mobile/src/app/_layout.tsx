@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+﻿import { Stack } from "expo-router";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -19,8 +19,11 @@ import {
 } from "@/contexts/CompanyContext";
 
 function RootNavigator() {
-  const { session, loading: authLoading } =
-    useAuth();
+  const {
+    session,
+    loading: authLoading,
+    isAdmin,
+  } = useAuth();
 
   const {
     activeCompany,
@@ -30,6 +33,8 @@ function RootNavigator() {
   const isAuthenticated = Boolean(session);
   const hasActiveCompany =
     isAuthenticated && Boolean(activeCompany);
+  const hasAdminAccess =
+    hasActiveCompany && isAdmin;
 
   if (
     authLoading ||
@@ -74,6 +79,10 @@ function RootNavigator() {
         <Stack.Screen name="presupuestos" />
         <Stack.Screen name="proyectos" />
         <Stack.Screen name="catalogo" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={hasAdminAccess}>
+        <Stack.Screen name="admin" />
       </Stack.Protected>
     </Stack>
   );

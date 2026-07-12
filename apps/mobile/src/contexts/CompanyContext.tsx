@@ -51,6 +51,7 @@ export function CompanyProvider({
   children,
 }: PropsWithChildren) {
   const { user, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
 
   const [memberships, setMemberships] =
     useState<CompanyMembership[]>([]);
@@ -90,7 +91,7 @@ export function CompanyProvider({
   }, [activeCompanyId, memberships]);
 
   const refreshCompanies = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setMemberships([]);
       setActiveCompanyIdState(null);
       setLoading(false);
@@ -133,7 +134,7 @@ export function CompanyProvider({
           )
         `,
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("active", true)
         .order("created_at", {
           ascending: true,
@@ -211,13 +212,11 @@ export function CompanyProvider({
         "Error cargando empresas:",
         error,
       );
-      setMemberships([]);
-      setActiveCompanyIdState(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     if (authLoading) return;

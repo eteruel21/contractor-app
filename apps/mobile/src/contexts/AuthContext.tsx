@@ -1,18 +1,32 @@
-import type {
-    AuthError,
-    Session,
-    User,
+﻿import type {
+  AuthError,
+  Session,
+  User,
 } from "@supabase/supabase-js";
 import {
-    createContext,
-    type PropsWithChildren,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  type PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 
 import { supabase } from "@/services/supabase";
+
+export type AppRole = "admin" | "employee" | "user";
+
+export type AppProfile = {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  avatar_url: string | null;
+  role: AppRole;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
 
 type SignUpInput = {
   fullName: string;
@@ -29,7 +43,11 @@ type AuthResult = {
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
+  profile: AppProfile | null;
   loading: boolean;
+  profileError: string | null;
+  isAdmin: boolean;
+  refreshProfile: () => Promise<void>;
   signIn: (
     email: string,
     password: string,
@@ -51,11 +69,63 @@ export function AuthProvider({
 }: PropsWithChildren) {
   const [session, setSession] =
     useState<Session | null>(null);
+  const [profile, setProfile] =
+    useState<AppProfile | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] =
+    useState<string | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const loadProfile = useCallback(
+    async (userId: string) => {
+      setProfileLoading(true);
+      setProfileError(null);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "Error cargando el perfil:",
+          error.message,
+        );
+        setProfile(null);
+        setProfileError(error.message);
+        setProfileLoading(false);
+        return;
+      }
+
+      setProfile(data as unknown as AppProfile | null);
+      setProfileLoading(false);
+    },
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
+
+    async function applySession(
+      nextSession: Session | null,
+    ) {
+      if (!mounted) return;
+
+      setSession(nextSession);
+
+      if (nextSession?.user) {
+        await loadProfile(nextSession.user.id);
+      } else {
+        setProfile(null);
+        setProfileError(null);
+        setProfileLoading(false);
+      }
+
+      if (mounted) {
+        setAuthLoading(false);
+      }
+    }
 
     async function loadSession() {
       const {
@@ -67,13 +137,12 @@ export function AuthProvider({
 
       if (error) {
         console.error(
-          "Error cargando la sesión:",
+          "Error cargando la sesiÃ³n:",
           error.message,
         );
       }
 
-      setSession(currentSession);
-      setLoading(false);
+      await applySession(currentSession);
     }
 
     void loadSession();
@@ -81,11 +150,11 @@ export function AuthProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      (_event, nextSession) => {
         if (!mounted) return;
 
-        setSession(newSession);
-        setLoading(false);
+        setAuthLoading(true);
+        void applySession(nextSession);
       },
     );
 
@@ -93,74 +162,114 @@ export function AuthProvider({
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadProfile]);
 
-  async function signIn(
-    email: string,
-    password: string,
-  ): Promise<AuthResult> {
-    const { error } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+  const refreshProfile = useCallback(async () => {
+    if (!session?.user) {
+      setProfile(null);
+      return;
+    }
 
-    return { error };
-  }
+    await loadProfile(session.user.id);
+  }, [loadProfile, session?.user]);
 
-  async function signUp({
-    fullName,
-    phone = "",
-    email,
-    password,
-  }: SignUpInput): Promise<AuthResult> {
-    const { data, error } =
-      await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password,
-        options: {
-          data: {
-            full_name: fullName.trim(),
-            phone: phone.trim(),
+  const signIn = useCallback(
+    async (
+      email: string,
+      password: string,
+    ): Promise<AuthResult> => {
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
+
+      return { error };
+    },
+    [],
+  );
+
+  const signUp = useCallback(
+    async ({
+      fullName,
+      phone = "",
+      email,
+      password,
+    }: SignUpInput): Promise<AuthResult> => {
+      const { data, error } =
+        await supabase.auth.signUp({
+          email: email.trim().toLowerCase(),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+              phone: phone.trim(),
+            },
           },
-        },
-      });
+        });
 
-    return {
-      error,
-      requiresEmailConfirmation:
-        !error && !data.session,
-    };
-  }
+      return {
+        error,
+        requiresEmailConfirmation:
+          !error && !data.session,
+      };
+    },
+    [],
+  );
 
-  async function signOut(): Promise<AuthResult> {
-    const { error } = await supabase.auth.signOut();
+  const signOut = useCallback(
+    async (): Promise<AuthResult> => {
+      const { error } = await supabase.auth.signOut();
+      return { error };
+    },
+    [],
+  );
 
-    return { error };
-  }
+  const resetPassword = useCallback(
+    async (email: string): Promise<AuthResult> => {
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(
+          email.trim().toLowerCase(),
+        );
 
-  async function resetPassword(
-    email: string,
-  ): Promise<AuthResult> {
-    const { error } =
-      await supabase.auth.resetPasswordForEmail(
-        email.trim().toLowerCase(),
-      );
+      return { error };
+    },
+    [],
+  );
 
-    return { error };
-  }
+  const loading =
+    authLoading || (Boolean(session) && profileLoading);
+
+  const isAdmin = Boolean(
+    profile?.active && profile.role === "admin",
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       user: session?.user ?? null,
+      profile,
       loading,
+      profileError,
+      isAdmin,
+      refreshProfile,
       signIn,
       signUp,
       signOut,
       resetPassword,
     }),
-    [loading, session],
+    [
+      isAdmin,
+      loading,
+      profile,
+      profileError,
+      refreshProfile,
+      resetPassword,
+      session,
+      signIn,
+      signOut,
+      signUp,
+    ],
   );
 
   return (
