@@ -1,4 +1,4 @@
-export type AggregatePriceMode = "cubicMeter" | "bag";
+﻿export type AggregatePriceMode = "cubicMeter" | "bag";
 
 export type ConcreteInput = {
   length: number;
@@ -756,3 +756,178 @@ export function calculatePaint(
     materialsCost, laborCost, totalCost: materialsCost + laborCost,
   };
 }
+
+export type FlooringInput = {
+  grossArea: number;
+  excludedArea: number;
+  tileLengthCm: number;
+  tileWidthCm: number;
+  piecesPerBox: number;
+  wastePercentage: number;
+  adhesiveCoveragePerBag: number;
+  groutJointWidthMm: number;
+  groutJointDepthMm: number;
+  groutBagKilograms: number;
+};
+
+export type FlooringPrices = {
+  flooringBox: number;
+  adhesiveBag: number;
+  groutBag: number;
+  supplies: number;
+  laborSquareMeter: number;
+};
+
+export type FlooringResult = {
+  grossArea: number;
+  netArea: number;
+  areaWithWaste: number;
+  tileArea: number;
+  piecesExact: number;
+  piecesToBuy: number;
+  boxesExact: number;
+  boxesToBuy: number;
+  adhesiveBagsExact: number;
+  adhesiveBagsToBuy: number;
+  groutKilograms: number;
+  groutBagsExact: number;
+  groutBagsToBuy: number;
+  flooringCost: number;
+  adhesiveCost: number;
+  groutCost: number;
+  suppliesCost: number;
+  materialsCost: number;
+  laborCost: number;
+  totalCost: number;
+};
+
+function emptyFlooringResult(): FlooringResult {
+  return {
+    grossArea: 0,
+    netArea: 0,
+    areaWithWaste: 0,
+    tileArea: 0,
+    piecesExact: 0,
+    piecesToBuy: 0,
+    boxesExact: 0,
+    boxesToBuy: 0,
+    adhesiveBagsExact: 0,
+    adhesiveBagsToBuy: 0,
+    groutKilograms: 0,
+    groutBagsExact: 0,
+    groutBagsToBuy: 0,
+    flooringCost: 0,
+    adhesiveCost: 0,
+    groutCost: 0,
+    suppliesCost: 0,
+    materialsCost: 0,
+    laborCost: 0,
+    totalCost: 0,
+  };
+}
+
+export function calculateFlooring(
+  input: FlooringInput,
+  prices: FlooringPrices,
+): FlooringResult {
+  const grossArea = sanitizeNumber(input.grossArea);
+  const excludedArea = sanitizeNumber(input.excludedArea);
+  const netArea = Math.max(grossArea - excludedArea, 0);
+  const tileLengthMm =
+    sanitizeNumber(input.tileLengthCm) * 10;
+  const tileWidthMm =
+    sanitizeNumber(input.tileWidthCm) * 10;
+  const piecesPerBox = Math.max(
+    Math.round(sanitizeNumber(input.piecesPerBox)),
+    1,
+  );
+  const adhesiveCoverage =
+    sanitizeNumber(input.adhesiveCoveragePerBag);
+  const groutBagKilograms =
+    sanitizeNumber(input.groutBagKilograms);
+
+  if (
+    !netArea ||
+    !tileLengthMm ||
+    !tileWidthMm ||
+    !adhesiveCoverage ||
+    !groutBagKilograms
+  ) {
+    return {
+      ...emptyFlooringResult(),
+      grossArea,
+      netArea,
+    };
+  }
+
+  const wasteFactor =
+    1 + sanitizeNumber(input.wastePercentage) / 100;
+  const areaWithWaste = netArea * wasteFactor;
+  const tileArea =
+    (tileLengthMm / 1000) * (tileWidthMm / 1000);
+  const piecesExact = areaWithWaste / tileArea;
+  const boxesExact = piecesExact / piecesPerBox;
+  const boxesToBuy = Math.ceil(boxesExact);
+  const piecesToBuy = boxesToBuy * piecesPerBox;
+
+  const adhesiveBagsExact =
+    netArea / adhesiveCoverage;
+  const adhesiveBagsToBuy =
+    Math.ceil(adhesiveBagsExact);
+
+  const jointWidth =
+    sanitizeNumber(input.groutJointWidthMm);
+  const jointDepth =
+    sanitizeNumber(input.groutJointDepthMm);
+  const groutKilogramsPerSquareMeter =
+    ((tileLengthMm + tileWidthMm) /
+      (tileLengthMm * tileWidthMm)) *
+    jointWidth *
+    jointDepth *
+    1.6;
+  const groutKilograms =
+    netArea * groutKilogramsPerSquareMeter;
+  const groutBagsExact =
+    groutKilograms / groutBagKilograms;
+  const groutBagsToBuy = Math.ceil(groutBagsExact);
+
+  const flooringCost =
+    boxesToBuy * sanitizeNumber(prices.flooringBox);
+  const adhesiveCost =
+    adhesiveBagsToBuy *
+    sanitizeNumber(prices.adhesiveBag);
+  const groutCost =
+    groutBagsToBuy * sanitizeNumber(prices.groutBag);
+  const suppliesCost = sanitizeNumber(prices.supplies);
+  const materialsCost =
+    flooringCost +
+    adhesiveCost +
+    groutCost +
+    suppliesCost;
+  const laborCost =
+    netArea * sanitizeNumber(prices.laborSquareMeter);
+
+  return {
+    grossArea,
+    netArea,
+    areaWithWaste,
+    tileArea,
+    piecesExact,
+    piecesToBuy,
+    boxesExact,
+    boxesToBuy,
+    adhesiveBagsExact,
+    adhesiveBagsToBuy,
+    groutKilograms,
+    groutBagsExact,
+    groutBagsToBuy,
+    flooringCost,
+    adhesiveCost,
+    groutCost,
+    suppliesCost,
+    materialsCost,
+    laborCost,
+    totalCost: materialsCost + laborCost,
+  };
+}
+

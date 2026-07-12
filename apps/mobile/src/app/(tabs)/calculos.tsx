@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+﻿import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   Pressable,
@@ -22,7 +22,8 @@ type CalculationCategory = {
     | "/calculos/bloques-repello"
     | "/calculos/gypsum"
     | "/calculos/cielo-raso-pvc"
-    | "/calculos/pintura";
+    | "/calculos/pintura"
+    | "/calculos/pisos";
 };
 
 const categories: CalculationCategory[] = [
@@ -48,7 +49,7 @@ const categories: CalculationCategory[] = [
     id: "gypsum",
     title: "Gypsum",
     description:
-      "Láminas, perfiles, tornillos y compuesto.",
+      "LÃ¡minas, perfiles, tornillos y compuesto.",
     icon: "layers-outline",
     enabled: true,
     route: "/calculos/gypsum",
@@ -57,7 +58,7 @@ const categories: CalculationCategory[] = [
     id: "pvc",
     title: "Cielo raso PVC",
     description:
-      "Láminas, tracks, studs, cargadores y accesorios.",
+      "LÃ¡minas, tracks, studs, cargadores y accesorios.",
     icon: "apps-outline",
     enabled: true,
     route: "/calculos/cielo-raso-pvc",
@@ -66,7 +67,7 @@ const categories: CalculationCategory[] = [
     id: "paint",
     title: "Pintura",
     description:
-      "Área, galones, manos de pintura y mano de obra.",
+      "Ãrea, galones, manos de pintura y mano de obra.",
     icon: "color-palette-outline",
     enabled: true,
     route: "/calculos/pintura",
@@ -75,15 +76,16 @@ const categories: CalculationCategory[] = [
     id: "flooring",
     title: "Pisos",
     description:
-      "Cerámica, porcelanato, adhesivo y boquilla.",
+      "CerÃ¡mica, porcelanato, adhesivo y boquilla.",
     icon: "square-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/pisos",
   },
   {
     id: "electricity",
     title: "Electricidad",
     description:
-      "Puntos, cables, tuberías, breakers y accesorios.",
+      "Puntos, cables, tuberÃ­as, breakers y accesorios.",
     icon: "flash-outline",
     enabled: false,
   },
@@ -91,7 +93,7 @@ const categories: CalculationCategory[] = [
     id: "special-systems",
     title: "Sistemas especiales",
     description:
-      "Cámaras, alarmas, incendio y control de acceso.",
+      "CÃ¡maras, alarmas, incendio y control de acceso.",
     icon: "videocam-outline",
     enabled: false,
   },
@@ -99,7 +101,7 @@ const categories: CalculationCategory[] = [
     id: "air-conditioning",
     title: "Aire acondicionado",
     description:
-      "BTU, tuberías, cableado, drenaje e instalación.",
+      "BTU, tuberÃ­as, cableado, drenaje e instalaciÃ³n.",
     icon: "snow-outline",
     enabled: false,
   },
@@ -107,7 +109,7 @@ const categories: CalculationCategory[] = [
     id: "mdf",
     title: "Muebles MDF",
     description:
-      "Tableros, cortes, cantos, herrajes y fabricación.",
+      "Tableros, cortes, cantos, herrajes y fabricaciÃ³n.",
     icon: "file-tray-full-outline",
     enabled: false,
   },
@@ -155,7 +157,7 @@ export default function CalculationsScreen() {
 
           <Text style={styles.noticeText}>
             Los resultados son estimaciones. Los rendimientos,
-            precios y desperdicios podrán configurarse para cada
+            precios y desperdicios podrÃ¡n configurarse para cada
             empresa.
           </Text>
         </View>
@@ -194,7 +196,7 @@ export default function CalculationsScreen() {
                 {!category.enabled && (
                   <View style={styles.comingSoon}>
                     <Text style={styles.comingSoonText}>
-                      Próximamente
+                      PrÃ³ximamente
                     </Text>
                   </View>
                 )}
@@ -392,3 +394,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+
