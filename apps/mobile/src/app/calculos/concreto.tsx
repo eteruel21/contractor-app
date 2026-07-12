@@ -35,6 +35,10 @@ import {
   loadLocalData,
   saveLocalData,
 } from "../../utils/local-storage";
+import {
+  formatMoney as formatMoneyUtil,
+  formatDecimal as formatDecimalUtil,
+} from "../../utils/format";
 
 type CatalogPriceTarget =
   | "cement"
@@ -122,23 +126,7 @@ function parseNumber(value: string): number {
   return Number.isFinite(result) ? result : 0;
 }
 
-function formatNumber(
-  value: number,
-  maximumFractionDigits = 2,
-): string {
-  return new Intl.NumberFormat("es-PA", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits,
-  }).format(value);
-}
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat("es-PA", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(value);
-}
+// Las funciones de formato se definen dinámicamente dentro del componente para usar la moneda de la empresa
 
 export default function ConcreteCalculatorScreen() {
   const params = useLocalSearchParams<{
@@ -149,6 +137,14 @@ export default function ConcreteCalculatorScreen() {
     : params.budgetId;
 
   const { activeCompany } = useCompany();
+
+  const formatNumber = (val: number, maxDigits = 2) => {
+    return formatDecimalUtil(val, maxDigits, activeCompany?.currency_code);
+  };
+
+  const formatMoney = (val: number) => {
+    return formatMoneyUtil(val, activeCompany?.currency_code);
+  };
   const [form, setForm] = useState<FormState>(initialForm);
   const [sandPriceMode, setSandPriceMode] =
     useState<AggregatePriceMode>("cubicMeter");

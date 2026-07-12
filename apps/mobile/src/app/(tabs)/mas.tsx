@@ -29,6 +29,7 @@ const options = [
     description:
       "Programación y seguimiento de trabajos.",
     icon: "business-outline" as const,
+    onPress: () => router.push("/proyectos" as Href),
   },
   {
     id: "invoices",

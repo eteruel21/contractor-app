@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "../../constants/theme";
+import { useCompany } from "../../contexts/CompanyContext";
+import { formatDate as formatDateUtil } from "../../utils/format";
 import {
   deleteAppointment,
   getAppointments,
@@ -36,18 +38,16 @@ const typeLabels: Record<AppointmentType, string> = {
   other: "Otro",
 };
 
-function formatDate(date: string): string {
-  return new Intl.DateTimeFormat("es-PA", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${date}T12:00:00`));
-}
+// La función formatDate se define dentro del componente usando la zona horaria de la empresa
 
 export default function AgendaScreen() {
+  const { activeCompany } = useCompany();
   const [appointments, setAppointments] =
     useState<Appointment[]>([]);
+
+  const formatDate = (dateStr: string) => {
+    return formatDateUtil(dateStr, activeCompany?.timezone || undefined);
+  };
 
   useFocusEffect(
     useCallback(() => {

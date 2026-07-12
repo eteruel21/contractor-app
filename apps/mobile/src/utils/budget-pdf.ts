@@ -10,6 +10,7 @@ import {
 } from "@/types/budget";
 import { getClientDisplayName } from "@/types/client";
 import type { Company } from "@/types/company";
+import { formatShortDate } from "@/utils/format";
 
 type BudgetPdfInput = {
   company: Company;
@@ -25,19 +26,15 @@ function escapeHtml(value: string | null | undefined) {
     .replaceAll("'", "&#039;");
 }
 
-function formatDate(value: string | null | undefined) {
+function formatDate(value: string | null | undefined, timezone?: string) {
   if (!value) return "No definido";
-
-  return new Intl.DateTimeFormat("es-PA", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(value));
+  return formatShortDate(value, timezone);
 }
 
 function renderItems(
   section: BudgetSection | null,
   items: BudgetItem[],
+  currencyCode?: string,
 ) {
   const sectionName = section?.name ?? "Sin sección";
 
@@ -77,10 +74,10 @@ function renderItems(
               ${Number(item.quantity).toLocaleString("es-PA")}
             </td>
             <td class="right">
-              ${formatMoney(item.unit_price)}
+              ${formatMoney(item.unit_price, currencyCode)}
             </td>
             <td class="right strong">
-              ${formatMoney(item.subtotal)}
+              ${formatMoney(item.subtotal, currencyCode)}
             </td>
           </tr>
         `,
@@ -108,7 +105,7 @@ export function buildBudgetHtml({
         (item) => item.section_id === section.id,
       );
 
-      return renderItems(section, items);
+      return renderItems(section, items, budget.currency_code);
     })
     .join("");
 
@@ -118,7 +115,7 @@ export function buildBudgetHtml({
 
   const orphanHtml =
     orphanItems.length > 0
-      ? renderItems(null, orphanItems)
+      ? renderItems(null, orphanItems, budget.currency_code)
       : "";
 
   return `
@@ -373,10 +370,10 @@ export function buildBudgetHtml({
     <div class="card">
       <div class="card-title">Fecha</div>
       <div class="main-text">
-        ${formatDate(budget.created_at)}
+        ${formatDate(budget.created_at, company.timezone)}
       </div>
       <div class="muted">
-        Válido hasta: ${formatDate(budget.valid_until)}
+        Válido hasta: ${formatDate(budget.valid_until, company.timezone)}
       </div>
     </div>
 
@@ -411,22 +408,22 @@ export function buildBudgetHtml({
   <div class="totals">
     <div class="total-row">
       <span>Subtotal</span>
-      <strong>${formatMoney(budget.subtotal)}</strong>
+      <strong>${formatMoney(budget.subtotal, budget.currency_code)}</strong>
     </div>
 
     <div class="total-row">
       <span>Descuento</span>
-      <strong>${formatMoney(budget.discount_amount)}</strong>
+      <strong>${formatMoney(budget.discount_amount, budget.currency_code)}</strong>
     </div>
 
     <div class="total-row">
       <span>ITBMS ${Number(budget.tax_rate).toFixed(2)}%</span>
-      <strong>${formatMoney(budget.tax_amount)}</strong>
+      <strong>${formatMoney(budget.tax_amount, budget.currency_code)}</strong>
     </div>
 
     <div class="total-row total-final">
       <span>Total</span>
-      <span>${formatMoney(budget.total)}</span>
+      <span>${formatMoney(budget.total, budget.currency_code)}</span>
     </div>
   </div>
 

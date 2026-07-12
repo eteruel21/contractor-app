@@ -218,3 +218,58 @@ export async function updateProjectProgress(input: {
     error: error?.message ?? null,
   };
 }
+
+export async function listProjectsByCompany(
+  companyId: string,
+): Promise<{
+  projects: (Project & {
+    client: {
+      id: string;
+      client_type: "person" | "business";
+      first_name: string | null;
+      last_name: string | null;
+      business_name: string | null;
+    } | null;
+  })[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select(`
+      *,
+      client:clients (
+        id,
+        client_type,
+        first_name,
+        last_name,
+        business_name
+      )
+    `)
+    .eq("company_id", companyId)
+    .order("created_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    return {
+      projects: [],
+      error: error.message,
+    };
+  }
+
+  const parsedProjects = (data ?? []).map((project) => {
+    const clientData = Array.isArray(project.client)
+      ? project.client[0]
+      : project.client;
+
+    return {
+      ...project,
+      client: clientData ?? null,
+    };
+  });
+
+  return {
+    projects: parsedProjects as any,
+    error: null,
+  };
+}

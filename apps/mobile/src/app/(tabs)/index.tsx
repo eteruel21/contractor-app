@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router, type Href } from "expo-router";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -11,6 +13,13 @@ import { ModuleCard } from "../../components/ModuleCard";
 import { colors, radius } from "../../constants/theme";
 
 export default function HomeScreen() {
+  const handleUnderDevelopment = (moduleName: string) => {
+    Alert.alert(
+      "Próximamente",
+      `El módulo de ${moduleName} estará disponible en las siguientes etapas de desarrollo. Puedes gestionarlos actualmente desde el menú de Clientes.`
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
@@ -71,24 +80,28 @@ export default function HomeScreen() {
             title="Nuevo cálculo"
             description="Calcula materiales, equipos y mano de obra."
             icon="calculator-outline"
+            onPress={() => router.push("/calculos" as Href)}
           />
 
           <ModuleCard
             title="Presupuestos"
             description="Crea cotizaciones profesionales para tus clientes."
             icon="document-text-outline"
+            onPress={() => router.push("/presupuestos" as Href)}
           />
 
           <ModuleCard
             title="Proyectos"
             description="Programa y controla el avance de cada trabajo."
             icon="business-outline"
+            onPress={() => router.push("/proyectos" as Href)}
           />
 
           <ModuleCard
             title="Facturas"
             description="Registra facturas, abonos y saldos pendientes."
             icon="receipt-outline"
+            onPress={() => handleUnderDevelopment("Facturas")}
           />
         </View>
 

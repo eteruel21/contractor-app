@@ -110,9 +110,8 @@ export function getBudgetStatusLabel(
   return labels[status];
 }
 
-export function formatMoney(value: number): string {
-  return new Intl.NumberFormat("es-PA", {
-    style: "currency",
-    currency: "USD",
-  }).format(value || 0);
+import { formatMoney as formatMoneyUtil } from "@/utils/format";
+
+export function formatMoney(value: number, currencyCode?: string): string {
+  return formatMoneyUtil(value, currencyCode);
 }
