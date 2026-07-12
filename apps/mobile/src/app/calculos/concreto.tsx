@@ -862,6 +862,7 @@ export default function ConcreteCalculatorScreen() {
           {result ? (
             <Results
               result={result}
+              currencyCode={activeCompany?.currency_code}
               onAddToBudget={handleAddToBudget}
             />
           ) : null}
@@ -911,6 +912,7 @@ export default function ConcreteCalculatorScreen() {
         target={catalogTarget}
         items={catalogItems}
         loading={catalogLoading}
+        currencyCode={activeCompany?.currency_code}
         onClose={() => setCatalogTarget(null)}
         onSelect={handleCatalogItemSelected}
       />
@@ -956,6 +958,7 @@ function CatalogPricePicker({
   target,
   items,
   loading,
+  currencyCode,
   onClose,
   onSelect,
 }: {
@@ -963,6 +966,7 @@ function CatalogPricePicker({
   target: CatalogPriceTarget | null;
   items: CatalogItemWithDetails[];
   loading: boolean;
+  currencyCode?: string;
   onClose: () => void;
   onSelect: (item: CatalogItemWithDetails) => void;
 }) {
@@ -1094,7 +1098,7 @@ function CatalogPricePicker({
                     </View>
 
                     <Text style={styles.catalogItemPrice}>
-                      {formatMoney(price)}
+                      {formatMoneyUtil(price, currencyCode)}
                     </Text>
                   </Pressable>
                 );
@@ -1288,11 +1292,18 @@ function AggregatePriceSection({
 
 function Results({
   result,
+  currencyCode,
   onAddToBudget,
 }: {
   result: ConcreteResult;
+  currencyCode?: string;
   onAddToBudget: () => void;
 }) {
+  const formatNumber = (value: number, maximumDigits = 2) =>
+    formatDecimalUtil(value, maximumDigits, currencyCode);
+  const formatMoney = (value: number) =>
+    formatMoneyUtil(value, currencyCode);
+
   return (
     <View style={styles.resultsSection}>
       <View style={styles.resultsHeader}>

@@ -25,6 +25,12 @@ export default function CalculationsLayout() {
           title: "Cálculo de concreto",
         }}
       />
+      <Stack.Screen
+        name="bloques-repello"
+        options={{
+          title: "Bloques y repello",
+        }}
+      />
     </Stack>
   );
 }

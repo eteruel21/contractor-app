@@ -17,7 +17,9 @@ type CalculationCategory = {
   description: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   enabled: boolean;
-  route?: "/calculos/concreto";
+  route?:
+    | "/calculos/concreto"
+    | "/calculos/bloques-repello";
 };
 
 const categories: CalculationCategory[] = [
@@ -36,7 +38,8 @@ const categories: CalculationCategory[] = [
     description:
       "Muros, bloques, mortero, repello y desperdicio.",
     icon: "grid-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/bloques-repello",
   },
   {
     id: "gypsum",
