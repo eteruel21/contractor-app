@@ -1,4 +1,4 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   Pressable,
@@ -23,7 +23,11 @@ type CalculationCategory = {
     | "/calculos/gypsum"
     | "/calculos/cielo-raso-pvc"
     | "/calculos/pintura"
-    | "/calculos/pisos";
+    | "/calculos/pisos"
+    | "/calculos/electricidad"
+    | "/calculos/sistemas-especiales"
+    | "/calculos/aire-acondicionado"
+    | "/calculos/muebles-mdf";
 };
 
 const categories: CalculationCategory[] = [
@@ -87,7 +91,8 @@ const categories: CalculationCategory[] = [
     description:
       "Puntos, cables, tuberÃ­as, breakers y accesorios.",
     icon: "flash-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/electricidad",
   },
   {
     id: "special-systems",
@@ -95,7 +100,8 @@ const categories: CalculationCategory[] = [
     description:
       "CÃ¡maras, alarmas, incendio y control de acceso.",
     icon: "videocam-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/sistemas-especiales",
   },
   {
     id: "air-conditioning",
@@ -103,7 +109,8 @@ const categories: CalculationCategory[] = [
     description:
       "BTU, tuberÃ­as, cableado, drenaje e instalaciÃ³n.",
     icon: "snow-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/aire-acondicionado",
   },
   {
     id: "mdf",
@@ -111,7 +118,8 @@ const categories: CalculationCategory[] = [
     description:
       "Tableros, cortes, cantos, herrajes y fabricaciÃ³n.",
     icon: "file-tray-full-outline",
-    enabled: false,
+    enabled: true,
+    route: "/calculos/muebles-mdf",
   },
 ];
 
@@ -394,4 +402,5 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
+
 
