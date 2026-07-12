@@ -53,7 +53,7 @@ const categories: CalculationCategory[] = [
     id: "gypsum",
     title: "Gypsum",
     description:
-      "LÃ¡minas, perfiles, tornillos y compuesto.",
+      "Láminas, perfiles, tornillos y compuesto.",
     icon: "layers-outline",
     enabled: true,
     route: "/calculos/gypsum",
@@ -62,7 +62,7 @@ const categories: CalculationCategory[] = [
     id: "pvc",
     title: "Cielo raso PVC",
     description:
-      "LÃ¡minas, tracks, studs, cargadores y accesorios.",
+      "Láminas, tracks, studs, cargadores y accesorios.",
     icon: "apps-outline",
     enabled: true,
     route: "/calculos/cielo-raso-pvc",
@@ -71,7 +71,7 @@ const categories: CalculationCategory[] = [
     id: "paint",
     title: "Pintura",
     description:
-      "Ãrea, galones, manos de pintura y mano de obra.",
+      "Área, galones, manos de pintura y mano de obra.",
     icon: "color-palette-outline",
     enabled: true,
     route: "/calculos/pintura",
@@ -80,7 +80,7 @@ const categories: CalculationCategory[] = [
     id: "flooring",
     title: "Pisos",
     description:
-      "CerÃ¡mica, porcelanato, adhesivo y boquilla.",
+      "Cerámica, porcelanato, adhesivo y boquilla.",
     icon: "square-outline",
     enabled: true,
     route: "/calculos/pisos",
@@ -89,7 +89,7 @@ const categories: CalculationCategory[] = [
     id: "electricity",
     title: "Electricidad",
     description:
-      "Puntos, cables, tuberÃ­as, breakers y accesorios.",
+      "Puntos, cables, tuberías, breakers y accesorios.",
     icon: "flash-outline",
     enabled: true,
     route: "/calculos/electricidad",
@@ -98,7 +98,7 @@ const categories: CalculationCategory[] = [
     id: "special-systems",
     title: "Sistemas especiales",
     description:
-      "CÃ¡maras, alarmas, incendio y control de acceso.",
+      "Cámaras, alarmas, incendio y control de acceso.",
     icon: "videocam-outline",
     enabled: true,
     route: "/calculos/sistemas-especiales",
@@ -107,7 +107,7 @@ const categories: CalculationCategory[] = [
     id: "air-conditioning",
     title: "Aire acondicionado",
     description:
-      "BTU, tuberÃ­as, cableado, drenaje e instalaciÃ³n.",
+      "BTU, tuberías, cableado, drenaje e instalación.",
     icon: "snow-outline",
     enabled: true,
     route: "/calculos/aire-acondicionado",
@@ -116,7 +116,7 @@ const categories: CalculationCategory[] = [
     id: "mdf",
     title: "Muebles MDF",
     description:
-      "Tableros, cortes, cantos, herrajes y fabricaciÃ³n.",
+      "Tableros, cortes, cantos, herrajes y fabricación.",
     icon: "file-tray-full-outline",
     enabled: true,
     route: "/calculos/muebles-mdf",
@@ -165,7 +165,7 @@ export default function CalculationsScreen() {
 
           <Text style={styles.noticeText}>
             Los resultados son estimaciones. Los rendimientos,
-            precios y desperdicios podrÃ¡n configurarse para cada
+            precios y desperdicios podrán configurarse para cada
             empresa.
           </Text>
         </View>
@@ -204,7 +204,7 @@ export default function CalculationsScreen() {
                 {!category.enabled && (
                   <View style={styles.comingSoon}>
                     <Text style={styles.comingSoonText}>
-                      PrÃ³ximamente
+                      Próximamente
                     </Text>
                   </View>
                 )}

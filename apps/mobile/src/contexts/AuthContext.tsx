@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   AuthError,
   Session,
   User,
@@ -137,7 +137,7 @@ export function AuthProvider({
 
       if (error) {
         console.error(
-          "Error cargando la sesiÃ³n:",
+          "Error cargando la sesión:",
           error.message,
         );
       }

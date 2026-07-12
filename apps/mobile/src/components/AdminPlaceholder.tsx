@@ -1,4 +1,4 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   Pressable,
@@ -18,7 +18,7 @@ type AdminPlaceholderProps = {
 export function AdminPlaceholder({
   title,
   description =
-    "La ruta ya estÃ¡ preparada. Su contenido se conectarÃ¡ en el siguiente bloque.",
+    "La ruta ya está preparada. Su contenido se conectará en el siguiente bloque.",
 }: AdminPlaceholderProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>

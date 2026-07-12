@@ -1,8 +1,5 @@
-﻿import { Ionicons } from "@expo/vector-icons";
-import {
-  type Href,
-  router,
-} from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { type Href, router } from "expo-router";
 import {
   Pressable,
   ScrollView,
@@ -16,63 +13,38 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { colors, radius } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
-const modules = [
+const activeModules = [
   {
     id: "catalog",
-    title: "CatÃ¡logo",
+    title: "Catálogo",
     description:
-      "Productos, servicios y categorÃ­as.",
+      "Productos, servicios, categorías, precios y rendimientos.",
     icon: "cube-outline" as const,
-    route: "/admin/catalogo",
+    route: "/catalogo" as Href,
   },
   {
     id: "prices",
     title: "Precios",
     description:
-      "Costos, venta e historial de cambios.",
+      "Edita costos, precios de venta y desperdicios desde el catálogo.",
     icon: "pricetags-outline" as const,
-    route: "/admin/precios",
-  },
-  {
-    id: "measurements",
-    title: "Medidas",
-    description:
-      "Unidades, sÃ­mbolos y conversiones.",
-    icon: "resize-outline" as const,
-    route: "/admin/medidas",
-  },
-  {
-    id: "formulas",
-    title: "FÃ³rmulas",
-    description:
-      "Rendimientos y parÃ¡metros de cÃ¡lculo.",
-    icon: "calculator-outline" as const,
-    route: "/admin/formulas",
+    route: "/catalogo" as Href,
   },
   {
     id: "clients",
     title: "Clientes",
     description:
-      "InformaciÃ³n y actividad de clientes.",
+      "Consulta clientes, direcciones y actividad registrada.",
     icon: "people-outline" as const,
-    route: "/admin/clientes",
+    route: "/(tabs)/clientes" as Href,
   },
-  {
-    id: "users",
-    title: "Usuarios",
-    description:
-      "Roles, accesos y cuentas activas.",
-    icon: "shield-checkmark-outline" as const,
-    route: "/admin/usuarios",
-  },
-  {
-    id: "settings",
-    title: "ConfiguraciÃ³n",
-    description:
-      "Preferencias generales de la aplicaciÃ³n.",
-    icon: "settings-outline" as const,
-    route: "/admin/configuracion",
-  },
+];
+
+const pendingModules = [
+  "Medidas",
+  "Fórmulas",
+  "Usuarios",
+  "Configuración",
 ];
 
 export default function AdminDashboardScreen() {
@@ -102,16 +74,11 @@ export default function AdminDashboardScreen() {
                 size={15}
                 color={colors.primary}
               />
-              <Text style={styles.adminBadgeText}>
-                ADMIN
-              </Text>
+              <Text style={styles.adminBadgeText}>ADMIN</Text>
             </View>
           </View>
 
-          <Text style={styles.title}>
-            Panel administrativo
-          </Text>
-
+          <Text style={styles.title}>Panel administrativo</Text>
           <Text style={styles.subtitle}>
             {profile?.full_name
               ? `Bienvenido, ${profile.full_name}.`
@@ -120,34 +87,55 @@ export default function AdminDashboardScreen() {
         </View>
 
         <View style={styles.summaryCard}>
-          <View>
+          <View style={styles.summaryText}>
             <Text style={styles.summaryLabel}>
               Estado del sistema
             </Text>
             <Text style={styles.summaryValue}>
-              AdministraciÃ³n activa
+              3 módulos funcionales
+            </Text>
+            <Text style={styles.summaryDescription}>
+              Catálogo, precios y clientes están conectados a pantallas reales.
             </Text>
           </View>
-
           <View style={styles.statusDot} />
         </View>
 
         <Text style={styles.sectionTitle}>
-          Herramientas administrativas
+          Herramientas disponibles
         </Text>
 
         <View style={styles.grid}>
-          {modules.map((module) => (
+          {activeModules.map((module) => (
             <ModuleCard
               key={module.id}
               title={module.title}
               description={module.description}
               icon={module.icon}
-              onPress={() =>
-                router.push(module.route as Href)
-              }
+              onPress={() => router.push(module.route)}
             />
           ))}
+        </View>
+
+        <View style={styles.pendingCard}>
+          <View style={styles.pendingIcon}>
+            <Ionicons
+              name="time-outline"
+              size={22}
+              color={colors.primary}
+            />
+          </View>
+          <View style={styles.summaryText}>
+            <Text style={styles.pendingTitle}>
+              Módulos pendientes
+            </Text>
+            <Text style={styles.pendingText}>
+              {pendingModules.join(" · ")}
+            </Text>
+            <Text style={styles.pendingDescription}>
+              Se habilitarán cuando sus servicios, tablas y permisos estén implementados.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -159,27 +147,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surfaceDark,
   },
-
   content: {
     flexGrow: 1,
-    paddingBottom: 32,
+    paddingBottom: 36,
     backgroundColor: colors.background,
   },
-
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 28,
     backgroundColor: colors.surfaceDark,
   },
-
   headerTop: {
     marginBottom: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-
   backButton: {
     width: 42,
     height: 42,
@@ -188,7 +172,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   adminBadge: {
     paddingHorizontal: 11,
     paddingVertical: 7,
@@ -198,25 +181,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
   },
-
   adminBadgeText: {
     color: colors.primaryDark,
     fontSize: 11,
     fontWeight: "900",
   },
-
   title: {
     color: colors.textLight,
     fontSize: 27,
     fontWeight: "900",
   },
-
   subtitle: {
     marginTop: 6,
     color: "#94A3B8",
     fontSize: 14,
   },
-
   summaryCard: {
     marginHorizontal: 20,
     marginTop: 20,
@@ -227,29 +206,32 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: 16,
   },
-
+  summaryText: { flex: 1 },
   summaryLabel: {
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "700",
   },
-
   summaryValue: {
     marginTop: 4,
     color: colors.text,
     fontSize: 16,
     fontWeight: "900",
   },
-
+  summaryDescription: {
+    marginTop: 5,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
+  },
   statusDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
     backgroundColor: colors.primary,
   },
-
   sectionTitle: {
     marginHorizontal: 20,
     marginTop: 26,
@@ -258,11 +240,47 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "900",
   },
-
   grid: {
     paddingHorizontal: 20,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 12,
+  },
+  pendingCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 17,
+    borderRadius: radius.lg,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 13,
+  },
+  pendingIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pendingTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  pendingText: {
+    marginTop: 5,
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  pendingDescription: {
+    marginTop: 5,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

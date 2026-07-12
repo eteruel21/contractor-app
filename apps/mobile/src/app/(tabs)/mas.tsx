@@ -1,4 +1,4 @@
-﻿import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import {
   type Href,
   router,
@@ -28,7 +28,7 @@ const baseOptions = [
     id: "projects",
     title: "Proyectos",
     description:
-      "ProgramaciÃ³n y seguimiento de trabajos.",
+      "Programación y seguimiento de trabajos.",
     icon: "business-outline" as const,
     onPress: () => router.push("/proyectos" as Href),
   },
@@ -41,7 +41,7 @@ const baseOptions = [
   },
   {
     id: "catalog",
-    title: "CatÃ¡logo",
+    title: "Catálogo",
     description:
       "Consultar materiales, mano de obra y servicios.",
     icon: "cube-outline" as const,
@@ -51,9 +51,9 @@ const baseOptions = [
 
 const adminOption = {
   id: "administration",
-  title: "AdministraciÃ³n",
+  title: "Administración",
   description:
-    "Control de catÃ¡logo, precios, medidas, usuarios y configuraciÃ³n.",
+    "Control de catálogo, precios, medidas, usuarios y configuración.",
   icon: "shield-checkmark-outline" as const,
   onPress: () => router.push("/admin" as Href),
 };
@@ -69,11 +69,11 @@ export default function MoreScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>
-            MÃ¡s herramientas
+            Más herramientas
           </Text>
 
           <Text style={styles.subtitle}>
-            AdministraciÃ³n general de la empresa.
+            Administración general de la empresa.
           </Text>
         </View>
 
@@ -119,7 +119,7 @@ export default function MoreScreen() {
                 />
               ) : (
                 <Text style={styles.soonText}>
-                  PrÃ³ximamente
+                  Próximamente
                 </Text>
               )}
             </Pressable>

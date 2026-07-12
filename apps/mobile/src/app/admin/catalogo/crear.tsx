@@ -1,10 +1,5 @@
-import { AdminPlaceholder } from "@/components/AdminPlaceholder";
+import { type Href, Redirect } from "expo-router";
 
-export default function AdminCreateCatalogItemScreen() {
-  return (
-    <AdminPlaceholder
-      title="Nuevo elemento"
-      description="Formulario para agregar productos y servicios al catálogo."
-    />
-  );
+export default function AdminCatalogRedirect() {
+  return <Redirect href={"/catalogo" as Href} />;
 }

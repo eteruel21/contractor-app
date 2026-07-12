@@ -1,10 +1,5 @@
-import { AdminPlaceholder } from "@/components/AdminPlaceholder";
+import { type Href, Redirect } from "expo-router";
 
-export default function AdminCategoriesScreen() {
-  return (
-    <AdminPlaceholder
-      title="Categorías"
-      description="Creación, edición y desactivación de categorías."
-    />
-  );
+export default function AdminCatalogRedirect() {
+  return <Redirect href={"/catalogo" as Href} />;
 }
