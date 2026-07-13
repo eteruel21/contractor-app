@@ -23,69 +23,12 @@ import {
 } from "lucide-react";
 import { supabase } from "./supabase";
 
-// Mock Fallback Data (used if Supabase fails or tables do not exist yet)
-const mockContractors = [
-  {
-    id: "1",
-    name: "Constructora Horizon PA",
-    owner: "Carlos Mendoza",
-    email: "carlos.m@horizon.com",
-    projects: 14,
-    status: "active",
-    joined: "2026-04-12",
-  },
-  {
-    id: "2",
-    name: "Teruel & Asociados",
-    owner: "Eliel Teruel",
-    email: "eteruel21@gmail.com",
-    projects: 22,
-    status: "active",
-    joined: "2026-05-01",
-  },
-  {
-    id: "3",
-    name: "Reformas Integrales Balboa",
-    owner: "Ana Victoria Díaz",
-    email: "ventas@reformasbalboa.com",
-    projects: 5,
-    status: "active",
-    joined: "2026-06-15",
-  },
-  {
-    id: "4",
-    name: "Electricidad y Gypsum Pro",
-    owner: "Jorge Luis Pinto",
-    email: "jorge.pinto@gmail.com",
-    projects: 8,
-    status: "pending",
-    joined: "2026-07-10",
-  },
-];
-
-const mockCatalogItems = [
-  { id: "1", code: "CONC-001", name: "Concreto Premezclado 3000 PSI", category: "Materiales", unit: "m³", basePrice: 125.00 },
-  { id: "2", code: "GYP-012", name: "Lámina Gypsum Standard 1/2", category: "Materiales", unit: "Pza", basePrice: 10.50 },
-  { id: "3", code: "PNT-002", name: "Pintura Látex Premium (Galón)", category: "Acabados", unit: "Gal", basePrice: 28.90 },
-  { id: "4", code: "MO-REP", name: "Mano de Obra Repello Liso", category: "Mano de Obra", unit: "m²", basePrice: 8.50 },
-  { id: "5", code: "BLO-004", name: "Bloque de Arcilla 4 pulgadas", category: "Materiales", unit: "Pza", basePrice: 0.65 },
-];
-
-const mockFormulas = [
-  { id: "1", name: "Cálculo de Concreto de Losa", variables: "Largo, Ancho, Espesor", expression: "Largo * Ancho * Espesor * 1.05 (Desperdicio)" },
-  { id: "2", name: "Cálculo de Bloques de Pared", variables: "Largo, Alto, BloqueTipo", expression: "(Largo * Alto) * 12.5 (Bloques por m²)" },
-  { id: "3", name: "Cálculo de Gypsum en Cielo Raso", variables: "Largo, Ancho", expression: "(Largo * Ancho) / 2.98 (Área de lámina)" },
-];
-
-const mockMarkupRules = [
-  { id: "1", category: "Materiales", globalMarkup: 15, laborCostHour: 0 },
-  { id: "2", category: "Mano de Obra", globalMarkup: 25, laborCostHour: 12.50 },
-  { id: "3", category: "Acabados", globalMarkup: 20, laborCostHour: 0 },
-];
-
 export default function App() {
   // Auth state
   const [session, setSession] = useState<any>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -98,23 +41,25 @@ export default function App() {
   const [formulas, setFormulas] = useState<any[]>([]);
   const [markupRules, setMarkupRules] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   const [stats, setStats] = useState({
     contractorsCount: 0,
     projectsCount: 0,
     clientsCount: 0,
-    growth: "+28%",
+    growth: "—",
   });
 
   // Listen for Auth Session
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setSessionLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      setSessionLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -142,36 +87,127 @@ export default function App() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
+    setIsAuthorized(false);
   };
+
+  // Authentication proves identity; this check enforces authorization.
+  useEffect(() => {
+    let active = true;
+
+    async function validateAdminAccess() {
+      if (!session?.user) {
+        setIsAuthorized(false);
+        return;
+      }
+
+      setAccessLoading(true);
+      setAuthError(null);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role, active")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        await supabase.auth.signOut();
+        setAuthError(`No se pudo verificar el acceso administrativo: ${error.message}`);
+        setIsAuthorized(false);
+      } else if (!data?.active || data.role !== "super_admin") {
+        await supabase.auth.signOut();
+        setAuthError("Esta cuenta no tiene permisos de superadministrador.");
+        setIsAuthorized(false);
+      } else {
+        setIsAuthorized(true);
+      }
+
+      if (active) setAccessLoading(false);
+    }
+
+    void validateAdminAccess();
+
+    return () => {
+      active = false;
+    };
+  }, [session]);
 
   // Load database information once session is active
   const loadDatabaseData = useCallback(async () => {
-    if (!session) return;
+    if (!isAuthorized) return;
     setLoadingData(true);
-    setIsDemoMode(false);
+    setDataError(null);
+
     try {
-      // 1. Fetch Contractors (profiles joined with companies)
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          full_name,
-          phone,
-          role,
-          created_at,
-          company_members (
+      const [
+        profilesResult,
+        projectsResult,
+        clientsResult,
+        catalogResult,
+        formulasResult,
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(`
+            id,
+            full_name,
+            phone,
             role,
-            company:companies (
-              id,
-              name,
-              active
+            created_at,
+            company_members (
+              role,
+              company:companies (
+                id,
+                name,
+                active
+              )
             )
-          )
-        `);
+          `)
+          .eq("role", "contractor"),
+        supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["approved", "in_progress", "paused"]),
+        supabase
+          .from("clients")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("catalog_items")
+          .select(`
+            id,
+            sku,
+            name,
+            sale_price,
+            category:catalog_categories (name),
+            unit:units (symbol)
+          `)
+          .eq("active", true)
+          .order("name", { ascending: true }),
+        supabase
+          .from("catalog_yields")
+          .select(`
+            id,
+            name,
+            output_quantity,
+            labor_hours,
+            crew_size,
+            waste_percentage
+          `)
+          .eq("active", true)
+          .order("name", { ascending: true }),
+      ]);
 
-      if (profilesError) throw profilesError;
+      const queryError =
+        profilesResult.error ||
+        projectsResult.error ||
+        clientsResult.error ||
+        catalogResult.error ||
+        formulasResult.error;
 
-      const loadedContractors = (profilesData || []).map((p: any) => {
+      if (queryError) throw queryError;
+
+      const loadedContractors = (profilesResult.data || []).map((p: any) => {
         const membership = p.company_members?.[0];
         const company = membership?.company;
         const companyName = Array.isArray(company) 
@@ -185,148 +221,71 @@ export default function App() {
           id: p.id,
           name: companyName,
           owner: p.full_name || "Sin Nombre",
-          email: p.phone || "Sin Teléfono",
-          projects: 0,
-          status: p.role === "super_admin" ? "active" : activeStatus,
+          contact: p.phone || "Sin teléfono",
+          status: activeStatus,
           joined: p.created_at ? p.created_at.substring(0, 10) : "N/A",
         };
       });
 
-      // 2. Fetch Projects Count
-      let pCount = 0;
-      try {
-        const { count } = await supabase
-          .from("projects")
-          .select("*", { count: "exact", head: true });
-        pCount = count || 0;
-      } catch {
-        pCount = 0;
-      }
+      const loadedCatalog = (catalogResult.data || []).map((item: any) => {
+        const category = Array.isArray(item.category)
+          ? item.category[0]
+          : item.category;
+        const unit = Array.isArray(item.unit) ? item.unit[0] : item.unit;
 
-      // 3. Fetch Clients Count
-      let cCount = 0;
-      try {
-        const { count } = await supabase
-          .from("clients")
-          .select("*", { count: "exact", head: true });
-        cCount = count || 0;
-      } catch {
-        cCount = 0;
-      }
-
-      // 4. Fetch Catalog Items
-      let loadedCatalog: any[] = [];
-      try {
-        const { data: catalogData } = await supabase
-          .from("catalog_items")
-          .select(`
-            id,
-            sku,
-            name,
-            sale_price,
-            category_id
-          `);
-
-        if (catalogData) {
-          loadedCatalog = catalogData.map((item: any) => ({
-            id: item.id,
-            code: item.sku || "N/A",
-            name: item.name,
-            category: item.category_id || "General",
-            unit: "Pza",
-            basePrice: item.sale_price || 0,
-          }));
-        }
-      } catch (err) {
-        console.warn("Catalog fetch failed or table doesn't exist:", err);
-      }
-
-      // 5. Fetch Formulas
-      let loadedFormulas: any[] = [];
-      try {
-        const { data: formulasData } = await (supabase as any)
-          .from("formulas")
-          .select("*");
-        if (formulasData) {
-          loadedFormulas = formulasData.map((f: any) => ({
-            id: f.id,
-            name: f.name || "Fórmula",
-            variables: f.variables || "N/A",
-            expression: f.expression || "N/A",
-          }));
-        }
-      } catch (err) {
-        console.warn("Formulas fetch failed or table doesn't exist:", err);
-      }
-
-      // 6. Fetch Pricing Rules
-      let loadedMarkup: any[] = [];
-      try {
-        const { data: pricingData } = await (supabase as any)
-          .from("pricing_rules")
-          .select("*");
-        if (pricingData) {
-          loadedMarkup = pricingData.map((p: any) => ({
-            id: p.id,
-            category: p.category || "General",
-            globalMarkup: p.markup_percentage || 0,
-            laborCostHour: p.labor_cost || 0,
-          }));
-        }
-      } catch (err) {
-        console.warn("Pricing rules fetch failed or table doesn't exist:", err);
-      }
-
-      // Determine if we need to show fallback/demo data (if tables exist but are empty)
-      if (loadedContractors.length === 0 && loadedCatalog.length === 0) {
-        setIsDemoMode(true);
-        setContractors(mockContractors);
-        setCatalogItems(mockCatalogItems);
-        setFormulas(mockFormulas);
-        setMarkupRules(mockMarkupRules);
-        setStats({
-          contractorsCount: mockContractors.length,
-          projectsCount: 156,
-          clientsCount: 432,
-          growth: "+28%",
-        });
-      } else {
-        setIsDemoMode(false);
-        setContractors(loadedContractors.length > 0 ? loadedContractors : mockContractors);
-        setCatalogItems(loadedCatalog.length > 0 ? loadedCatalog : mockCatalogItems);
-        setFormulas(loadedFormulas.length > 0 ? loadedFormulas : mockFormulas);
-        setMarkupRules(loadedMarkup.length > 0 ? loadedMarkup : mockMarkupRules);
-        setStats({
-          contractorsCount: loadedContractors.length,
-          projectsCount: pCount,
-          clientsCount: cCount,
-          growth: "+28%",
-        });
-      }
-
-    } catch (err: any) {
-      console.error("General error querying Supabase. Activating Demo Mode.", err);
-      setIsDemoMode(true);
-      setContractors(mockContractors);
-      setCatalogItems(mockCatalogItems);
-      setFormulas(mockFormulas);
-      setMarkupRules(mockMarkupRules);
-      setStats({
-        contractorsCount: mockContractors.length,
-        projectsCount: 156,
-        clientsCount: 432,
-        growth: "+28%",
+        return {
+          id: item.id,
+          code: item.sku || "N/A",
+          name: item.name,
+          category: category?.name || "Sin categoría",
+          unit: unit?.symbol || "—",
+          basePrice: item.sale_price || 0,
+        };
       });
+
+      const loadedFormulas = (formulasResult.data || []).map((formula: any) => ({
+        id: formula.id,
+        name: formula.name,
+        variables: "Producción, horas, cuadrilla y desperdicio",
+        expression: `${formula.output_quantity} unidades / ${formula.labor_hours} h / ${formula.crew_size} personas / ${formula.waste_percentage}%`,
+      }));
+
+      setContractors(loadedContractors);
+      setCatalogItems(loadedCatalog);
+      setFormulas(loadedFormulas);
+      setMarkupRules([]);
+      setStats({
+        contractorsCount: loadedContractors.length,
+        projectsCount: projectsResult.count || 0,
+        clientsCount: clientsResult.count || 0,
+        growth: "—",
+      });
+    } catch (err: any) {
+      console.error("Error consultando Supabase:", err);
+      setDataError(err.message || "No fue posible cargar la información.");
+      setContractors([]);
+      setCatalogItems([]);
+      setFormulas([]);
+      setMarkupRules([]);
     } finally {
       setLoadingData(false);
     }
-  }, [session]);
+  }, [isAuthorized]);
 
   useEffect(() => {
-    if (session) {
+    if (isAuthorized) {
       loadDatabaseData();
     }
-  }, [session, loadDatabaseData]);
+  }, [isAuthorized, loadDatabaseData]);
+
+  if (sessionLoading || (session && (!isAuthorized || accessLoading))) {
+    return (
+      <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", gap: "10px", backgroundColor: "#0f172a", color: "#94a3b8" }}>
+        <Loader2 size={28} className="animate-spin" />
+        <span>Verificando acceso administrativo...</span>
+      </div>
+    );
+  }
 
   // LOGIN SCREEN
   if (!session) {
@@ -486,11 +445,6 @@ export default function App() {
           </div>
 
           <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-            {isDemoMode && (
-              <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.8rem", color: "#f59e0b", backgroundColor: "#2d1f10", padding: "6px 12px", borderRadius: "6px", border: "1px solid #d97706" }}>
-                <AlertTriangle size={14} /> Modo Demostración (DB Vacía)
-              </span>
-            )}
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <Server size={20} className="stat-icon" />
               <span style={{ fontSize: "0.9rem", fontWeight: "700", color: "#22c55e" }}>
@@ -499,6 +453,17 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {dataError && (
+          <div style={{ margin: "0 0 20px", padding: "14px", border: "1px solid #ef4444", borderRadius: "8px", backgroundColor: "#311c1c", color: "#fca5a5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <AlertTriangle size={18} /> Error de Supabase: {dataError}
+            </span>
+            <button onClick={() => void loadDatabaseData()} style={{ padding: "7px 12px", borderRadius: "6px", border: "1px solid #ef4444", background: "transparent", color: "#fca5a5", cursor: "pointer", fontWeight: "700" }}>
+              Reintentar
+            </button>
+          </div>
+        )}
 
         {loadingData ? (
           <div style={{ display: "flex", flexDirection: "column", height: "50vh", alignItems: "center", justifyContent: "center", gap: "10px", color: "#94a3b8" }}>
@@ -544,7 +509,7 @@ export default function App() {
                       <TrendingUp size={16} className="stat-icon" />
                     </div>
                     <div className="stat-value">{stats.growth}</div>
-                    <div className="stat-desc">Objetivo: 20%</div>
+                    <div className="stat-desc">Métrica pendiente</div>
                   </div>
                 </div>
 
@@ -567,7 +532,7 @@ export default function App() {
                         <tr key={c.id}>
                           <td style={{ fontWeight: "700" }}>{c.name}</td>
                           <td>{c.owner}</td>
-                          <td>{c.email}</td>
+                          <td>{c.contact}</td>
                           <td>
                             <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
                               {c.status === "active" ? "Activo" : "Pendiente"}
@@ -606,7 +571,7 @@ export default function App() {
                       <tr key={c.id}>
                         <td style={{ fontWeight: "700" }}>{c.name}</td>
                         <td>{c.owner}</td>
-                        <td>{c.email}</td>
+                        <td>{c.contact}</td>
                         <td>
                           <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
                             {c.status === "active" ? "Activo" : "Pendiente"}
