@@ -17,6 +17,8 @@ import { supabase } from "@/services/supabase";
 
 export type AppRole = "super_admin" | "contractor" | "client";
 
+export type PublicAppRole = Exclude<AppRole, "super_admin">;
+
 export type AppProfile = {
   id: string;
   full_name: string | null;
@@ -33,7 +35,7 @@ type SignUpInput = {
   phone?: string;
   email: string;
   password: string;
-  role?: AppRole;
+  role?: PublicAppRole;
 };
 
 type AuthResult = {

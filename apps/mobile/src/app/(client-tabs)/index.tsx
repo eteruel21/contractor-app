@@ -16,7 +16,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { getClientContractorCompanies } from "../../services/client-service";
 
 export default function ClientHomeScreen() {
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const [contractors, setContractors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,7 +90,7 @@ export default function ClientHomeScreen() {
             <Text style={styles.emptyTitle}>Sin proveedores vinculados</Text>
             <Text style={styles.emptyText}>
               Pídele a tu contratista que registre tu correo electrónico (
-              {profile?.phone || "el que usaste al registrarte"}) para poder
+              {user?.email || "el que usaste al registrarte"}) para poder
               vincularte de forma automática.
             </Text>
           </View>

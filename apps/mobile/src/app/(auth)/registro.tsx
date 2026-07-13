@@ -19,7 +19,10 @@ import {
     colors,
     radius,
 } from "@/constants/theme";
-import { useAuth } from "@/contexts/AuthContext";
+import {
+  type PublicAppRole,
+  useAuth,
+} from "@/contexts/AuthContext";
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
@@ -32,6 +35,8 @@ export default function RegisterScreen() {
     useState("");
   const [confirmPassword, setConfirmPassword] =
     useState("");
+  const [accountRole, setAccountRole] =
+    useState<PublicAppRole>("contractor");
   const [submitting, setSubmitting] =
     useState(false);
 
@@ -79,6 +84,7 @@ export default function RegisterScreen() {
         phone,
         email,
         password,
+        role: accountRole,
       });
 
       if (error) {
@@ -140,10 +146,55 @@ export default function RegisterScreen() {
           </Text>
 
           <Text style={styles.subtitle}>
-            Registra al propietario principal de la empresa.
+            {accountRole === "contractor"
+              ? "Crea tu cuenta para administrar empresas, clientes y obras."
+              : "Crea tu acceso para consultar proyectos y presupuestos compartidos."}
           </Text>
 
           <View style={styles.card}>
+            <Text style={styles.accountTypeLabel}>
+              Tipo de cuenta
+            </Text>
+
+            <View style={styles.roleSelector}>
+              <Pressable
+                onPress={() => setAccountRole("contractor")}
+                style={[
+                  styles.roleButton,
+                  accountRole === "contractor" &&
+                    styles.roleButtonActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleButtonText,
+                    accountRole === "contractor" &&
+                      styles.roleButtonTextActive,
+                  ]}
+                >
+                  Contratista
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setAccountRole("client")}
+                style={[
+                  styles.roleButton,
+                  accountRole === "client" &&
+                    styles.roleButtonActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.roleButtonText,
+                    accountRole === "client" &&
+                      styles.roleButtonTextActive,
+                  ]}
+                >
+                  Cliente
+                </Text>
+              </Pressable>
+            </View>
             <FormField
               label="Nombre completo"
               value={fullName}
@@ -367,6 +418,45 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+
+  accountTypeLabel: {
+    marginBottom: 9,
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  roleSelector: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 20,
+  },
+
+  roleButton: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  roleButtonActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+
+  roleButtonText: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  roleButtonTextActive: {
+    color: colors.primaryDark,
   },
 
   field: {
