@@ -23,7 +23,6 @@ function RootNavigator() {
     session,
     profile,
     loading: authLoading,
-    isAdmin,
   } = useAuth();
 
   const {
@@ -39,7 +38,6 @@ function RootNavigator() {
   const isContractorAuthenticated = isAuthenticated && isContractor;
 
   const hasActiveCompany = isContractorAuthenticated && Boolean(activeCompany);
-  const hasAdminAccess = hasActiveCompany && isAdmin;
   const needsCompanySetup = isContractorAuthenticated && !activeCompany;
 
   if (
@@ -87,9 +85,6 @@ function RootNavigator() {
         <Stack.Screen name="catalogo" />
       </Stack.Protected>
 
-      <Stack.Protected guard={hasAdminAccess}>
-        <Stack.Screen name="admin" />
-      </Stack.Protected>
 
       <Stack.Protected guard={isClientAuthenticated}>
         <Stack.Screen name="(client-tabs)" />

@@ -13,7 +13,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "@/constants/theme";
-import { useAuth } from "@/contexts/AuthContext";
 
 const baseOptions = [
   {
@@ -49,20 +48,8 @@ const baseOptions = [
   },
 ];
 
-const adminOption = {
-  id: "administration",
-  title: "Administración",
-  description:
-    "Control de catálogo, precios, medidas, usuarios y configuración.",
-  icon: "shield-checkmark-outline" as const,
-  onPress: () => router.push("/admin" as Href),
-};
-
 export default function MoreScreen() {
-  const { isAdmin } = useAuth();
-  const options = isAdmin
-    ? [...baseOptions, adminOption]
-    : baseOptions;
+  const options = baseOptions;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
