@@ -32,7 +32,7 @@ function RootNavigator() {
   } = useCompany();
 
   const isClient = profile?.role === "client";
-  const isContractor = profile?.role === "contractor" || profile?.role === "super_admin";
+  const isContractor = profile ? (profile.role !== "client") : false;
 
   const isAuthenticated = Boolean(session);
   const isClientAuthenticated = isAuthenticated && isClient;

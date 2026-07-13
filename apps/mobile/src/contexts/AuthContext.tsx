@@ -244,7 +244,12 @@ export function AuthProvider({
     authLoading || (Boolean(session) && profileLoading);
 
   const isAdmin = Boolean(
-    profile?.active && (profile.role === "contractor" || profile.role === "super_admin"),
+    profile?.active && (
+      profile.role === "contractor" ||
+      profile.role === "super_admin" ||
+      (profile.role as string) === "admin" ||
+      !profile.role
+    ),
   );
 
   const value = useMemo<AuthContextValue>(
