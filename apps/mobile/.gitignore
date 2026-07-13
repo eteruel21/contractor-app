@@ -43,3 +43,10 @@ example
 # generated native folders
 /ios
 /android
+
+# backup files generated during editing
+*.backup-*
+*.backup
+
+# temporary PowerShell scripts
+*.ps1

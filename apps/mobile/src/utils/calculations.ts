@@ -110,13 +110,26 @@ export function calculateConcrete(
   const cementBagWeight =
     sanitizeNumber(input.cementBagWeight) || 42.5;
 
+  const cementDensityKgM3 =
+    sanitizeNumber(input.cementDensityKgM3 ?? 0) ||
+    CEMENT_DENSITY_KG_M3;
+
+  const dryVolumeFactor =
+    sanitizeNumber(input.dryVolumeFactor ?? 0) ||
+    DRY_VOLUME_FACTOR;
+
+  const defaultAggregateBagVolume =
+    sanitizeNumber(
+      input.defaultAggregateBagVolume ?? 0,
+    ) || DEFAULT_AGGREGATE_BAG_VOLUME;
+
   const sandBagVolume =
     sanitizeNumber(input.sandBagVolume) ||
-    DEFAULT_AGGREGATE_BAG_VOLUME;
+    defaultAggregateBagVolume;
 
   const gravelBagVolume =
     sanitizeNumber(input.gravelBagVolume) ||
-    DEFAULT_AGGREGATE_BAG_VOLUME;
+    defaultAggregateBagVolume;
 
   const totalParts = cementPart + sandPart + gravelPart;
 
@@ -132,7 +145,7 @@ export function calculateConcrete(
   const netVolume = length * width * thickness;
   const volumeWithWaste =
     netVolume * (1 + wastePercentage / 100);
-  const dryVolume = volumeWithWaste * DRY_VOLUME_FACTOR;
+  const dryVolume = volumeWithWaste * dryVolumeFactor;
 
   const cementVolume =
     dryVolume * (cementPart / totalParts);
@@ -142,7 +155,7 @@ export function calculateConcrete(
     dryVolume * (gravelPart / totalParts);
 
   const cementKilograms =
-    cementVolume * CEMENT_DENSITY_KG_M3;
+    cementVolume * cementDensityKgM3;
   const cementBags = cementKilograms / cementBagWeight;
 
   const sandBags = sandVolume / sandBagVolume;
@@ -336,6 +349,7 @@ export function calculateMasonry(
   const sandVolume = dryMortarVolume * (mixSand / totalParts);
   const cementBagWeight =
     sanitizeNumber(input.cementBagWeight) || 42.5;
+
   const cementBags =
     (cementVolume * CEMENT_DENSITY_KG_M3) / cementBagWeight;
   const cementBagsToBuy = Math.ceil(cementBags);

@@ -28,14 +28,33 @@ import {
 } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import { listProjectsByCompany } from "@/services/project-service";
-import { getClientDisplayName } from "@/types/client";
 import type { Project, ProjectStatus } from "@/types/project";
 import { getProjectStatusLabel } from "@/types/project";
+
+type ProjectClientSummary = {
+  id: string;
+  client_type: "person" | "business";
+  first_name: string | null;
+  last_name: string | null;
+  business_name: string | null;
+};
+
+type ProjectListItem = Project & {
+  client: ProjectClientSummary | null;
+};
+
+function getProjectClientName(client: ProjectClientSummary): string {
+  if (client.client_type === "business") {
+    return client.business_name || "Empresa sin nombre";
+  }
+  const full = `${client.first_name ?? ""} ${client.last_name ?? ""}`.trim();
+  return full || "Cliente sin nombre";
+}
 
 export default function ProjectsScreen() {
   const { activeCompany } = useCompany();
 
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
@@ -49,7 +68,7 @@ export default function ProjectsScreen() {
       const code = (project.project_code ?? "").toLowerCase();
       const name = project.name.toLowerCase();
       const clientName = project.client
-        ? getClientDisplayName(project.client).toLowerCase()
+        ? getProjectClientName(project.client).toLowerCase()
         : "";
       const status = getProjectStatusLabel(project.status).toLowerCase();
 
@@ -255,7 +274,7 @@ export default function ProjectsScreen() {
 
                   {item.client && (
                     <Text style={styles.clientName} numberOfLines={1}>
-                      Cliente: {getClientDisplayName(item.client)}
+                      Cliente: {getProjectClientName(item.client)}
                     </Text>
                   )}
                 </View>
