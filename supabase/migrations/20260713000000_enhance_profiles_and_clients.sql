@@ -41,7 +41,8 @@ BEGIN
       AFTER INSERT ON auth.users
       FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
   END IF;
-END$$;
+END;
+$$ LANGUAGE plpgsql;
 SELECT public.create_new_user_trigger();
 
 -- 5. Trigger para auto-vincular cliente por correo electrónico en el registro
