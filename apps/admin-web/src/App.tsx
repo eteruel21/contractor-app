@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -16,6 +16,10 @@ import {
   Edit,
   Sliders,
   Loader2,
+  Lock,
+  Mail,
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "./supabase";
 
@@ -80,13 +84,21 @@ const mockMarkupRules = [
 ];
 
 export default function App() {
+  // Auth state
+  const [session, setSession] = useState<any>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // App UI state
   const [activeTab, setActiveTab] = useState("dashboard");
   const [contractors, setContractors] = useState<any[]>([]);
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [formulas, setFormulas] = useState<any[]>([]);
   const [markupRules, setMarkupRules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loadingData, setLoadingData] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const [stats, setStats] = useState({
     contractorsCount: 0,
@@ -95,168 +107,292 @@ export default function App() {
     growth: "+28%",
   });
 
+  // Listen for Auth Session
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      setErrorMsg(null);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) throw error;
+      setSession(data.session);
+    } catch (err: any) {
+      setAuthError(err.message || "Credenciales inválidas");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
+
+  // Load database information once session is active
+  const loadDatabaseData = useCallback(async () => {
+    if (!session) return;
+    setLoadingData(true);
+    setIsDemoMode(false);
+    try {
+      // 1. Fetch Contractors (profiles joined with companies)
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select(`
+          id,
+          full_name,
+          phone,
+          role,
+          created_at,
+          company_members (
+            role,
+            company:companies (
+              id,
+              name,
+              active
+            )
+          )
+        `);
+
+      if (profilesError) throw profilesError;
+
+      const loadedContractors = (profilesData || []).map((p: any) => {
+        const membership = p.company_members?.[0];
+        const company = membership?.company;
+        const companyName = Array.isArray(company) 
+          ? company[0]?.name 
+          : (company as any)?.name || "Sin Empresa";
+        const activeStatus = Array.isArray(company)
+          ? (company[0]?.active ? "active" : "pending")
+          : ((company as any)?.active ? "active" : "pending");
+
+        return {
+          id: p.id,
+          name: companyName,
+          owner: p.full_name || "Sin Nombre",
+          email: p.phone || "Sin Teléfono",
+          projects: 0,
+          status: p.role === "super_admin" ? "active" : activeStatus,
+          joined: p.created_at ? p.created_at.substring(0, 10) : "N/A",
+        };
+      });
+
+      // 2. Fetch Projects Count
+      let pCount = 0;
       try {
-        // 1. Fetch Contractors (profiles where role = contractor or super_admin)
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
+        const { count } = await supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true });
+        pCount = count || 0;
+      } catch {
+        pCount = 0;
+      }
+
+      // 3. Fetch Clients Count
+      let cCount = 0;
+      try {
+        const { count } = await supabase
+          .from("clients")
+          .select("*", { count: "exact", head: true });
+        cCount = count || 0;
+      } catch {
+        cCount = 0;
+      }
+
+      // 4. Fetch Catalog Items
+      let loadedCatalog: any[] = [];
+      try {
+        const { data: catalogData } = await supabase
+          .from("catalog_items")
           .select(`
             id,
-            full_name,
-            phone,
-            role,
-            created_at,
-            company_members (
-              role,
-              company:companies (
-                id,
-                name,
-                active
-              )
-            )
+            sku,
+            name,
+            sale_price,
+            category_id
           `);
 
-        if (profilesError) {
-          console.warn("Profiles fetch failed, using fallback data.");
-          setContractors(mockContractors);
-        } else {
-          const loadedContractors = (profilesData || []).map((p: any) => {
-            const membership = p.company_members?.[0];
-            const company = membership?.company;
-            const companyName = Array.isArray(company) 
-              ? company[0]?.name 
-              : (company as any)?.name || "Sin Empresa";
-            const activeStatus = Array.isArray(company)
-              ? (company[0]?.active ? "active" : "pending")
-              : ((company as any)?.active ? "active" : "pending");
-
-            return {
-              id: p.id,
-              name: companyName,
-              owner: p.full_name || "Sin Nombre",
-              email: p.phone || "Sin Teléfono",
-              projects: 0,
-              status: p.role === "super_admin" ? "active" : activeStatus,
-              joined: p.created_at ? p.created_at.substring(0, 10) : "N/A",
-            };
-          });
-          setContractors(loadedContractors.length > 0 ? loadedContractors : mockContractors);
+        if (catalogData) {
+          loadedCatalog = catalogData.map((item: any) => ({
+            id: item.id,
+            code: item.sku || "N/A",
+            name: item.name,
+            category: item.category_id || "General",
+            unit: "Pza",
+            basePrice: item.sale_price || 0,
+          }));
         }
+      } catch (err) {
+        console.warn("Catalog fetch failed or table doesn't exist:", err);
+      }
 
-        // 2. Fetch Projects Count
-        let pCount = 0;
-        try {
-          const { count } = await supabase
-            .from("projects")
-            .select("*", { count: "exact", head: true });
-          pCount = count || 0;
-        } catch {
-          pCount = 156;
+      // 5. Fetch Formulas
+      let loadedFormulas: any[] = [];
+      try {
+        const { data: formulasData } = await (supabase as any)
+          .from("formulas")
+          .select("*");
+        if (formulasData) {
+          loadedFormulas = formulasData.map((f: any) => ({
+            id: f.id,
+            name: f.name || "Fórmula",
+            variables: f.variables || "N/A",
+            expression: f.expression || "N/A",
+          }));
         }
+      } catch (err) {
+        console.warn("Formulas fetch failed or table doesn't exist:", err);
+      }
 
-        // 3. Fetch Clients Count
-        let cCount = 0;
-        try {
-          const { count } = await supabase
-            .from("clients")
-            .select("*", { count: "exact", head: true });
-          cCount = count || 0;
-        } catch {
-          cCount = 432;
+      // 6. Fetch Pricing Rules
+      let loadedMarkup: any[] = [];
+      try {
+        const { data: pricingData } = await (supabase as any)
+          .from("pricing_rules")
+          .select("*");
+        if (pricingData) {
+          loadedMarkup = pricingData.map((p: any) => ({
+            id: p.id,
+            category: p.category || "General",
+            globalMarkup: p.markup_percentage || 0,
+            laborCostHour: p.labor_cost || 0,
+          }));
         }
+      } catch (err) {
+        console.warn("Pricing rules fetch failed or table doesn't exist:", err);
+      }
 
-        setStats({
-          contractorsCount: contractors.length || mockContractors.length,
-          projectsCount: pCount,
-          clientsCount: cCount,
-          growth: "+28%",
-        });
-
-        // 4. Fetch Catalog Items
-        try {
-          const { data: catalogData } = await supabase
-            .from("catalog_items")
-            .select(`
-              id,
-              sku,
-              name,
-              sale_price,
-              category_id
-            `);
-
-          if (catalogData && catalogData.length > 0) {
-            setCatalogItems(catalogData.map((item: any) => ({
-              id: item.id,
-              code: item.sku || "N/A",
-              name: item.name,
-              category: item.category_id || "General",
-              unit: "Pza",
-              basePrice: item.sale_price || 0,
-            })));
-          } else {
-            setCatalogItems(mockCatalogItems);
-          }
-        } catch {
-          setCatalogItems(mockCatalogItems);
-        }
-
-        // 5. Fetch Formulas (Try-catch in case table doesn't exist yet)
-        try {
-          const { data: formulasData } = await (supabase as any)
-            .from("formulas")
-            .select("*");
-          
-          if (formulasData && formulasData.length > 0) {
-            setFormulas(formulasData.map((f: any) => ({
-              id: f.id,
-              name: f.name || "Fórmula sin nombre",
-              variables: f.variables || "N/A",
-              expression: f.expression || "N/A",
-            })));
-          } else {
-            setFormulas(mockFormulas);
-          }
-        } catch {
-          setFormulas(mockFormulas);
-        }
-
-        // 6. Fetch Pricing Rules / Margins
-        try {
-          const { data: pricingData } = await (supabase as any)
-            .from("pricing_rules")
-            .select("*");
-          if (pricingData && pricingData.length > 0) {
-            setMarkupRules(pricingData.map((p: any) => ({
-              id: p.id,
-              category: p.category || "General",
-              globalMarkup: p.markup_percentage || 0,
-              laborCostHour: p.labor_cost || 0,
-            })));
-          } else {
-            setMarkupRules(mockMarkupRules);
-          }
-        } catch {
-          setMarkupRules(mockMarkupRules);
-        }
-
-      } catch (err: any) {
-        console.error("Error loading real data from Supabase:", err);
-        setErrorMsg("Error cargando base de datos real. Usando datos locales de respaldo.");
+      // Determine if we need to show fallback/demo data (if tables exist but are empty)
+      if (loadedContractors.length === 0 && loadedCatalog.length === 0) {
+        setIsDemoMode(true);
         setContractors(mockContractors);
         setCatalogItems(mockCatalogItems);
         setFormulas(mockFormulas);
         setMarkupRules(mockMarkupRules);
-      } finally {
-        setLoading(false);
+        setStats({
+          contractorsCount: mockContractors.length,
+          projectsCount: 156,
+          clientsCount: 432,
+          growth: "+28%",
+        });
+      } else {
+        setIsDemoMode(false);
+        setContractors(loadedContractors.length > 0 ? loadedContractors : mockContractors);
+        setCatalogItems(loadedCatalog.length > 0 ? loadedCatalog : mockCatalogItems);
+        setFormulas(loadedFormulas.length > 0 ? loadedFormulas : mockFormulas);
+        setMarkupRules(loadedMarkup.length > 0 ? loadedMarkup : mockMarkupRules);
+        setStats({
+          contractorsCount: loadedContractors.length,
+          projectsCount: pCount,
+          clientsCount: cCount,
+          growth: "+28%",
+        });
       }
+
+    } catch (err: any) {
+      console.error("General error querying Supabase. Activating Demo Mode.", err);
+      setIsDemoMode(true);
+      setContractors(mockContractors);
+      setCatalogItems(mockCatalogItems);
+      setFormulas(mockFormulas);
+      setMarkupRules(mockMarkupRules);
+      setStats({
+        contractorsCount: mockContractors.length,
+        projectsCount: 156,
+        clientsCount: 432,
+        growth: "+28%",
+      });
+    } finally {
+      setLoadingData(false);
     }
+  }, [session]);
 
-    loadData();
-  }, []);
+  useEffect(() => {
+    if (session) {
+      loadDatabaseData();
+    }
+  }, [session, loadDatabaseData]);
 
+  // LOGIN SCREEN
+  if (!session) {
+    return (
+      <div className="login-container" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", backgroundColor: "#0f172a", color: "#fff", fontFamily: "system-ui, sans-serif" }}>
+        <form onSubmit={handleLogin} style={{ backgroundColor: "#1e293b", padding: "40px", borderRadius: "12px", width: "100%", maxWidth: "420px", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.3)", border: "1px solid #334155" }}>
+          <div style={{ textAlign: "center", marginBottom: "30px" }}>
+            <Briefcase size={40} style={{ color: "#3b82f6", margin: "0 auto 10px auto" }} />
+            <h2 style={{ fontSize: "1.75rem", fontWeight: "800", letterSpacing: "-0.025em" }}>Contractor Pro</h2>
+            <p style={{ color: "#94a3b8", fontSize: "0.9rem", marginTop: "5px" }}>Super Admin Central Portal</p>
+          </div>
+
+          {authError && (
+            <div style={{ backgroundColor: "#311c1c", border: "1px solid #f87171", color: "#f87171", padding: "12px", borderRadius: "6px", fontSize: "0.85rem", marginBottom: "20px", display: "flex", gap: "8px", alignItems: "center" }}>
+              <AlertTriangle size={16} />
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px", fontWeight: "600" }}>Correo Electrónico</label>
+            <div style={{ position: "relative" }}>
+              <Mail size={18} style={{ position: "absolute", left: "12px", top: "12px", color: "#64748b" }} />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@example.com"
+                style={{ width: "100%", padding: "10px 12px 10px 40px", borderRadius: "6px", backgroundColor: "#0f172a", border: "1px solid #334155", color: "#fff", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "30px" }}>
+            <label style={{ display: "block", fontSize: "0.85rem", color: "#94a3b8", marginBottom: "6px", fontWeight: "600" }}>Contraseña</label>
+            <div style={{ position: "relative" }}>
+              <Lock size={18} style={{ position: "absolute", left: "12px", top: "12px", color: "#64748b" }} />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{ width: "100%", padding: "10px 12px 10px 40px", borderRadius: "6px", backgroundColor: "#0f172a", border: "1px solid #334155", color: "#fff", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={authLoading}
+            style={{ width: "100%", padding: "12px", borderRadius: "6px", backgroundColor: "#3b82f6", color: "#fff", border: "none", fontWeight: "700", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "background-color 0.2s" }}
+          >
+            {authLoading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              "Ingresar al Panel"
+            )}
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  // PORTAL MAIN SCREEN
   return (
     <div className="dashboard-container">
       {/* Sidebar Nav */}
@@ -315,6 +451,22 @@ export default function App() {
             <span>Ajustes del Sistema</span>
           </div>
         </div>
+
+        {/* User Signout footer */}
+        <div style={{ marginTop: "auto", padding: "15px", borderTop: "1px solid #1e293b", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "0.8rem", fontWeight: "700", color: "#fff" }}>Super Administrador</span>
+            <span style={{ fontSize: "0.7rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {session.user?.email}
+            </span>
+          </div>
+          <button
+            onClick={handleSignOut}
+            style={{ width: "100%", padding: "8px", borderRadius: "6px", backgroundColor: "#1e293b", color: "#f87171", border: "1px solid #334155", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "0.8rem" }}
+          >
+            <LogOut size={14} /> Cerrar Sesión
+          </button>
+        </div>
       </div>
 
       {/* Main Admin Page Content */}
@@ -334,9 +486,9 @@ export default function App() {
           </div>
 
           <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-            {errorMsg && (
-              <span style={{ fontSize: "0.8rem", color: "#f87171", backgroundColor: "#311c1c", padding: "4px 10px", borderRadius: "4px" }}>
-                {errorMsg}
+            {isDemoMode && (
+              <span style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "0.8rem", color: "#f59e0b", backgroundColor: "#2d1f10", padding: "6px 12px", borderRadius: "6px", border: "1px solid #d97706" }}>
+                <AlertTriangle size={14} /> Modo Demostración (DB Vacía)
               </span>
             )}
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -348,10 +500,10 @@ export default function App() {
           </div>
         </div>
 
-        {loading ? (
+        {loadingData ? (
           <div style={{ display: "flex", flexDirection: "column", height: "50vh", alignItems: "center", justifyContent: "center", gap: "10px", color: "#94a3b8" }}>
             <Loader2 size={32} className="animate-spin" style={{ color: "#3b82f6" }} />
-            <span>Conectando con Supabase...</span>
+            <span>Consultando Supabase...</span>
           </div>
         ) : (
           <>
@@ -364,7 +516,7 @@ export default function App() {
                       <span>Contratistas</span>
                       <Briefcase size={16} className="stat-icon" />
                     </div>
-                    <div className="stat-value">{stats.contractorsCount || contractors.length}</div>
+                    <div className="stat-value">{stats.contractorsCount}</div>
                     <div className="stat-desc">Sincronizado</div>
                   </div>
 
