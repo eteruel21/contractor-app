@@ -559,4 +559,39 @@ export async function deleteClientAddress(input: {
   return { error: null };
 }
 
+export async function getClientContractorCompanies(
+  userId: string,
+): Promise<{
+  companies: any[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("clients")
+    .select(`
+      company:companies (
+        id,
+        name,
+        phone,
+        email,
+        address
+      )
+    `)
+    .eq("user_id", userId)
+    .eq("active", true);
 
+  if (error) {
+    return {
+      companies: [],
+      error: error.message,
+    };
+  }
+
+  const companies = (data ?? [])
+    .map((row: any) => row.company)
+    .filter(Boolean);
+
+  return {
+    companies,
+    error: null,
+  };
+}

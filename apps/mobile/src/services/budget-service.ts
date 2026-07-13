@@ -298,3 +298,80 @@ export async function deleteBudgetItem(input: {
     error: error?.message ?? null,
   };
 }
+
+export async function listBudgetsForClient(
+  userId: string,
+): Promise<{
+  budgets: any[];
+  error: string | null;
+}> {
+  const { data: clientsData, error: clientsError } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (clientsError) {
+    return {
+      budgets: [],
+      error: clientsError.message,
+    };
+  }
+
+  const clientIds = (clientsData ?? []).map((c) => c.id);
+
+  if (clientIds.length === 0) {
+    return {
+      budgets: [],
+      error: null,
+    };
+  }
+
+  const { data: projectsData, error: projectsError } = await supabase
+    .from("projects")
+    .select("id")
+    .in("client_id", clientIds);
+
+  if (projectsError) {
+    return {
+      budgets: [],
+      error: projectsError.message,
+    };
+  }
+
+  const projectIds = (projectsData ?? []).map((p) => p.id);
+
+  if (projectIds.length === 0) {
+    return {
+      budgets: [],
+      error: null,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("budgets")
+    .select(`
+      *,
+      project:projects (
+        name
+      ),
+      company:companies (
+        name
+      )
+    `)
+    .in("project_id", projectIds)
+    .order("created_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    return {
+      budgets: [],
+      error: error.message,
+    };
+  }
+
+  return {
+    budgets: data ?? [],
+    error: null,
+  };
+}

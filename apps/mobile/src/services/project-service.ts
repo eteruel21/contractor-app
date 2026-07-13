@@ -273,3 +273,56 @@ export async function listProjectsByCompany(
     error: null,
   };
 }
+
+export async function listProjectsForClient(
+  userId: string,
+): Promise<{
+  projects: any[];
+  error: string | null;
+}> {
+  const { data: clientsData, error: clientsError } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (clientsError) {
+    return {
+      projects: [],
+      error: clientsError.message,
+    };
+  }
+
+  const clientIds = (clientsData ?? []).map((c) => c.id);
+
+  if (clientIds.length === 0) {
+    return {
+      projects: [],
+      error: null,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .select(`
+      *,
+      company:companies (
+        name
+      )
+    `)
+    .in("client_id", clientIds)
+    .order("created_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    return {
+      projects: [],
+      error: error.message,
+    };
+  }
+
+  return {
+    projects: data ?? [],
+    error: null,
+  };
+}

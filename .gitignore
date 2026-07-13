@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db

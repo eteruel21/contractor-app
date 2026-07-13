@@ -15,7 +15,7 @@ import {
 
 import { supabase } from "@/services/supabase";
 
-export type AppRole = "admin" | "employee" | "user";
+export type AppRole = "super_admin" | "contractor" | "client";
 
 export type AppProfile = {
   id: string;
@@ -33,6 +33,7 @@ type SignUpInput = {
   phone?: string;
   email: string;
   password: string;
+  role?: AppRole;
 };
 
 type AuthResult = {
@@ -195,6 +196,7 @@ export function AuthProvider({
       phone = "",
       email,
       password,
+      role = "contractor",
     }: SignUpInput): Promise<AuthResult> => {
       const { data, error } =
         await supabase.auth.signUp({
@@ -204,6 +206,7 @@ export function AuthProvider({
             data: {
               full_name: fullName.trim(),
               phone: phone.trim(),
+              role,
             },
           },
         });
@@ -241,7 +244,7 @@ export function AuthProvider({
     authLoading || (Boolean(session) && profileLoading);
 
   const isAdmin = Boolean(
-    profile?.active && profile.role === "admin",
+    profile?.active && (profile.role === "contractor" || profile.role === "super_admin"),
   );
 
   const value = useMemo<AuthContextValue>(

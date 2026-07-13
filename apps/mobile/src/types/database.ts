@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -639,6 +639,7 @@ export type Database = {
           phone: string | null
           secondary_phone: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -657,6 +658,7 @@ export type Database = {
           phone?: string | null
           secondary_phone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -675,6 +677,7 @@ export type Database = {
           phone?: string | null
           secondary_phone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -884,6 +887,7 @@ export type Database = {
           id: string
           phone: string | null
           updated_at: string
+          role: Database["public"]["Enums"]["global_user_role"]
         }
         Insert: {
           active?: boolean
@@ -893,6 +897,7 @@ export type Database = {
           id: string
           phone?: string | null
           updated_at?: string
+          role?: Database["public"]["Enums"]["global_user_role"]
         }
         Update: {
           active?: boolean
@@ -902,6 +907,7 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
+          role?: Database["public"]["Enums"]["global_user_role"]
         }
         Relationships: []
       }
@@ -1283,6 +1289,7 @@ export type Database = {
         | "time"
         | "package"
         | "service"
+      global_user_role: "super_admin" | "contractor" | "client"
     }
     CompositeTypes: {
       [_ in never]: never

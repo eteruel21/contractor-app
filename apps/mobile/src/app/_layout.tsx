@@ -1,4 +1,4 @@
-﻿import { Stack } from "expo-router";
+import { Stack } from "expo-router";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -21,6 +21,7 @@ import {
 function RootNavigator() {
   const {
     session,
+    profile,
     loading: authLoading,
     isAdmin,
   } = useAuth();
@@ -30,15 +31,20 @@ function RootNavigator() {
     loading: companyLoading,
   } = useCompany();
 
+  const isClient = profile?.role === "client";
+  const isContractor = profile?.role === "contractor" || profile?.role === "super_admin";
+
   const isAuthenticated = Boolean(session);
-  const hasActiveCompany =
-    isAuthenticated && Boolean(activeCompany);
-  const hasAdminAccess =
-    hasActiveCompany && isAdmin;
+  const isClientAuthenticated = isAuthenticated && isClient;
+  const isContractorAuthenticated = isAuthenticated && isContractor;
+
+  const hasActiveCompany = isContractorAuthenticated && Boolean(activeCompany);
+  const hasAdminAccess = hasActiveCompany && isAdmin;
+  const needsCompanySetup = isContractorAuthenticated && !activeCompany;
 
   if (
     authLoading ||
-    (isAuthenticated && companyLoading)
+    (isContractorAuthenticated && companyLoading)
   ) {
     return (
       <View style={styles.loading}>
@@ -67,7 +73,7 @@ function RootNavigator() {
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
 
-      <Stack.Protected guard={isAuthenticated}>
+      <Stack.Protected guard={needsCompanySetup}>
         <Stack.Screen name="empresa" />
       </Stack.Protected>
 
@@ -83,6 +89,10 @@ function RootNavigator() {
 
       <Stack.Protected guard={hasAdminAccess}>
         <Stack.Screen name="admin" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={isClientAuthenticated}>
+        <Stack.Screen name="(client-tabs)" />
       </Stack.Protected>
     </Stack>
   );
