@@ -57,14 +57,12 @@ apps/mobile
     │   │   │   ├── bloques-repello.tsx
     │   │   │   ├── cielo-raso-pvc.tsx
     │   │   │   ├── concreto.tsx
-    │   │   │   ├── concreto.tsx.backup-20260712-174518
-    │   │   │   ├── concreto.tsx.backup-20260712-175944
     │   │   │   ├── electricidad.tsx
     │   │   │   ├── gypsum.tsx
     │   │   │   ├── muebles-mdf.tsx
     │   │   │   ├── pintura.tsx
-    │   │   │   ├── piso.tsx
-    │   │   │   └── Sistemas-especiales.tsx
+    │   │   │   ├── pisos.tsx
+    │   │   │   └── sistemas-especiales.tsx
     │   │   ├── catalogo/
     │   │   │   ├── _layout.tsx
     │   │   │   └── concreto.tsx
@@ -126,8 +124,8 @@ apps/mobile
     │       ├── appointment-storage.ts
     │       ├── budget-pdf.ts
     │       ├── calculations.ts
-    │       ├── calculations.ts.backup-20260712-175944
-    │       ├── formar.ts
+    │       ├── format.ts
+    │       ├── formula-parameters.ts
     │       ├── local-storage.ts
     │       └── number-format.ts
     ├── supabase/.temp
@@ -136,13 +134,11 @@ apps/mobile
     ├── AGENTS.md
     ├── app.json
     ├── CLAUDE.md
-    ├── corregir-concreto-final.ps1
     ├── expo-env.d.ts
     ├── LICENSE
     ├── package-lock.json
     ├── package.json
     ├── README.md
     ├── README.txt
-    ├── reparar-concreto-y-formulas.ps1
     ├── skills-lock.json
     └── tsconfig.json
