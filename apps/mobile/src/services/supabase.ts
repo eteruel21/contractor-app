@@ -33,12 +33,11 @@ export const supabase = createClient<Database>(
   {
     auth: {
       ...(Platform.OS !== "web"
-        ? { storage: AsyncStorage }
+        ? { storage: AsyncStorage, lock: processLock }
         : {}),
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
-      lock: processLock,
     },
   },
 );

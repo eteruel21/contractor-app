@@ -517,32 +517,34 @@ export default function App() {
                   <div className="table-header">
                     <h3>Contratistas Sincronizados (Supabase)</h3>
                   </div>
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Empresa / Contratista</th>
-                        <th>Administrador</th>
-                        <th>Contacto</th>
-                        <th>Estado</th>
-                        <th>Registro</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {contractors.map((c) => (
-                        <tr key={c.id}>
-                          <td style={{ fontWeight: "700" }}>{c.name}</td>
-                          <td>{c.owner}</td>
-                          <td>{c.contact}</td>
-                          <td>
-                            <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
-                              {c.status === "active" ? "Activo" : "Pendiente"}
-                            </span>
-                          </td>
-                          <td style={{ color: "#64748b" }}>{c.joined}</td>
+                  <div className="table-wrapper">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Empresa / Contratista</th>
+                          <th>Administrador</th>
+                          <th>Contacto</th>
+                          <th>Estado</th>
+                          <th>Registro</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {contractors.map((c) => (
+                          <tr key={c.id}>
+                            <td style={{ fontWeight: "700" }}>{c.name}</td>
+                            <td>{c.owner}</td>
+                            <td>{c.contact}</td>
+                            <td>
+                              <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
+                                {c.status === "active" ? "Activo" : "Pendiente"}
+                              </span>
+                            </td>
+                            <td style={{ color: "#64748b" }}>{c.joined}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </>
             )}
@@ -556,36 +558,38 @@ export default function App() {
                     <Plus size={16} /> Agregar Contratista
                   </button>
                 </div>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Empresa</th>
-                      <th>Propietario</th>
-                      <th>Contacto</th>
-                      <th>Estado de Cuenta</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contractors.map((c) => (
-                      <tr key={c.id}>
-                        <td style={{ fontWeight: "700" }}>{c.name}</td>
-                        <td>{c.owner}</td>
-                        <td>{c.contact}</td>
-                        <td>
-                          <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
-                            {c.status === "active" ? "Activo" : "Pendiente"}
-                          </span>
-                        </td>
-                        <td>
-                          <button style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer" }}>
-                            <Sliders size={16} />
-                          </button>
-                        </td>
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th>Propietario</th>
+                        <th>Contacto</th>
+                        <th>Estado de Cuenta</th>
+                        <th>Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {contractors.map((c) => (
+                        <tr key={c.id}>
+                          <td style={{ fontWeight: "700" }}>{c.name}</td>
+                          <td>{c.owner}</td>
+                          <td>{c.contact}</td>
+                          <td>
+                            <span className={`badge ${c.status === "active" ? "badge-active" : "badge-pending"}`}>
+                              {c.status === "active" ? "Activo" : "Pendiente"}
+                            </span>
+                          </td>
+                          <td>
+                            <button style={{ background: "transparent", border: "none", color: "#64748b", cursor: "pointer" }}>
+                              <Sliders size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -598,35 +602,37 @@ export default function App() {
                     <Plus size={16} /> Nuevo Ítem
                   </button>
                 </div>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Nombre del Elemento</th>
-                      <th>Categoría</th>
-                      <th>Unidad</th>
-                      <th>Precio Base ($)</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {catalogItems.map((item) => (
-                      <tr key={item.id}>
-                        <td style={{ fontFamily: "monospace", color: "#94a3b8" }}>{item.code}</td>
-                        <td style={{ fontWeight: "700" }}>{item.name}</td>
-                        <td>{item.category}</td>
-                        <td>{item.unit}</td>
-                        <td>${item.basePrice.toFixed(2)}</td>
-                        <td>
-                          <div style={{ display: "flex", gap: "12px" }}>
-                            <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
-                            <Trash2 size={16} style={{ color: "#ef4444", cursor: "pointer" }} />
-                          </div>
-                        </td>
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Código</th>
+                        <th>Nombre del Elemento</th>
+                        <th>Categoría</th>
+                        <th>Unidad</th>
+                        <th>Precio Base ($)</th>
+                        <th>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {catalogItems.map((item) => (
+                        <tr key={item.id}>
+                          <td style={{ fontFamily: "monospace", color: "#94a3b8" }}>{item.code}</td>
+                          <td style={{ fontWeight: "700" }}>{item.name}</td>
+                          <td>{item.category}</td>
+                          <td>{item.unit}</td>
+                          <td>${item.basePrice.toFixed(2)}</td>
+                          <td>
+                            <div style={{ display: "flex", gap: "12px" }}>
+                              <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
+                              <Trash2 size={16} style={{ color: "#ef4444", cursor: "pointer" }} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -639,31 +645,33 @@ export default function App() {
                     <Plus size={16} /> Agregar Fórmula
                   </button>
                 </div>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Fórmula / Módulo</th>
-                      <th>Variables Requeridas</th>
-                      <th>Expresión Lógica / Algoritmo</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formulas.map((f) => (
-                      <tr key={f.id}>
-                        <td style={{ fontWeight: "700" }}>{f.name}</td>
-                        <td>{f.variables}</td>
-                        <td style={{ fontFamily: "monospace", color: "#3b82f6" }}>{f.expression}</td>
-                        <td>
-                          <div style={{ display: "flex", gap: "12px" }}>
-                            <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
-                            <Trash2 size={16} style={{ color: "#ef4444", cursor: "pointer" }} />
-                          </div>
-                        </td>
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Fórmula / Módulo</th>
+                        <th>Variables Requeridas</th>
+                        <th>Expresión Lógica / Algoritmo</th>
+                        <th>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {formulas.map((f) => (
+                        <tr key={f.id}>
+                          <td style={{ fontWeight: "700" }}>{f.name}</td>
+                          <td>{f.variables}</td>
+                          <td style={{ fontFamily: "monospace", color: "#3b82f6" }}>{f.expression}</td>
+                          <td>
+                            <div style={{ display: "flex", gap: "12px" }}>
+                              <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
+                              <Trash2 size={16} style={{ color: "#ef4444", cursor: "pointer" }} />
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
@@ -673,32 +681,34 @@ export default function App() {
                 <div className="table-header">
                   <h3>Márgenes de Utilidad y Costo de Mano de Obra</h3>
                 </div>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Categoría de Concepto</th>
-                      <th>Margen Comercial Global (%)</th>
-                      <th>Costo Promedio Hora ($)</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {markupRules.map((rule) => (
-                      <tr key={rule.id}>
-                        <td style={{ fontWeight: "700" }}>{rule.category}</td>
-                        <td>{rule.globalMarkup}%</td>
-                        <td>{rule.laborCostHour > 0 ? `$${rule.laborCostHour.toFixed(2)}` : "N/A"}</td>
-                        <td>
-                          <span className="badge badge-active">Activo</span>
-                        </td>
-                        <td>
-                          <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
-                        </td>
+                <div className="table-wrapper">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Categoría de Concepto</th>
+                        <th>Margen Comercial Global (%)</th>
+                        <th>Costo Promedio Hora ($)</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {markupRules.map((rule) => (
+                        <tr key={rule.id}>
+                          <td style={{ fontWeight: "700" }}>{rule.category}</td>
+                          <td>{rule.globalMarkup}%</td>
+                          <td>{rule.laborCostHour > 0 ? `$${rule.laborCostHour.toFixed(2)}` : "N/A"}</td>
+                          <td>
+                            <span className="badge badge-active">Activo</span>
+                          </td>
+                          <td>
+                            <Edit size={16} style={{ color: "#3b82f6", cursor: "pointer" }} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
 
