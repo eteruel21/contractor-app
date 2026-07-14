@@ -12,6 +12,7 @@ type CreateBudgetItemInput = {
   budgetId: string;
   sectionId?: string | null;
   catalogItemId?: string | null;
+  platformCatalogItemId?: string | null;
   itemType?: BudgetItemType;
   description: string;
   unitName: string;
@@ -253,6 +254,7 @@ export async function addBudgetItem(
       budget_id: input.budgetId,
       section_id: input.sectionId ?? null,
       catalog_item_id: input.catalogItemId ?? null,
+      platform_catalog_item_id: input.platformCatalogItemId ?? null,
       item_type: input.itemType ?? "manual",
       description: cleanDescription,
       unit_name: input.unitName.trim() || "unidad",

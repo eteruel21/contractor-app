@@ -70,6 +70,7 @@ export type BudgetItem = {
   budget_id: string;
   section_id: string | null;
   catalog_item_id: string | null;
+  platform_catalog_item_id: string | null;
   calculation_run_id: string | null;
   item_type: BudgetItemType;
   description: string;

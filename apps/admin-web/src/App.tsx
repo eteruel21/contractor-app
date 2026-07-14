@@ -79,6 +79,7 @@ const EMPTY_DATA: AdminData = {
   projectCount: 0,
   clientCount: 0,
   priceHistoryCount: 0,
+  warnings: [],
 };
 
 const ITEM_TYPES: Array<{ value: ItemType; label: string }> = [
@@ -264,6 +265,11 @@ export default function App() {
     try {
       const nextData = await loadAdminData();
       setData(nextData);
+      setDataError(
+        nextData.warnings.length > 0
+          ? nextData.warnings.join(" ")
+          : null,
+      );
     } catch (error) {
       setDataError(errorMessage(error));
     } finally {

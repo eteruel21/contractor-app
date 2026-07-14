@@ -1,11 +1,5 @@
 import { supabase } from "@/services/supabase";
 
-type UntypedClient = {
-  from: (table: string) => any;
-};
-
-const db = supabase as unknown as UntypedClient;
-
 function normalizeFormulaCode(value: string): string {
   return value
     .trim()
@@ -23,7 +17,7 @@ export async function getFormulaParameterMap(
   parameters: Record<string, number>;
   error: string | null;
 }> {
-  const { data: formula, error } = await db
+  const { data: formula, error } = await supabase
     .from("calculation_formulas")
     .select("id")
     .eq("company_id", input.companyId)
@@ -52,7 +46,7 @@ export async function getFormulaParameterMap(
   const {
     data: rows,
     error: parametersError,
-  } = await db
+  } = await supabase
     .from("calculation_formula_parameters")
     .select("parameter_key, numeric_value")
     .eq("company_id", input.companyId)
