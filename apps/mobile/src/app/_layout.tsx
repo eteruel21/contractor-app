@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import {
   ActivityIndicator,
@@ -47,14 +48,26 @@ function RootNavigator() {
   ) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
+        <View style={styles.loadingOrb} />
+        <View style={styles.loadingLogo}>
+          <Ionicons
+            name="construct"
+            size={29}
+            color={colors.surfaceDark}
+          />
+        </View>
+
+        <Text style={styles.loadingBrand}>CONTRACTOR PRO</Text>
 
         <Text style={styles.loadingText}>
-          Cargando Contractor Pro...
+          Preparando tu espacio de trabajo
         </Text>
+
+        <ActivityIndicator
+          style={styles.loadingIndicator}
+          size="small"
+          color={colors.primary}
+        />
       </View>
     );
   }
@@ -128,12 +141,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceDark,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+
+  loadingOrb: {
+    position: "absolute",
+    width: 330,
+    height: 330,
+    top: -145,
+    right: -170,
+    borderRadius: 165,
+    borderWidth: 52,
+    borderColor: "rgba(255,255,255,0.035)",
+  },
+
+  loadingLogo: {
+    width: 68,
+    height: 68,
+    borderRadius: 21,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  loadingBrand: {
+    marginTop: 19,
+    color: colors.textLight,
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
   loadingText: {
-    marginTop: 14,
-    color: colors.textLight,
-    fontSize: 13,
-    fontWeight: "700",
+    marginTop: 9,
+    color: colors.textLightMuted,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  loadingIndicator: {
+    marginTop: 22,
   },
 });
