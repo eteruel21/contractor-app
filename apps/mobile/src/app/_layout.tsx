@@ -30,12 +30,13 @@ function RootNavigator() {
     loading: companyLoading,
   } = useCompany();
 
-  const isClient = profile?.role === "client";
-  const isContractor = profile ? (profile.role !== "client") : false;
-
   const isAuthenticated = Boolean(session);
-  const isClientAuthenticated = isAuthenticated && isClient;
-  const isContractorAuthenticated = isAuthenticated && isContractor;
+  const isApproved = Boolean(profile?.active);
+  const isPendingApproval = isAuthenticated && !isApproved;
+  const isClientAuthenticated =
+    isAuthenticated && isApproved && profile?.role === "client";
+  const isContractorAuthenticated =
+    isAuthenticated && isApproved && profile?.role !== "client";
 
   const hasActiveCompany = isContractorAuthenticated && Boolean(activeCompany);
   const needsCompanySetup = isContractorAuthenticated && !activeCompany;
@@ -69,6 +70,10 @@ function RootNavigator() {
     >
       <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={isPendingApproval}>
+        <Stack.Screen name="pendiente" />
       </Stack.Protected>
 
       <Stack.Protected guard={needsCompanySetup}>
