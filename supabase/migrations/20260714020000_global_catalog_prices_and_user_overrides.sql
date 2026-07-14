@@ -64,7 +64,7 @@ select
       '|',
       lower(btrim(catalog_items.name)),
       catalog_items.item_type::text,
-      lower(btrim(units.symbol))
+      lower(btrim(catalog_items.unit_symbol))
     )
   ),
   nullif(btrim(catalog_items.sku), ''),
@@ -72,8 +72,8 @@ select
   catalog_items.description,
   catalog_items.item_type,
   catalog_categories.name,
-  units.name,
-  units.symbol,
+  catalog_items.unit_name,
+  catalog_items.unit_symbol,
   catalog_items.unit_cost,
   catalog_items.sale_price,
   catalog_items.waste_percentage,
@@ -84,7 +84,9 @@ from (
     source_items.item_type,
     lower(btrim(source_units.symbol))
   )
-    source_items.*
+    source_items.*,
+    source_units.name as unit_name,
+    source_units.symbol as unit_symbol
   from public.catalog_items as source_items
   join public.units as source_units
     on source_units.id = source_items.unit_id
@@ -96,9 +98,6 @@ from (
     source_items.active desc,
     source_items.updated_at desc
 ) as catalog_items
-join public.units
-  on units.id = catalog_items.unit_id
- and units.company_id = catalog_items.company_id
 left join public.catalog_categories
   on catalog_categories.id = catalog_items.category_id
  and catalog_categories.company_id = catalog_items.company_id
@@ -425,10 +424,7 @@ security definer
 set search_path = ''
 as $function$
 declare
-  item_record public.platform_catalog_items%rowtype;
   updated_count integer := 0;
-  next_unit_cost numeric;
-  next_sale_price numeric;
 begin
   if not (select private.is_super_admin()) then
     raise exception 'Solo un superadministrador puede cambiar precios globales.'
@@ -442,39 +438,63 @@ begin
       using errcode = '22023';
   end if;
 
-  for item_record in
-    select *
+  with locked_items as (
+    select id, default_unit_cost, default_sale_price, default_waste_percentage
     from public.platform_catalog_items
     where id = any(requested_item_ids)
       and active = true
     for update
-  loop
-    next_unit_cost := item_record.default_unit_cost;
-    next_sale_price := item_record.default_sale_price;
-
-    if requested_target = 'unit_cost' then
-      next_unit_cost := round(
-        item_record.default_unit_cost * (1 + requested_percentage / 100),
-        2
-      );
-    else
-      next_sale_price := round(
-        item_record.default_sale_price * (1 + requested_percentage / 100),
-        2
-      );
-    end if;
-
-    perform public.admin_update_platform_catalog_pricing(
-      item_record.id,
-      next_unit_cost,
-      next_sale_price,
-      item_record.default_waste_percentage,
+  ),
+  updated_items as (
+    update public.platform_catalog_items p
+    set
+      default_unit_cost = case 
+        when requested_target = 'unit_cost' then round(l.default_unit_cost * (1 + requested_percentage / 100), 2)
+        else l.default_unit_cost
+      end,
+      default_sale_price = case 
+        when requested_target = 'sale_price' then round(l.default_sale_price * (1 + requested_percentage / 100), 2)
+        else l.default_sale_price
+      end,
+      updated_at = now()
+    from locked_items l
+    where p.id = l.id
+    returning 
+      p.id,
+      l.default_unit_cost as prev_unit_cost,
+      l.default_sale_price as prev_sale_price,
+      l.default_waste_percentage as prev_waste_percentage,
+      p.default_unit_cost as new_unit_cost,
+      p.default_sale_price as new_sale_price,
+      p.default_waste_percentage as new_waste_percentage
+  ),
+  inserted_history as (
+    insert into public.platform_catalog_price_history (
+      catalog_item_id,
+      previous_unit_cost,
+      previous_sale_price,
+      previous_waste_percentage,
+      unit_cost,
+      sale_price,
+      waste_percentage,
+      source,
+      notes,
+      changed_by
+    )
+    select 
+      id,
+      prev_unit_cost,
+      prev_sale_price,
+      prev_waste_percentage,
+      new_unit_cost,
+      new_sale_price,
+      new_waste_percentage,
       'ajuste_porcentual_global',
-      change_notes
-    );
-
-    updated_count := updated_count + 1;
-  end loop;
+      nullif(btrim(change_notes), ''),
+      (select auth.uid())
+    from updated_items
+  )
+  select count(*) into updated_count from updated_items;
 
   return updated_count;
 end;
