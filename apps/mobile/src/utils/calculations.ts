@@ -40,13 +40,16 @@ export type ConcreteResult = {
   dryVolume: number;
 
   cementBags: number;
+  cementBagsToBuy: number;
   cementKilograms: number;
 
   sandVolume: number;
   sandBags: number;
+  sandBagsToBuy: number;
 
   gravelVolume: number;
   gravelBags: number;
+  gravelBagsToBuy: number;
 
   cementCost: number;
   sandCost: number;
@@ -76,13 +79,16 @@ function createEmptyResult(): ConcreteResult {
     dryVolume: 0,
 
     cementBags: 0,
+    cementBagsToBuy: 0,
     cementKilograms: 0,
 
     sandVolume: 0,
     sandBags: 0,
+    sandBagsToBuy: 0,
 
     gravelVolume: 0,
     gravelBags: 0,
+    gravelBagsToBuy: 0,
 
     cementCost: 0,
     sandCost: 0,
@@ -101,7 +107,10 @@ export function calculateConcrete(
   const length = sanitizeNumber(input.length);
   const width = sanitizeNumber(input.width);
   const thickness = sanitizeNumber(input.thickness);
-  const wastePercentage = sanitizeNumber(input.wastePercentage);
+  const wastePercentage = Math.min(
+    sanitizeNumber(input.wastePercentage),
+    100,
+  );
 
   const cementPart = sanitizeNumber(input.mixCement);
   const sandPart = sanitizeNumber(input.mixSand);
@@ -137,7 +146,9 @@ export function calculateConcrete(
     length === 0 ||
     width === 0 ||
     thickness === 0 ||
-    totalParts === 0
+    cementPart === 0 ||
+    sandPart === 0 ||
+    gravelPart === 0
   ) {
     return createEmptyResult();
   }
@@ -157,21 +168,24 @@ export function calculateConcrete(
   const cementKilograms =
     cementVolume * cementDensityKgM3;
   const cementBags = cementKilograms / cementBagWeight;
+  const cementBagsToBuy = Math.ceil(cementBags);
 
   const sandBags = sandVolume / sandBagVolume;
   const gravelBags = gravelVolume / gravelBagVolume;
+  const sandBagsToBuy = Math.ceil(sandBags);
+  const gravelBagsToBuy = Math.ceil(gravelBags);
 
   const cementCost =
-    cementBags * sanitizeNumber(prices.cementBag);
+    cementBagsToBuy * sanitizeNumber(prices.cementBag);
 
   const sandCost =
     input.sandPriceMode === "bag"
-      ? sandBags * sanitizeNumber(prices.sandBag)
+      ? sandBagsToBuy * sanitizeNumber(prices.sandBag)
       : sandVolume * sanitizeNumber(prices.sandCubicMeter);
 
   const gravelCost =
     input.gravelPriceMode === "bag"
-      ? gravelBags * sanitizeNumber(prices.gravelBag)
+      ? gravelBagsToBuy * sanitizeNumber(prices.gravelBag)
       : gravelVolume * sanitizeNumber(prices.gravelCubicMeter);
 
   const laborCost =
@@ -188,13 +202,16 @@ export function calculateConcrete(
     dryVolume,
 
     cementBags,
+    cementBagsToBuy,
     cementKilograms,
 
     sandVolume,
     sandBags,
+    sandBagsToBuy,
 
     gravelVolume,
     gravelBags,
+    gravelBagsToBuy,
 
     cementCost,
     sandCost,

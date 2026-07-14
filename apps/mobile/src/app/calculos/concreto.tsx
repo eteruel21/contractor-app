@@ -404,13 +404,21 @@ export default function ConcreteCalculatorScreen() {
       return;
     }
 
-    const ratioTotal =
-      parseNumber(form.cementRatio) +
-      parseNumber(form.sandRatio) +
-      parseNumber(form.gravelRatio);
+    const cementRatio = parseNumber(form.cementRatio);
+    const sandRatio = parseNumber(form.sandRatio);
+    const gravelRatio = parseNumber(form.gravelRatio);
 
-    if (ratioTotal <= 0) {
-      setError("La proporción de mezcla no es válida.");
+    if (cementRatio <= 0 || sandRatio <= 0 || gravelRatio <= 0) {
+      setError(
+        "Cada componente de la mezcla debe tener una proporción mayor que cero.",
+      );
+      setResult(null);
+      return;
+    }
+
+    const wastePercentage = parseNumber(form.wastePercentage);
+    if (wastePercentage < 0 || wastePercentage > 100) {
+      setError("El desperdicio debe estar entre 0% y 100%.");
       setResult(null);
       return;
     }
@@ -439,13 +447,11 @@ export default function ConcreteCalculatorScreen() {
         length,
         width,
         thickness,
-        wastePercentage: parseNumber(
-          form.wastePercentage,
-        ),
+        wastePercentage,
 
-        mixCement: parseNumber(form.cementRatio),
-        mixSand: parseNumber(form.sandRatio),
-        mixGravel: parseNumber(form.gravelRatio),
+        mixCement: cementRatio,
+        mixSand: sandRatio,
+        mixGravel: gravelRatio,
 
         cementBagWeight: parseNumber(
           form.cementBagWeight,
@@ -1383,7 +1389,7 @@ function Results({
           result.cementKilograms,
           1,
         )} kg · Comprar ${formatNumber(
-          Math.ceil(result.cementBags),
+          result.cementBagsToBuy,
           0,
         )} sacos`}
       />
@@ -1398,7 +1404,7 @@ function Results({
           result.sandBags,
           2,
         )} sacos · Comprar ${formatNumber(
-          Math.ceil(result.sandBags),
+          result.sandBagsToBuy,
           0,
         )} sacos`}
       />
@@ -1413,7 +1419,7 @@ function Results({
           result.gravelBags,
           2,
         )} sacos · Comprar ${formatNumber(
-          Math.ceil(result.gravelBags),
+          result.gravelBagsToBuy,
           0,
         )} sacos`}
       />
