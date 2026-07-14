@@ -1187,7 +1187,30 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      effective_platform_catalog_prices: {
+        Row: {
+          active: boolean | null
+          category_name: string | null
+          code: string | null
+          default_sale_price: number | null
+          default_unit_cost: number | null
+          default_waste_percentage: number | null
+          description: string | null
+          has_override: boolean | null
+          id: string | null
+          item_type: Database["public"]["Enums"]["catalog_item_type"] | null
+          name: string | null
+          override_updated_at: string | null
+          sale_price: number | null
+          sku: string | null
+          unit_cost: number | null
+          unit_name: string | null
+          unit_symbol: string | null
+          updated_at: string | null
+          waste_percentage: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_company: {
@@ -1229,12 +1252,25 @@ export type Database = {
         Args: { requested_budget_id: string; requested_company_id: string }
         Returns: undefined
       }
+      reset_personal_catalog_pricing: {
+        Args: { requested_item_id: string }
+        Returns: undefined
+      }
       seed_default_catalog: {
         Args: { requested_company_id: string }
         Returns: undefined
       }
       seed_default_units: {
         Args: { requested_company_id: string }
+        Returns: undefined
+      }
+      set_personal_catalog_pricing: {
+        Args: {
+          requested_item_id: string
+          requested_sale_price: number
+          requested_unit_cost: number
+          requested_waste_percentage: number
+        }
         Returns: undefined
       }
     }
