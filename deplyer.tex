@@ -1,12 +1,18 @@
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
 
+git add .
+git commit -m
+git push origin main
+
 git status --short
 git switch main
 git pull --ff-only origin main
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
 
+cd apps/mobile
 npx supabase db push
+cd ../..
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\admin-web"
 
