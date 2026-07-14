@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -55,9 +56,18 @@ export default function ClientHomeScreen() {
           <Text style={styles.name}>{profile?.full_name || "Cliente"}</Text>
         </View>
 
-        <Pressable onPress={handleSignOut} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={22} color={colors.danger} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityLabel="Editar perfil"
+            onPress={() => router.push("/perfil")}
+            style={styles.profileButton}
+          >
+            <Ionicons name="person-outline" size={21} color={colors.primary} />
+          </Pressable>
+          <Pressable onPress={handleSignOut} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={22} color={colors.danger} />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -161,6 +171,18 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 12,
     backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },

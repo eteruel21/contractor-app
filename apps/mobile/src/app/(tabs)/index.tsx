@@ -58,9 +58,18 @@ export default function HomeScreen() {
               <Text style={styles.brandName}>CONTRACTOR PRO</Text>
             </View>
 
-            <View style={styles.avatar}>
+            <Pressable
+              accessibilityLabel="Editar perfil"
+              accessibilityRole="button"
+              hitSlop={8}
+              onPress={() => router.push("/perfil" as Href)}
+              style={({ pressed }) => [
+                styles.avatar,
+                pressed && styles.avatarPressed,
+              ]}
+            >
               <Text style={styles.avatarText}>{initial}</Text>
-            </View>
+            </Pressable>
           </View>
 
           <View style={styles.heroCopy}>
@@ -306,6 +315,10 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontSize: 15,
     fontWeight: "900",
+  },
+  avatarPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.96 }],
   },
   heroCopy: {
     marginTop: 39,

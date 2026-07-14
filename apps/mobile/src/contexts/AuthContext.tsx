@@ -46,6 +46,15 @@ type AuthResult = {
   requiresEmailConfirmation?: boolean;
 };
 
+type UpdateProfileInput = {
+  fullName: string;
+  phone?: string;
+};
+
+type UpdateProfileResult = {
+  error: string | null;
+};
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
@@ -54,6 +63,9 @@ type AuthContextValue = {
   profileError: string | null;
   isAdmin: boolean;
   refreshProfile: () => Promise<void>;
+  updateProfile: (
+    input: UpdateProfileInput,
+  ) => Promise<UpdateProfileResult>;
   signIn: (
     email: string,
     password: string,
@@ -181,6 +193,42 @@ export function AuthProvider({
     await loadProfile(session.user.id);
   }, [loadProfile, session?.user]);
 
+  const updateProfile = useCallback(
+    async ({
+      fullName,
+      phone = "",
+    }: UpdateProfileInput): Promise<UpdateProfileResult> => {
+      if (!session?.user) {
+        return { error: "No hay una sesión activa." };
+      }
+
+      const normalizedName = fullName.trim();
+      const normalizedPhone = phone.trim();
+
+      if (normalizedName.length < 2) {
+        return {
+          error: "El nombre debe tener al menos 2 caracteres.",
+        };
+      }
+
+      const { error } = await supabase.rpc(
+        "update_own_profile",
+        {
+          p_full_name: normalizedName,
+          p_phone: normalizedPhone || null,
+        },
+      );
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      await loadProfile(session.user.id);
+      return { error: null };
+    },
+    [loadProfile, session?.user],
+  );
+
   const signIn = useCallback(
     async (
       email: string,
@@ -263,6 +311,7 @@ export function AuthProvider({
       profileError,
       isAdmin,
       refreshProfile,
+      updateProfile,
       signIn,
       signUp,
       signOut,
@@ -274,6 +323,7 @@ export function AuthProvider({
       profile,
       profileError,
       refreshProfile,
+      updateProfile,
       resetPassword,
       session,
       signIn,
