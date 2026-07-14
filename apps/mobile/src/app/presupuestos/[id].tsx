@@ -45,6 +45,8 @@ import {
   deleteBudgetItem,
   getBudgetById,
 } from "@/services/budget-service";
+import { getInvoiceByBudgetId, createInvoiceFromBudget } from "@/services/invoice-service";
+import type { Invoice } from "@/types/invoice";
 
 import type {
   BudgetItem,
@@ -84,7 +86,11 @@ export default function BudgetDetailScreen() {
   const [catalogModalVisible, setCatalogModalVisible] =
     useState(false);
   const [sharingPdf, setSharingPdf] =
-  useState(false);
+    useState(false);
+  const [associatedInvoice, setAssociatedInvoice] =
+    useState<Invoice | null>(null);
+  const [generatingInvoice, setGeneratingInvoice] =
+    useState(false);
   const defaultSection = useMemo(() => {
     return budget?.sections[0] ?? null;
   }, [budget]);
@@ -112,6 +118,15 @@ export default function BudgetDetailScreen() {
         );
       } else {
         setBudget(loadedBudget);
+        try {
+          const { invoice } = await getInvoiceByBudgetId(
+            activeCompany.id,
+            budgetId,
+          );
+          setAssociatedInvoice(invoice);
+        } catch (err) {
+          // Ignore
+        }
       }
 
       setLoading(false);
@@ -214,6 +229,68 @@ export default function BudgetDetailScreen() {
     }
   }
 
+  async function handleCreateInvoice() {
+    if (!activeCompany || !budget) return;
+
+    if (associatedInvoice) {
+      router.push({
+        pathname: "/facturas/[id]",
+        params: { id: associatedInvoice.id },
+      } as Href);
+      return;
+    }
+
+    Alert.alert(
+      "Facturar presupuesto",
+      `¿Deseas generar la factura para el presupuesto ${budget.budget_number}? Se asignará el correlativo automático.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Generar",
+          onPress: async () => {
+            try {
+              setGeneratingInvoice(true);
+              const { invoice, error } = await createInvoiceFromBudget({
+                companyId: activeCompany.id,
+                budgetId: budget.id,
+                clientId: budget.client_id,
+              });
+
+              if (error) {
+                Alert.alert("Error al generar factura", error);
+                return;
+              }
+
+              if (invoice) {
+                setAssociatedInvoice(invoice);
+                Alert.alert(
+                  "Factura generada",
+                  `Se ha creado la factura ${invoice.invoice_number} con éxito.`,
+                  [
+                    {
+                      text: "Ver factura",
+                      onPress: () => {
+                        router.push({
+                          pathname: "/facturas/[id]",
+                          params: { id: invoice.id },
+                        } as Href);
+                      },
+                    },
+                    { text: "Aceptar", style: "default" },
+                  ],
+                );
+              }
+            } catch (err: any) {
+              Alert.alert("Error", err?.message || "Ocurrió un error");
+            } finally {
+              setGeneratingInvoice(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen
@@ -288,33 +365,57 @@ export default function BudgetDetailScreen() {
           />
         </View>
 
-        <Pressable
-          onPress={() => void handleSharePdf()}
-          disabled={sharingPdf}
-          style={({ pressed }) => [
-            styles.pdfButton,
-            sharingPdf && styles.disabledButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          {sharingPdf ? (
-            <ActivityIndicator
-              color={colors.textLight}
-            />
-          ) : (
-            <>
-              <Ionicons
-                name="share-social-outline"
-                size={21}
-                color={colors.textLight}
-              />
+        <View style={styles.buttonRow}>
+          <Pressable
+            onPress={() => void handleSharePdf()}
+            disabled={sharingPdf}
+            style={({ pressed }) => [
+              styles.pdfButton,
+              sharingPdf && styles.disabledButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            {sharingPdf ? (
+              <ActivityIndicator color={colors.textLight} />
+            ) : (
+              <>
+                <Ionicons
+                  name="share-social-outline"
+                  size={21}
+                  color={colors.textLight}
+                />
+                <Text style={styles.pdfButtonText}>Compartir PDF</Text>
+              </>
+            )}
+          </Pressable>
 
-              <Text style={styles.pdfButtonText}>
-                Compartir PDF
-              </Text>
-            </>
+          {budget.status === "approved" && (
+            <Pressable
+              onPress={() => void handleCreateInvoice()}
+              disabled={generatingInvoice}
+              style={({ pressed }) => [
+                styles.invoiceButton,
+                generatingInvoice && styles.disabledButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              {generatingInvoice ? (
+                <ActivityIndicator color={colors.textLight} />
+              ) : (
+                <>
+                  <Ionicons
+                    name="receipt-outline"
+                    size={21}
+                    color={colors.textLight}
+                  />
+                  <Text style={styles.invoiceButtonText}>
+                    {associatedInvoice ? "Ver factura" : "Generar factura"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
           )}
-        </Pressable>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -1412,9 +1513,15 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.99 }],
   },
 
-  pdfButton: {
-    minHeight: 54,
+  buttonRow: {
+    flexDirection: "row",
+    gap: 10,
     marginTop: 14,
+  },
+
+  pdfButton: {
+    flex: 1,
+    minHeight: 54,
     borderRadius: radius.md,
     backgroundColor: colors.surfaceDark,
     flexDirection: "row",
@@ -1424,6 +1531,23 @@ const styles = StyleSheet.create({
   },
 
   pdfButtonText: {
+    color: colors.textLight,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  invoiceButton: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  invoiceButtonText: {
     color: colors.textLight,
     fontSize: 14,
     fontWeight: "900",

@@ -14,7 +14,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "@/constants/theme";
 
-const baseOptions = [
+type OptionItem = {
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  onPress?: () => void;
+};
+
+const baseOptions: OptionItem[] = [
   {
     id: "budgets",
     title: "Presupuestos",
@@ -37,6 +45,7 @@ const baseOptions = [
     description:
       "Facturas, abonos y saldos pendientes.",
     icon: "receipt-outline" as const,
+    onPress: () => router.push("/facturas" as Href),
   },
   {
     id: "catalog",
