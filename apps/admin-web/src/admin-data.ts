@@ -72,6 +72,20 @@ export type CatalogItem = {
   active: boolean;
 };
 
+export type GlobalCatalogItem = {
+  id: string;
+  sku: string;
+  name: string;
+  itemType: ItemType;
+  categoryName: string;
+  unitName: string;
+  unitSymbol: string;
+  unitCost: number;
+  salePrice: number;
+  wastePercentage: number;
+  active: boolean;
+};
+
 export type Unit = {
   id: string;
   companyId: string;
@@ -128,6 +142,7 @@ export type AdminData = {
   companies: Company[];
   categories: Category[];
   items: CatalogItem[];
+  globalItems: GlobalCatalogItem[];
   units: Unit[];
   yields: CatalogYield[];
   formulas: Formula[];
@@ -141,6 +156,10 @@ export type CategoryDraft = Omit<Category, "companyName">;
 export type ItemDraft = Omit<
   CatalogItem,
   "companyName" | "categoryName" | "unitSymbol"
+>;
+export type GlobalCatalogItemDraft = Pick<
+  GlobalCatalogItem,
+  "id" | "unitCost" | "salePrice" | "wastePercentage"
 >;
 export type UnitDraft = Omit<Unit, "companyName">;
 export type YieldDraft = Omit<
@@ -237,7 +256,18 @@ export async function loadAdminData(): Promise<AdminData> {
         )
       `)
       .order("name"),
-    db.from("catalog_price_history").select("id", { count: "exact", head: true }),
+    db
+      .from("platform_catalog_items")
+      .select(`
+        id, sku, name, item_type, category_name, unit_name, unit_symbol,
+        default_unit_cost, default_sale_price,
+        default_waste_percentage, active
+      `)
+      .order("item_type")
+      .order("name"),
+    db
+      .from("platform_catalog_price_history")
+      .select("id", { count: "exact", head: true }),
   ]);
 
   results.forEach((result) => throwIfError(result.error));
@@ -253,6 +283,7 @@ export async function loadAdminData(): Promise<AdminData> {
     unitsResult,
     yieldsResult,
     formulasResult,
+    globalItemsResult,
     historyResult,
   ] = results;
 
@@ -303,6 +334,19 @@ export async function loadAdminData(): Promise<AdminData> {
       unitCost: Number(row.unit_cost ?? 0),
       salePrice: Number(row.sale_price ?? 0),
       wastePercentage: Number(row.waste_percentage ?? 0),
+      active: Boolean(row.active),
+    })),
+    globalItems: (globalItemsResult.data ?? []).map((row: any) => ({
+      id: row.id,
+      sku: row.sku ?? "",
+      name: row.name,
+      itemType: row.item_type as ItemType,
+      categoryName: row.category_name ?? "Sin categoría",
+      unitName: row.unit_name ?? "Unidad",
+      unitSymbol: row.unit_symbol ?? "und.",
+      unitCost: Number(row.default_unit_cost ?? 0),
+      salePrice: Number(row.default_sale_price ?? 0),
+      wastePercentage: Number(row.default_waste_percentage ?? 0),
       active: Boolean(row.active),
     })),
     units: (unitsResult.data ?? []).map((row: any) => ({
@@ -499,15 +543,33 @@ export async function saveFormula(draft: FormulaDraft) {
   }
 }
 
+export async function saveGlobalCatalogPricing(
+  draft: GlobalCatalogItemDraft,
+) {
+  const { error } = await db.rpc(
+    "admin_update_platform_catalog_pricing",
+    {
+      requested_item_id: draft.id,
+      requested_unit_cost: nonNegative(draft.unitCost, "El costo"),
+      requested_sale_price: nonNegative(draft.salePrice, "El precio"),
+      requested_waste_percentage: nonNegative(
+        draft.wastePercentage,
+        "El desperdicio",
+      ),
+      change_source: "panel_super_admin",
+      change_notes: "Edición individual del precio maestro",
+    },
+  );
+  throwIfError(error);
+}
+
 export async function adjustPrices(input: {
-  companyId: string;
   itemIds: string[];
   target: "unit_cost" | "sale_price";
   percentage: number;
   notes: string;
 }) {
-  const { error } = await db.rpc("admin_adjust_catalog_prices", {
-    requested_company_id: input.companyId,
+  const { error } = await db.rpc("admin_adjust_platform_catalog_prices", {
     requested_item_ids: input.itemIds,
     requested_target: input.target,
     requested_percentage: input.percentage,

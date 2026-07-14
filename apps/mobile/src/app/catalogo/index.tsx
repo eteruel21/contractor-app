@@ -1,191 +1,79 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
 import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useState,
-} from "react";
-import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-    colors,
-    radius,
-} from "@/constants/theme";
+import { colors, radius, shadows } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
-    createCatalogCategory,
-    createCatalogItem,
-    createCatalogYield,
-    deactivateCatalogCategory,
-    deactivateCatalogYield,
-    deactivateCatalogItem,
-    listCatalogCategories,
-    listCatalogItems,
-    listCatalogUnits,
-    listCatalogYields,
-    updateCatalogItemPricing,
+  listCatalogItems,
+  resetCatalogItemPricing,
+  updateCatalogItemPricing,
 } from "@/services/catalog-service";
 import { formatMoney } from "@/types/budget";
 import type {
-    CatalogCategory,
-    CatalogItemType,
-    CatalogItemWithDetails,
-    CatalogYieldWithDetails,
-    Unit,
+  CatalogItemType,
+  CatalogItemWithDetails,
 } from "@/types/catalog";
 import { getCatalogItemTypeLabel } from "@/types/catalog";
 
-const FILTERS: {
-  label: string;
-  value: CatalogItemType | "all";
-}[] = [
-  {
-    label: "Todos",
-    value: "all",
-  },
-  {
-    label: "Materiales",
-    value: "material",
-  },
-  {
-    label: "Mano de obra",
-    value: "labor",
-  },
-  {
-    label: "Equipos",
-    value: "equipment",
-  },
-  {
-    label: "Servicios",
-    value: "service",
-  },
+type Filter = CatalogItemType | "all";
+
+const FILTERS: Array<{ label: string; value: Filter }> = [
+  { label: "Todos", value: "all" },
+  { label: "Materiales", value: "material" },
+  { label: "Mano de obra", value: "labor" },
+  { label: "Equipos", value: "equipment" },
+  { label: "Servicios", value: "service" },
 ];
 
 export default function CatalogScreen() {
   const { activeCompany } = useCompany();
-
-  const [items, setItems] = useState<
-    CatalogItemWithDetails[]
-  >([]);
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [categories, setCategories] = useState<
-    CatalogCategory[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] =
-    useState(false);
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] =
-    useState<CatalogItemType | "all">("all");
+  const [items, setItems] = useState<CatalogItemWithDetails[]>([]);
   const [editingItem, setEditingItem] =
-    useState<CatalogItemWithDetails | null>(
-      null,
-    );
-  const [createModalVisible, setCreateModalVisible] =
-    useState(false);
-  const [
-    categoriesModalVisible,
-    setCategoriesModalVisible,
-  ] = useState(false);
-  const [yieldItem, setYieldItem] =
     useState<CatalogItemWithDetails | null>(null);
-
-  const filteredItems = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return items.filter((item) => {
-      const matchesFilter =
-        filter === "all" ||
-        item.item_type === filter;
-
-      if (!matchesFilter) return false;
-
-      if (!query) return true;
-
-      const name = item.name.toLowerCase();
-      const sku = item.sku?.toLowerCase() ?? "";
-      const category =
-        item.category?.name.toLowerCase() ?? "";
-      const type = getCatalogItemTypeLabel(
-        item.item_type,
-      ).toLowerCase();
-
-      return (
-        name.includes(query) ||
-        sku.includes(query) ||
-        category.includes(query) ||
-        type.includes(query)
-      );
-    });
-  }, [filter, items, search]);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadCatalog = useCallback(
     async (showRefresh = false) => {
-      if (!activeCompany) return;
+      if (showRefresh) setRefreshing(true);
+      else setLoading(true);
 
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      const result = await listCatalogItems(
+        activeCompany?.id ?? "platform",
+      );
 
-      const [
-        itemsResult,
-        unitsResult,
-        categoriesResult,
-      ] = await Promise.all([
-        listCatalogItems(activeCompany.id),
-        listCatalogUnits(activeCompany.id),
-        listCatalogCategories(activeCompany.id),
-      ]);
-
-      if (itemsResult.error) {
+      if (result.error) {
         Alert.alert(
-          "No fue posible cargar el catálogo",
-          itemsResult.error,
+          "No fue posible cargar los precios",
+          result.error,
         );
       } else {
-        setItems(itemsResult.items);
-      }
-
-      if (unitsResult.error) {
-        Alert.alert(
-          "No fue posible cargar las unidades",
-          unitsResult.error,
-        );
-      } else {
-        setUnits(unitsResult.units);
-      }
-
-      if (categoriesResult.error) {
-        Alert.alert(
-          "No fue posible cargar las categorías",
-          categoriesResult.error,
-        );
-      } else {
-        setCategories(categoriesResult.categories);
+        setItems(result.items);
       }
 
       setLoading(false);
       setRefreshing(false);
     },
-    [activeCompany],
+    [activeCompany?.id],
   );
 
   useFocusEffect(
@@ -194,61 +82,33 @@ export default function CatalogScreen() {
     }, [loadCatalog]),
   );
 
-  async function handleDeactivate(
-    item: CatalogItemWithDetails,
-  ) {
-    if (!activeCompany) return;
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-    Alert.alert(
-      "Desactivar ítem",
-      `¿Deseas desactivar "${item.name}"?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Desactivar",
-          style: "destructive",
-          onPress: async () => {
-            const { error } =
-              await deactivateCatalogItem({
-                companyId: activeCompany.id,
-                itemId: item.id,
-              });
+    return items.filter((item) => {
+      if (filter !== "all" && item.item_type !== filter) {
+        return false;
+      }
 
-            if (error) {
-              Alert.alert(
-                "No fue posible desactivar el ítem",
-                error,
-              );
-              return;
-            }
+      if (!query) return true;
 
-            await loadCatalog(true);
-          },
-        },
-      ],
-    );
-  }
-
-  if (!activeCompany) {
-    return (
-      <View style={styles.loading}>
-        <Text style={styles.emptyTitle}>
-          No hay empresa activa
-        </Text>
-      </View>
-    );
-  }
+      return [
+        item.name,
+        item.sku ?? "",
+        item.category?.name ?? "",
+        getCatalogItemTypeLabel(item.item_type),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [filter, items, search]);
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loaderText}>Cargando precios globales...</Text>
       </View>
     );
   }
@@ -262,73 +122,52 @@ export default function CatalogScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() =>
-              void loadCatalog(true)
-            }
+            onRefresh={() => void loadCatalog(true)}
+            tintColor={colors.primary}
           />
         }
         ListHeaderComponent={
           <View>
             <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>
-                  Catálogo
-                </Text>
-
+              <View style={styles.headerIcon}>
+                <Ionicons
+                  name="pricetags-outline"
+                  size={24}
+                  color={colors.textLight}
+                />
+              </View>
+              <View style={styles.headerCopy}>
+                <Text style={styles.title}>Precios del catálogo</Text>
                 <Text style={styles.subtitle}>
-                  {activeCompany.name}
+                  Valores globales con ajustes privados para tu cuenta.
                 </Text>
               </View>
+            </View>
 
-              <View style={styles.headerActions}>
-                <Pressable
-                  onPress={() =>
-                    setCategoriesModalVisible(true)
-                  }
-                  style={({ pressed }) => [
-                    styles.categoriesButton,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons
-                    name="folder-outline"
-                    size={18}
-                    color={colors.primary}
-                  />
-                  <Text style={styles.categoriesButtonText}>
-                    Categorías
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setCreateModalVisible(true)}
-                  style={({ pressed }) => [
-                    styles.newButton,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Ionicons
-                    name="add-outline"
-                    size={20}
-                    color={colors.textLight}
-                  />
-                  <Text style={styles.newButtonText}>Nuevo</Text>
-                </Pressable>
-              </View>
+            <View style={styles.infoCard}>
+              <Ionicons
+                name="information-circle-outline"
+                size={22}
+                color={colors.info}
+              />
+              <Text style={styles.infoText}>
+                El administrador actualiza el precio predeterminado. Si lo
+                personalizas, el cambio solo será visible para ti y podrás
+                restaurarlo cuando quieras.
+              </Text>
             </View>
 
             <View style={styles.searchBox}>
               <Ionicons
                 name="search-outline"
-                size={19}
+                size={20}
                 color={colors.textSecondary}
               />
-
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Buscar material, mano de obra o SKU"
-                placeholderTextColor="#94A3B8"
+                placeholder="Buscar material, mano de obra o código"
+                placeholderTextColor={colors.textMuted}
                 style={styles.searchInput}
               />
             </View>
@@ -339,27 +178,21 @@ export default function CatalogScreen() {
               contentContainerStyle={styles.filters}
             >
               {FILTERS.map((option) => {
-                const active =
-                  filter === option.value;
-
+                const selected = filter === option.value;
                 return (
                   <Pressable
                     key={option.value}
-                    onPress={() =>
-                      setFilter(option.value)
-                    }
+                    onPress={() => setFilter(option.value)}
                     style={({ pressed }) => [
-                      styles.filterChip,
-                      active &&
-                        styles.filterChipActive,
+                      styles.filter,
+                      selected && styles.filterSelected,
                       pressed && styles.pressed,
                     ]}
                   >
                     <Text
                       style={[
-                        styles.filterChipText,
-                        active &&
-                          styles.filterChipTextActive,
+                        styles.filterText,
+                        selected && styles.filterTextSelected,
                       ]}
                     >
                       {option.label}
@@ -370,10 +203,8 @@ export default function CatalogScreen() {
             </ScrollView>
 
             <Text style={styles.counter}>
-              {filteredItems.length} ítem
-              {filteredItems.length === 1
-                ? ""
-                : "s"}
+              {filteredItems.length} concepto
+              {filteredItems.length === 1 ? "" : "s"}
             </Text>
           </View>
         }
@@ -381,195 +212,119 @@ export default function CatalogScreen() {
           <View style={styles.empty}>
             <Ionicons
               name="cube-outline"
-              size={46}
-              color={colors.textSecondary}
+              size={44}
+              color={colors.textMuted}
             />
-
-            <Text style={styles.emptyTitle}>
-              No hay ítems
-            </Text>
-
+            <Text style={styles.emptyTitle}>No hay resultados</Text>
             <Text style={styles.emptyText}>
-              No se encontraron materiales, mano de obra o servicios en el catálogo.
+              Prueba con otro nombre o filtro.
             </Text>
           </View>
         }
         renderItem={({ item }) => (
-          <CatalogCard
+          <CatalogPriceCard
             item={item}
             onEdit={() => setEditingItem(item)}
-            onYields={() => setYieldItem(item)}
-            onDeactivate={() =>
-              void handleDeactivate(item)
-            }
           />
         )}
       />
 
-      <ManageYieldsModal
-        visible={Boolean(yieldItem)}
-        companyId={activeCompany.id}
-        item={yieldItem}
-        units={units}
-        onClose={() => setYieldItem(null)}
-      />
-
-      <ManageCategoriesModal
-        visible={categoriesModalVisible}
-        companyId={activeCompany.id}
-        categories={categories}
-        onClose={() => setCategoriesModalVisible(false)}
-        onChanged={() => void loadCatalog(true)}
-      />
-
-      <CreateCatalogItemModal
-        visible={createModalVisible}
-        companyId={activeCompany.id}
-        units={units}
-        categories={categories}
-        onClose={() => setCreateModalVisible(false)}
-        onCreated={() => void loadCatalog(true)}
-      />
-
-      <EditCatalogItemModal
-        visible={Boolean(editingItem)}
+      <EditPersonalPriceModal
         item={editingItem}
-        companyId={activeCompany.id}
+        companyId={activeCompany?.id ?? "platform"}
         onClose={() => setEditingItem(null)}
-        onSaved={() => void loadCatalog(true)}
+        onChanged={async () => {
+          setEditingItem(null);
+          await loadCatalog(true);
+        }}
       />
     </SafeAreaView>
   );
 }
 
-function CatalogCard({
+function CatalogPriceCard({
   item,
   onEdit,
-  onYields,
-  onDeactivate,
 }: {
   item: CatalogItemWithDetails;
   onEdit: () => void;
-  onYields: () => void;
-  onDeactivate: () => void;
 }) {
-  const price =
-    item.sale_price > 0
-      ? item.sale_price
-      : item.unit_cost;
+  const salePrice = item.sale_price || item.unit_cost;
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={styles.itemIcon}>
+      <View style={styles.cardHeader}>
+        <View
+          style={[
+            styles.itemIcon,
+            item.item_type === "labor" && styles.laborIcon,
+          ]}
+        >
           <Ionicons
-            name={
-              item.item_type === "labor"
-                ? "hammer-outline"
-                : item.item_type === "equipment"
-                  ? "construct-outline"
-                  : item.item_type === "service"
-                    ? "briefcase-outline"
-                    : "cube-outline"
-            }
-            size={23}
-            color={colors.textLight}
+            name={item.item_type === "labor" ? "hammer-outline" : "cube-outline"}
+            size={21}
+            color={item.item_type === "labor" ? colors.warning : colors.primary}
           />
         </View>
-
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName}>
-            {item.name}
-          </Text>
-
-          <Text style={styles.itemMeta}>
-            {getCatalogItemTypeLabel(
-              item.item_type,
+        <View style={styles.itemCopy}>
+          <View style={styles.nameRow}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            {item.has_override && (
+              <View style={styles.personalBadge}>
+                <Text style={styles.personalBadgeText}>Personalizado</Text>
+              </View>
             )}
-            {item.category?.name
-              ? ` · ${item.category.name}`
-              : ""}
-          </Text>
-
+          </View>
           <Text style={styles.itemMeta}>
-            Unidad:{" "}
-            {item.unit?.symbol ||
-              item.unit?.name ||
-              "unidad"}
+            {getCatalogItemTypeLabel(item.item_type)}
+            {item.category?.name ? ` · ${item.category.name}` : ""}
+            {` · ${item.unit?.symbol ?? "und."}`}
           </Text>
         </View>
-
-        <Pressable
-          onPress={onDeactivate}
-          hitSlop={10}
-        >
-          <Ionicons
-            name="trash-outline"
-            size={20}
-            color="#EF4444"
-          />
-        </Pressable>
       </View>
 
-      <View style={styles.priceGrid}>
-        <PriceBox
-          label="Costo"
-          value={formatMoney(item.unit_cost)}
-        />
-
-        <PriceBox
-          label="Venta"
-          value={formatMoney(price)}
-          strong
-        />
-
-        <PriceBox
-          label="Desperdicio"
-          value={`${item.waste_percentage}%`}
-        />
+      <View style={styles.priceRow}>
+        <PriceValue label="Costo" value={formatMoney(item.unit_cost)} />
+        <PriceValue label="Venta" value={formatMoney(salePrice)} strong />
+        <PriceValue label="Desperdicio" value={`${item.waste_percentage}%`} />
       </View>
 
-      <View style={styles.itemActionsRow}>
-        <Pressable
-          onPress={onYields}
-          style={({ pressed }) => [
-            styles.secondaryItemButton,
-            pressed && styles.pressed,
-          ]}
-        >
+      {item.has_override && (
+        <View style={styles.defaultRow}>
           <Ionicons
-            name="speedometer-outline"
-            size={18}
-            color={colors.primary}
+            name="globe-outline"
+            size={16}
+            color={colors.textSecondary}
           />
-          <Text style={styles.editButtonText}>
-            Rendimientos
+          <Text style={styles.defaultText}>
+            Predeterminado: costo {formatMoney(item.default_unit_cost ?? 0)} ·
+            venta {formatMoney(item.default_sale_price ?? 0)} · desperdicio{" "}
+            {item.default_waste_percentage ?? 0}%
           </Text>
-        </Pressable>
+        </View>
+      )}
 
-        <Pressable
-          onPress={onEdit}
-          style={({ pressed }) => [
-            styles.editButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Ionicons
-            name="create-outline"
-            size={18}
-            color={colors.primary}
-          />
-
-          <Text style={styles.editButtonText}>
-            Precios
-          </Text>
-        </Pressable>
-      </View>
+      <Pressable
+        onPress={onEdit}
+        style={({ pressed }) => [
+          styles.editButton,
+          pressed && styles.pressed,
+        ]}
+      >
+        <Ionicons
+          name="create-outline"
+          size={18}
+          color={colors.primary}
+        />
+        <Text style={styles.editButtonText}>
+          {item.has_override ? "Editar mi precio" : "Personalizar para mí"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
-function PriceBox({
+function PriceValue({
   label,
   value,
   strong = false,
@@ -579,1020 +334,225 @@ function PriceBox({
   strong?: boolean;
 }) {
   return (
-    <View style={styles.priceBox}>
-      <Text style={styles.priceLabel}>
-        {label}
-      </Text>
-
-      <Text
-        style={[
-          styles.priceValue,
-          strong && styles.priceValueStrong,
-        ]}
-      >
+    <View style={styles.priceValue}>
+      <Text style={styles.priceLabel}>{label}</Text>
+      <Text style={[styles.priceText, strong && styles.priceTextStrong]}>
         {value}
       </Text>
     </View>
   );
 }
 
-function ManageYieldsModal({
-  visible,
-  companyId,
+function EditPersonalPriceModal({
   item,
-  units,
-  onClose,
-}: {
-  visible: boolean;
-  companyId: string;
-  item: CatalogItemWithDetails | null;
-  units: Unit[];
-  onClose: () => void;
-}) {
-  const [yields, setYields] = useState<
-    CatalogYieldWithDetails[]
-  >([]);
-  const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [outputUnitId, setOutputUnitId] = useState("");
-  const [outputQuantity, setOutputQuantity] = useState("1");
-  const [laborHours, setLaborHours] = useState("8");
-  const [crewSize, setCrewSize] = useState("1");
-  const [wastePercentage, setWastePercentage] =
-    useState("0");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [deactivatingId, setDeactivatingId] =
-    useState<string | null>(null);
-
-  async function loadYields() {
-    if (!item) return;
-
-    setLoading(true);
-
-    const { yields: loadedYields, error } =
-      await listCatalogYields({
-        companyId,
-        catalogItemId: item.id,
-      });
-
-    if (error) {
-      Alert.alert(
-        "No fue posible cargar los rendimientos",
-        error,
-      );
-    } else {
-      setYields(loadedYields);
-    }
-
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    if (!visible || !item) return;
-
-    setName("");
-    setOutputUnitId(item.unit_id || units[0]?.id || "");
-    setOutputQuantity("1");
-    setLaborHours("8");
-    setCrewSize("1");
-    setWastePercentage("0");
-    setNotes("");
-    void loadYields();
-  }, [item, units, visible]);
-
-  async function handleCreate() {
-    if (!item) return;
-
-    try {
-      setSaving(true);
-
-      const { error } = await createCatalogYield({
-        companyId,
-        catalogItemId: item.id,
-        outputUnitId,
-        name,
-        outputQuantity: parseMoney(outputQuantity),
-        laborHours: parseMoney(laborHours),
-        crewSize: parseMoney(crewSize),
-        wastePercentage: parseMoney(wastePercentage),
-        notes,
-      });
-
-      if (error) {
-        Alert.alert(
-          "No fue posible crear el rendimiento",
-          error,
-        );
-        return;
-      }
-
-      setName("");
-      setNotes("");
-      await loadYields();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function confirmDeactivate(
-    catalogYield: CatalogYieldWithDetails,
-  ) {
-    Alert.alert(
-      "Desactivar rendimiento",
-      `¿Deseas desactivar “${catalogYield.name}”?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Desactivar",
-          style: "destructive",
-          onPress: () =>
-            void handleDeactivate(catalogYield),
-        },
-      ],
-    );
-  }
-
-  async function handleDeactivate(
-    catalogYield: CatalogYieldWithDetails,
-  ) {
-    try {
-      setDeactivatingId(catalogYield.id);
-
-      const { error } = await deactivateCatalogYield({
-        companyId,
-        yieldId: catalogYield.id,
-      });
-
-      if (error) {
-        Alert.alert(
-          "No fue posible desactivar el rendimiento",
-          error,
-        );
-        return;
-      }
-
-      await loadYields();
-    } finally {
-      setDeactivatingId(null);
-    }
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.modalSafeArea}>
-        <View style={styles.modalHeader}>
-          <Pressable onPress={onClose}>
-            <Text style={styles.cancelText}>Cerrar</Text>
-          </Pressable>
-
-          <Text style={styles.modalTitle}>Rendimientos</Text>
-
-          <View style={styles.modalHeaderSpacer} />
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.modalContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.yieldItemHeader}>
-            <Text style={styles.yieldItemName}>
-              {item?.name}
-            </Text>
-            <Text style={styles.yieldItemHint}>
-              Define cuánto trabajo se produce con esta actividad.
-            </Text>
-          </View>
-
-          <View style={styles.categoryCreateCard}>
-            <Text style={styles.categoryCreateTitle}>
-              Nuevo rendimiento
-            </Text>
-
-            <FormField
-              label="Nombre"
-              value={name}
-              onChangeText={setName}
-              placeholder="Ej. Cuadrilla por jornada"
-              keyboardType="default"
-            />
-
-            <Text style={styles.selectionLabel}>
-              Unidad producida
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectionRow}
-            >
-              {units.map((unit) => (
-                <Pressable
-                  key={unit.id}
-                  onPress={() => setOutputUnitId(unit.id)}
-                  style={[
-                    styles.filterChip,
-                    outputUnitId === unit.id &&
-                      styles.filterChipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      outputUnitId === unit.id &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    {unit.symbol} · {unit.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            <FormField
-              label="Producción"
-              value={outputQuantity}
-              onChangeText={setOutputQuantity}
-              placeholder="Ej. 20"
-            />
-            <FormField
-              label="Horas de trabajo"
-              value={laborHours}
-              onChangeText={setLaborHours}
-              placeholder="Ej. 8"
-            />
-            <FormField
-              label="Tamaño de cuadrilla"
-              value={crewSize}
-              onChangeText={setCrewSize}
-              placeholder="Ej. 3"
-            />
-            <FormField
-              label="Desperdicio %"
-              value={wastePercentage}
-              onChangeText={setWastePercentage}
-              placeholder="0"
-            />
-            <FormField
-              label="Notas"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Opcional"
-              keyboardType="default"
-            />
-
-            <Pressable
-              onPress={() => void handleCreate()}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.fullSaveButton,
-                saving && styles.disabledButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.textLight} />
-              ) : (
-                <Text style={styles.fullSaveText}>
-                  Guardar rendimiento
-                </Text>
-              )}
-            </Pressable>
-          </View>
-
-          <Text style={styles.categoryListTitle}>
-            Rendimientos activos
-          </Text>
-
-          {loading ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : yields.length === 0 ? (
-            <View style={styles.emptyCategoryBox}>
-              <Text style={styles.emptyText}>
-                Este ítem todavía no tiene rendimientos.
-              </Text>
-            </View>
-          ) : (
-            yields.map((catalogYield) => (
-              <View
-                key={catalogYield.id}
-                style={styles.yieldRow}
-              >
-                <View style={styles.categoryRowInfo}>
-                  <Text style={styles.categoryRowName}>
-                    {catalogYield.name}
-                  </Text>
-                  <Text style={styles.yieldSummary}>
-                    {catalogYield.output_quantity}{" "}
-                    {catalogYield.output_unit?.symbol || "ud"} en{" "}
-                    {catalogYield.labor_hours} h · Cuadrilla{" "}
-                    {catalogYield.crew_size}
-                  </Text>
-                </View>
-
-                <Pressable
-                  onPress={() =>
-                    confirmDeactivate(catalogYield)
-                  }
-                  disabled={
-                    deactivatingId === catalogYield.id
-                  }
-                  hitSlop={10}
-                >
-                  {deactivatingId === catalogYield.id ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.danger}
-                    />
-                  ) : (
-                    <Ionicons
-                      name="trash-outline"
-                      size={20}
-                      color={colors.danger}
-                    />
-                  )}
-                </Pressable>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-function ManageCategoriesModal({
-  visible,
   companyId,
-  categories,
   onClose,
   onChanged,
 }: {
-  visible: boolean;
+  item: CatalogItemWithDetails | null;
   companyId: string;
-  categories: CatalogCategory[];
   onClose: () => void;
-  onChanged: () => void;
+  onChanged: () => Promise<void>;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [unitCost, setUnitCost] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [wastePercentage, setWastePercentage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [deactivatingId, setDeactivatingId] =
-    useState<string | null>(null);
 
-  useEffect(() => {
-    if (!visible) return;
-    setName("");
-    setDescription("");
-  }, [visible]);
+  const syncValues = useCallback(() => {
+    if (!item) return;
+    setUnitCost(String(item.unit_cost));
+    setSalePrice(String(item.sale_price));
+    setWastePercentage(String(item.waste_percentage));
+  }, [item]);
 
-  async function handleCreate() {
-    try {
-      setSaving(true);
+  useFocusEffect(
+    useCallback(() => {
+      syncValues();
+    }, [syncValues]),
+  );
 
-      const { error } = await createCatalogCategory({
-        companyId,
-        name,
-        description,
-      });
-
-      if (error) {
-        Alert.alert(
-          "No fue posible crear la categoría",
-          error,
-        );
-        return;
-      }
-
-      setName("");
-      setDescription("");
-      onChanged();
-    } finally {
-      setSaving(false);
-    }
+  function numberValue(value: string) {
+    const result = Number(value.replace(",", ".").trim());
+    return Number.isFinite(result) ? result : -1;
   }
 
-  function confirmDeactivate(category: CatalogCategory) {
+  async function save() {
+    if (!item) return;
+
+    const nextUnitCost = numberValue(unitCost);
+    const nextSalePrice = numberValue(salePrice);
+    const nextWaste = numberValue(wastePercentage);
+
+    if (
+      nextUnitCost < 0 ||
+      nextSalePrice < 0 ||
+      nextWaste < 0 ||
+      nextWaste > 100
+    ) {
+      Alert.alert("Revisa los valores", "Los precios deben ser positivos y el desperdicio debe estar entre 0% y 100%.");
+      return;
+    }
+
+    setSaving(true);
+    const result = await updateCatalogItemPricing({
+      companyId,
+      itemId: item.id,
+      unitCost: nextUnitCost,
+      salePrice: nextSalePrice,
+      wastePercentage: nextWaste,
+    });
+    setSaving(false);
+
+    if (result.error) {
+      Alert.alert("No fue posible guardar tu precio", result.error);
+      return;
+    }
+
+    await onChanged();
+  }
+
+  function confirmReset() {
+    if (!item) return;
+
     Alert.alert(
-      "Desactivar categoría",
-      `¿Deseas desactivar “${category.name}”?`,
+      "Restaurar precio predeterminado",
+      `Se eliminará tu ajuste de “${item.name}” y volverás a recibir el precio global.`,
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Desactivar",
-          style: "destructive",
-          onPress: () => void handleDeactivate(category),
+          text: "Restaurar",
+          onPress: () => void reset(),
         },
       ],
     );
   }
 
-  async function handleDeactivate(
-    category: CatalogCategory,
-  ) {
-    try {
-      setDeactivatingId(category.id);
+  async function reset() {
+    if (!item) return;
 
-      const { error } = await deactivateCatalogCategory({
-        companyId,
-        categoryId: category.id,
-      });
+    setSaving(true);
+    const result = await resetCatalogItemPricing({ itemId: item.id });
+    setSaving(false);
 
-      if (error) {
-        Alert.alert(
-          "No fue posible desactivar la categoría",
-          error,
-        );
-        return;
-      }
-
-      onChanged();
-    } finally {
-      setDeactivatingId(null);
-    }
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.modalSafeArea}>
-        <View style={styles.modalHeader}>
-          <Pressable onPress={onClose}>
-            <Text style={styles.cancelText}>Cerrar</Text>
-          </Pressable>
-
-          <Text style={styles.modalTitle}>Categorías</Text>
-
-          <View style={styles.modalHeaderSpacer} />
-        </View>
-
-        <ScrollView
-          contentContainerStyle={styles.modalContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.categoryCreateCard}>
-            <Text style={styles.categoryCreateTitle}>
-              Nueva categoría
-            </Text>
-
-            <FormField
-              label="Nombre"
-              value={name}
-              onChangeText={setName}
-              placeholder="Ej. Materiales de concreto"
-              keyboardType="default"
-            />
-
-            <FormField
-              label="Descripción"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Opcional"
-              keyboardType="default"
-            />
-
-            <Pressable
-              onPress={() => void handleCreate()}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.fullSaveButton,
-                saving && styles.disabledButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.textLight} />
-              ) : (
-                <Text style={styles.fullSaveText}>
-                  Crear categoría
-                </Text>
-              )}
-            </Pressable>
-          </View>
-
-          <Text style={styles.categoryListTitle}>
-            Categorías activas
-          </Text>
-
-          {categories.length === 0 ? (
-            <View style={styles.emptyCategoryBox}>
-              <Text style={styles.emptyText}>
-                Todavía no hay categorías.
-              </Text>
-            </View>
-          ) : (
-            categories.map((category) => (
-              <View
-                key={category.id}
-                style={styles.categoryRow}
-              >
-                <View style={styles.categoryRowInfo}>
-                  <Text style={styles.categoryRowName}>
-                    {category.name}
-                  </Text>
-                  {category.description ? (
-                    <Text style={styles.categoryRowDescription}>
-                      {category.description}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <Pressable
-                  onPress={() => confirmDeactivate(category)}
-                  disabled={deactivatingId === category.id}
-                  hitSlop={10}
-                >
-                  {deactivatingId === category.id ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.danger}
-                    />
-                  ) : (
-                    <Ionicons
-                      name="trash-outline"
-                      size={20}
-                      color={colors.danger}
-                    />
-                  )}
-                </Pressable>
-              </View>
-            ))
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
-function CreateCatalogItemModal({
-  visible,
-  companyId,
-  units,
-  categories,
-  onClose,
-  onCreated,
-}: {
-  visible: boolean;
-  companyId: string;
-  units: Unit[];
-  categories: CatalogCategory[];
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [itemType, setItemType] =
-    useState<CatalogItemType>("material");
-  const [categoryId, setCategoryId] =
-    useState<string | null>(null);
-  const [unitId, setUnitId] = useState("");
-  const [name, setName] = useState("");
-  const [sku, setSku] = useState("");
-  const [description, setDescription] = useState("");
-  const [unitCost, setUnitCost] = useState("");
-  const [salePrice, setSalePrice] = useState("");
-  const [wastePercentage, setWastePercentage] =
-    useState("");
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    setItemType("material");
-    setCategoryId(null);
-    setUnitId(units[0]?.id ?? "");
-    setName("");
-    setSku("");
-    setDescription("");
-    setUnitCost("");
-    setSalePrice("");
-    setWastePercentage("");
-  }, [units, visible]);
-
-  async function handleSave() {
-    const { error } = await createCatalogItem({
-      companyId,
-      itemType,
-      categoryId,
-      sku,
-      name,
-      description,
-      unitId,
-      unitCost: parseMoney(unitCost),
-      salePrice: parseMoney(salePrice),
-      wastePercentage: parseMoney(wastePercentage),
-    });
-
-    if (error) {
-      Alert.alert(
-        "No fue posible crear el ítem",
-        error,
-      );
+    if (result.error) {
+      Alert.alert("No fue posible restaurar el precio", result.error);
       return;
     }
 
-    onClose();
-    onCreated();
+    await onChanged();
   }
-
-  const createTypes = FILTERS.filter(
-    (
-      option,
-    ): option is {
-      label: string;
-      value: CatalogItemType;
-    } => option.value !== "all",
-  );
 
   return (
     <Modal
-      visible={visible}
+      visible={Boolean(item)}
       animationType="slide"
       presentationStyle="pageSheet"
+      onShow={syncValues}
       onRequestClose={onClose}
     >
       <SafeAreaView style={styles.modalSafeArea}>
         <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={
-            Platform.OS === "ios" ? "padding" : undefined
-          }
+          style={styles.modalKeyboard}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <View style={styles.modalHeader}>
-            <Pressable onPress={onClose}>
+            <Pressable onPress={onClose} disabled={saving}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </Pressable>
-
-            <Text style={styles.modalTitle}>Nuevo ítem</Text>
-
-            <Pressable
-              onPress={() => void handleSave()}
-              disabled={saving}
-            >
-              <Text style={styles.saveText}>Guardar</Text>
-            </Pressable>
+            <Text style={styles.modalTitle}>Mi precio</Text>
+            <View style={styles.modalSpacer} />
           </View>
 
-          <ScrollView
-            contentContainerStyle={styles.modalContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={styles.selectionLabel}>Tipo</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectionRow}
-            >
-              {createTypes.map((option) => (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setItemType(option.value)}
-                  style={[
-                    styles.filterChip,
-                    itemType === option.value &&
-                      styles.filterChipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      itemType === option.value &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalItemName}>{item?.name}</Text>
+            <Text style={styles.modalItemMeta}>
+              {item?.unit?.name ?? "Unidad"} ({item?.unit?.symbol ?? "und."})
+            </Text>
 
-            <FormField
-              label="Nombre"
-              value={name}
-              onChangeText={setName}
-              placeholder="Ej. Cemento de uso general"
-              keyboardType="default"
-            />
-            <FormField
-              label="SKU o código"
-              value={sku}
-              onChangeText={setSku}
-              placeholder="Opcional"
-              keyboardType="default"
-            />
-            <FormField
-              label="Descripción"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Opcional"
-              keyboardType="default"
-            />
-
-            <Text style={styles.selectionLabel}>Unidad</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectionRow}
-            >
-              {units.map((unit) => (
-                <Pressable
-                  key={unit.id}
-                  onPress={() => setUnitId(unit.id)}
-                  style={[
-                    styles.filterChip,
-                    unitId === unit.id &&
-                      styles.filterChipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      unitId === unit.id &&
-                        styles.filterChipTextActive,
-                    ]}
-                  >
-                    {unit.symbol} · {unit.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-
-            {categories.length > 0 ? (
-              <>
-                <Text style={styles.selectionLabel}>
-                  Categoría opcional
+            <View style={styles.globalPriceCard}>
+              <View style={styles.globalPriceTitle}>
+                <Ionicons
+                  name="globe-outline"
+                  size={19}
+                  color={colors.info}
+                />
+                <Text style={styles.globalPriceTitleText}>
+                  Precio predeterminado
                 </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.selectionRow}
-                >
-                  <Pressable
-                    onPress={() => setCategoryId(null)}
-                    style={[
-                      styles.filterChip,
-                      categoryId === null &&
-                        styles.filterChipActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        categoryId === null &&
-                          styles.filterChipTextActive,
-                      ]}
-                    >
-                      Sin categoría
-                    </Text>
-                  </Pressable>
+              </View>
+              <Text style={styles.globalPriceText}>
+                Costo {formatMoney(item?.default_unit_cost ?? 0)} · Venta{" "}
+                {formatMoney(item?.default_sale_price ?? 0)} · Desperdicio{" "}
+                {item?.default_waste_percentage ?? 0}%
+              </Text>
+            </View>
 
-                  {categories.map((category) => (
-                    <Pressable
-                      key={category.id}
-                      onPress={() => setCategoryId(category.id)}
-                      style={[
-                        styles.filterChip,
-                        categoryId === category.id &&
-                          styles.filterChipActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.filterChipText,
-                          categoryId === category.id &&
-                            styles.filterChipTextActive,
-                        ]}
-                      >
-                        {category.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </>
-            ) : null}
-
-            <FormField
-              label="Costo unitario"
+            <MoneyInput
+              label="Mi costo unitario"
               value={unitCost}
               onChangeText={setUnitCost}
-              placeholder="0.00"
             />
-            <FormField
-              label="Precio de venta"
+            <MoneyInput
+              label="Mi precio de venta"
               value={salePrice}
               onChangeText={setSalePrice}
-              placeholder="0.00"
             />
-            <FormField
-              label="Desperdicio %"
+            <MoneyInput
+              label="Mi desperdicio"
               value={wastePercentage}
               onChangeText={setWastePercentage}
-              placeholder="0"
+              suffix="%"
             />
 
+            <Text style={styles.privateNote}>
+              Este cambio se guardará en tu cuenta y será usado por tus
+              calculadoras. No modifica el catálogo global ni los precios de
+              otros usuarios.
+            </Text>
+
             <Pressable
-              onPress={() => void handleSave()}
+              onPress={() => void save()}
               disabled={saving}
               style={({ pressed }) => [
-                styles.fullSaveButton,
-                saving && styles.disabledButton,
+                styles.saveButton,
                 pressed && styles.pressed,
+                saving && styles.disabled,
               ]}
             >
               {saving ? (
                 <ActivityIndicator color={colors.textLight} />
               ) : (
-                <Text style={styles.fullSaveText}>
-                  Crear ítem
-                </Text>
+                <>
+                  <Ionicons
+                    name="save-outline"
+                    size={19}
+                    color={colors.textLight}
+                  />
+                  <Text style={styles.saveButtonText}>Guardar para mí</Text>
+                </>
               )}
             </Pressable>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
-  );
-}
 
-function EditCatalogItemModal({
-  visible,
-  item,
-  companyId,
-  onClose,
-  onSaved,
-}: {
-  visible: boolean;
-  item: CatalogItemWithDetails | null;
-  companyId: string;
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [unitCost, setUnitCost] = useState("");
-  const [salePrice, setSalePrice] =
-    useState("");
-  const [wastePercentage, setWastePercentage] =
-    useState("");
-  const [saving, setSaving] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!item) return;
-
-      setUnitCost(String(item.unit_cost));
-      setSalePrice(String(item.sale_price));
-      setWastePercentage(
-        String(item.waste_percentage),
-      );
-    }, [item]),
-  );
-
-  async function handleSave() {
-    if (!item) return;
-
-    const cleanUnitCost = parseMoney(unitCost);
-    const cleanSalePrice = parseMoney(salePrice);
-    const cleanWaste = parseMoney(wastePercentage);
-
-    try {
-      setSaving(true);
-
-      const { error } =
-        await updateCatalogItemPricing({
-          companyId,
-          itemId: item.id,
-          unitCost: cleanUnitCost,
-          salePrice: cleanSalePrice,
-          wastePercentage: cleanWaste,
-        });
-
-      if (error) {
-        Alert.alert(
-          "No fue posible actualizar el ítem",
-          error,
-        );
-        return;
-      }
-
-      onClose();
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.modalSafeArea}>
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={
-            Platform.OS === "ios"
-              ? "padding"
-              : undefined
-          }
-        >
-          <View style={styles.modalHeader}>
-            <Pressable onPress={onClose}>
-              <Text style={styles.cancelText}>
-                Cancelar
-              </Text>
-            </Pressable>
-
-            <Text style={styles.modalTitle}>
-              Editar ítem
-            </Text>
-
-            <Pressable
-              onPress={() => void handleSave()}
-              disabled={saving}
-            >
-              <Text style={styles.saveText}>
-                Guardar
-              </Text>
-            </Pressable>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={
-              styles.modalContent
-            }
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.modalItemHeader}>
-              <View style={styles.itemIcon}>
+            {item?.has_override && (
+              <Pressable
+                onPress={confirmReset}
+                disabled={saving}
+                style={({ pressed }) => [
+                  styles.resetButton,
+                  pressed && styles.pressed,
+                ]}
+              >
                 <Ionicons
-                  name="cube-outline"
-                  size={23}
-                  color={colors.textLight}
+                  name="refresh-outline"
+                  size={18}
+                  color={colors.primary}
                 />
-              </View>
-
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>
-                  {item?.name}
+                <Text style={styles.resetButtonText}>
+                  Volver al precio predeterminado
                 </Text>
-
-                <Text style={styles.itemMeta}>
-                  {item
-                    ? getCatalogItemTypeLabel(
-                        item.item_type,
-                      )
-                    : ""}
-                </Text>
-              </View>
-            </View>
-
-            <FormField
-              label="Costo unitario"
-              value={unitCost}
-              onChangeText={setUnitCost}
-              placeholder="0.00"
-            />
-
-            <FormField
-              label="Precio de venta"
-              value={salePrice}
-              onChangeText={setSalePrice}
-              placeholder="0.00"
-            />
-
-            <FormField
-              label="Desperdicio %"
-              value={wastePercentage}
-              onChangeText={setWastePercentage}
-              placeholder="0"
-            />
-
-            <Pressable
-              onPress={() => void handleSave()}
-              disabled={saving}
-              style={({ pressed }) => [
-                styles.fullSaveButton,
-                saving && styles.disabledButton,
-                pressed && styles.pressed,
-              ]}
-            >
-              {saving ? (
-                <ActivityIndicator
-                  color={colors.textLight}
-                />
-              ) : (
-                <Text style={styles.fullSaveText}>
-                  Guardar cambios
-                </Text>
-              )}
-            </Pressable>
+              </Pressable>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -1600,525 +560,222 @@ function EditCatalogItemModal({
   );
 }
 
-function FormField({
+function MoneyInput({
   label,
   value,
   onChangeText,
-  placeholder,
-  keyboardType = "decimal-pad",
+  suffix = "B/.",
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  placeholder: string;
-  keyboardType?: "default" | "decimal-pad";
+  suffix?: string;
 }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
-        keyboardType={keyboardType}
-        style={styles.input}
-      />
+      <Text style={styles.fieldLabel}>{label}</Text>
+      <View style={styles.inputWrap}>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType="decimal-pad"
+          style={styles.input}
+        />
+        <Text style={styles.inputSuffix}>{suffix}</Text>
+      </View>
     </View>
   );
 }
 
-function parseMoney(value: string): number {
-  const parsed = Number(
-    value.replace(",", ".").trim(),
-  );
-
-  return Number.isFinite(parsed) && parsed >= 0
-    ? parsed
-    : 0;
-}
-
 const styles = StyleSheet.create({
-  flex: {
+  safeArea: { flex: 1, backgroundColor: colors.background },
+  loader: {
     flex: 1,
-  },
-
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-
-  loading: {
-    flex: 1,
-    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
+    backgroundColor: colors.background,
   },
-
-  content: {
-    padding: 20,
-    paddingBottom: 50,
-  },
-
-  header: {
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
-  },
-
-  subtitle: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  iconBox: {
+  loaderText: { color: colors.textSecondary, fontWeight: "700" },
+  content: { padding: 20, paddingBottom: 48 },
+  header: { flexDirection: "row", gap: 14, alignItems: "center", marginBottom: 16 },
+  headerIcon: {
     width: 48,
     height: 48,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  categoriesButton: {
-    minHeight: 44,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  categoriesButtonText: {
-    color: colors.primary,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  newButton: {
-    minHeight: 44,
-    paddingHorizontal: 15,
-    borderRadius: radius.md,
     backgroundColor: colors.primary,
+  },
+  headerCopy: { flex: 1 },
+  title: { color: colors.text, fontSize: 25, fontWeight: "900" },
+  subtitle: { color: colors.textSecondary, marginTop: 3, lineHeight: 19 },
+  infoCard: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
+    gap: 10,
+    padding: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.infoSoft,
+    marginBottom: 16,
   },
-
-  newButtonText: {
-    color: colors.textLight,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-
+  infoText: { flex: 1, color: colors.text, lineHeight: 20 },
   searchBox: {
-    minHeight: 48,
-    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
+    paddingHorizontal: 14,
   },
-
-  searchInput: {
-    flex: 1,
-    color: colors.text,
-    fontSize: 13,
-  },
-
-  filters: {
-    paddingVertical: 14,
-    gap: 8,
-  },
-
-  filterChip: {
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+  searchInput: { flex: 1, minHeight: 48, color: colors.text },
+  filters: { gap: 8, paddingVertical: 14 },
+  filter: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 999,
+    borderRadius: radius.full,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
     backgroundColor: colors.surface,
   },
-
-  filterChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
-  },
-
-  filterChipText: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  filterChipTextActive: {
-    color: colors.primary,
-  },
-
-  counter: {
-    marginBottom: 12,
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  empty: {
-    marginTop: 90,
-    alignItems: "center",
-  },
-
-  emptyTitle: {
-    marginTop: 12,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  emptyText: {
-    maxWidth: 300,
-    marginTop: 7,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-
+  filterSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  filterText: { color: colors.textSecondary, fontWeight: "700" },
+  filterTextSelected: { color: colors.primaryDark },
+  counter: { color: colors.textSecondary, fontWeight: "700", marginBottom: 10 },
   card: {
-    marginBottom: 12,
-    padding: 15,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+    padding: 16,
+    marginBottom: 12,
+    ...shadows.soft,
   },
-
-  cardTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-
+  cardHeader: { flexDirection: "row", gap: 12, alignItems: "center" },
   itemIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: colors.surfaceDark,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  itemInfo: {
-    flex: 1,
-  },
-
-  itemName: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  itemMeta: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  priceGrid: {
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    flexDirection: "row",
-    gap: 8,
-  },
-
-  priceBox: {
-    flex: 1,
-  },
-
-  priceLabel: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-
-  priceValue: {
-    marginTop: 3,
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  priceValueStrong: {
-    color: colors.primary,
-    fontSize: 13,
-  },
-
-  itemActionsRow: {
-    marginTop: 14,
-    flexDirection: "row",
-    gap: 8,
-  },
-
-  secondaryItemButton: {
-    minHeight: 42,
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 42,
+    height: 42,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
+    backgroundColor: colors.primarySoft,
   },
-
+  laborIcon: { backgroundColor: colors.warningSoft },
+  itemCopy: { flex: 1 },
+  nameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
+  itemName: { color: colors.text, fontSize: 16, fontWeight: "900", flexShrink: 1 },
+  itemMeta: { color: colors.textSecondary, marginTop: 4 },
+  personalBadge: {
+    borderRadius: radius.full,
+    backgroundColor: colors.violetSoft,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  personalBadgeText: { color: colors.violet, fontSize: 11, fontWeight: "900" },
+  priceRow: { flexDirection: "row", gap: 8, marginTop: 15 },
+  priceValue: {
+    flex: 1,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: 10,
+  },
+  priceLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: "700" },
+  priceText: { color: colors.text, fontSize: 14, fontWeight: "800", marginTop: 3 },
+  priceTextStrong: { color: colors.primaryDark },
+  defaultRow: {
+    flexDirection: "row",
+    gap: 7,
+    alignItems: "flex-start",
+    marginTop: 12,
+    paddingHorizontal: 2,
+  },
+  defaultText: { flex: 1, color: colors.textSecondary, fontSize: 12, lineHeight: 17 },
   editButton: {
     minHeight: 42,
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
-    flexDirection: "row",
+    backgroundColor: colors.primaryWash,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
     gap: 7,
+    marginTop: 14,
   },
-
-  editButtonText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-
-  modalSafeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-
+  editButtonText: { color: colors.primary, fontWeight: "900" },
+  empty: { alignItems: "center", paddingVertical: 60 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "900", marginTop: 12 },
+  emptyText: { color: colors.textSecondary, marginTop: 4 },
+  modalSafeArea: { flex: 1, backgroundColor: colors.background },
+  modalKeyboard: { flex: 1 },
   modalHeader: {
-    minHeight: 56,
-    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
   },
-
-  modalTitle: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-
-  cancelText: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-
-  saveText: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  modalContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-
-  modalHeaderSpacer: {
-    width: 50,
-  },
-
-  yieldItemHeader: {
-    marginBottom: 14,
-    padding: 14,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surfaceDark,
-  },
-
-  yieldItemName: {
-    color: colors.textLight,
-    fontSize: 17,
-    fontWeight: "900",
-  },
-
-  yieldItemHint: {
-    marginTop: 4,
-    color: "#CBD5E1",
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  yieldRow: {
-    marginBottom: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
+  cancelText: { color: colors.primary, fontWeight: "800" },
+  modalTitle: { color: colors.text, fontSize: 17, fontWeight: "900" },
+  modalSpacer: { width: 62 },
+  modalContent: { padding: 20, paddingBottom: 48 },
+  modalItemName: { color: colors.text, fontSize: 23, fontWeight: "900" },
+  modalItemMeta: { color: colors.textSecondary, marginTop: 4, marginBottom: 18 },
+  globalPriceCard: {
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  yieldSummary: {
-    marginTop: 4,
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  categoryCreateCard: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-  },
-
-  categoryCreateTitle: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: "900",
-  },
-
-  categoryListTitle: {
-    marginTop: 22,
-    marginBottom: 10,
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  emptyCategoryBox: {
-    padding: 18,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-  },
-
-  categoryRow: {
-    marginBottom: 10,
+    backgroundColor: colors.infoSoft,
     padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  categoryRowInfo: {
-    flex: 1,
-  },
-
-  categoryRowName: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-
-  categoryRowDescription: {
-    marginTop: 4,
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
-  },
-
-  modalItemHeader: {
     marginBottom: 18,
-    padding: 14,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
+  },
+  globalPriceTitle: { flexDirection: "row", alignItems: "center", gap: 7 },
+  globalPriceTitleText: { color: colors.text, fontWeight: "900" },
+  globalPriceText: { color: colors.textSecondary, lineHeight: 19, marginTop: 7 },
+  field: { marginBottom: 14 },
+  fieldLabel: { color: colors.text, fontWeight: "800", marginBottom: 7 },
+  inputWrap: {
     flexDirection: "row",
-    gap: 12,
-  },
-
-  selectionLabel: {
-    marginBottom: 8,
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  selectionRow: {
-    paddingBottom: 16,
-    gap: 8,
-  },
-
-  field: {
-    marginBottom: 15,
-  },
-
-  label: {
-    marginBottom: 7,
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  input: {
-    minHeight: 52,
-    paddingHorizontal: 14,
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 14,
+    paddingHorizontal: 14,
   },
-
-  fullSaveButton: {
-    minHeight: 56,
-    marginTop: 8,
+  input: { flex: 1, minHeight: 50, color: colors.text, fontSize: 17, fontWeight: "800" },
+  inputSuffix: { color: colors.textSecondary, fontWeight: "800" },
+  privateNote: {
+    color: colors.textSecondary,
+    lineHeight: 20,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.md,
+    padding: 14,
+    marginTop: 4,
+  },
+  saveButton: {
+    minHeight: 52,
     borderRadius: radius.md,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 20,
   },
-
-  fullSaveText: {
-    color: colors.textLight,
-    fontSize: 15,
-    fontWeight: "900",
+  saveButtonText: { color: colors.textLight, fontWeight: "900", fontSize: 16 },
+  resetButton: {
+    minHeight: 48,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
   },
-
-  disabledButton: {
-    opacity: 0.65,
-  },
-
-  pressed: {
-    opacity: 0.78,
-    transform: [{ scale: 0.99 }],
-  },
+  resetButtonText: { color: colors.primary, fontWeight: "900" },
+  pressed: { opacity: 0.72 },
+  disabled: { opacity: 0.55 },
 });

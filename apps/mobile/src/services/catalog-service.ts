@@ -16,15 +16,8 @@ export async function listCatalogItems(
   error: string | null;
 }> {
   const { data, error } = await supabase
-    .from("catalog_items")
-    .select(
-      `
-      *,
-      unit:units (*),
-      category:catalog_categories (*)
-    `,
-    )
-    .eq("company_id", companyId)
+    .from("effective_platform_catalog_prices")
+    .select("*")
     .eq("active", true)
     .order("name", {
       ascending: true,
@@ -37,22 +30,63 @@ export async function listCatalogItems(
     };
   }
 
-  const items = (data ?? []).map((row) => {
-    const unitValue = Array.isArray(row.unit)
-      ? row.unit[0]
-      : row.unit;
+  const items: CatalogItemWithDetails[] = (data ?? [])
+    .filter(
+      (row): row is typeof row & { id: string; name: string } =>
+        Boolean(row.id && row.name),
+    )
+    .map((row) => {
+      const timestamp = row.updated_at ?? new Date(0).toISOString();
+      const unit: Unit = {
+        id: `platform-unit:${row.unit_symbol ?? "und"}`,
+        company_id: companyId,
+        code: row.unit_symbol ?? "und",
+        name: row.unit_name ?? "Unidad",
+        symbol: row.unit_symbol ?? "und.",
+        unit_type: "unit",
+        conversion_factor: 1,
+        active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+      };
+      const category: CatalogCategory | null = row.category_name
+        ? {
+            id: `platform-category:${row.category_name}`,
+            company_id: companyId,
+            parent_id: null,
+            name: row.category_name,
+            description: null,
+            active: true,
+            created_at: timestamp,
+            updated_at: timestamp,
+          }
+        : null;
 
-    const categoryValue = Array.isArray(row.category)
-      ? row.category[0]
-      : row.category;
-
-    return {
-      ...(row as CatalogItem),
-      unit: (unitValue ?? null) as Unit | null,
-      category:
-        (categoryValue ?? null) as CatalogCategory | null,
-    };
-  });
+      return {
+        id: row.id,
+        company_id: companyId,
+        item_type: row.item_type ?? "material",
+        category_id: category?.id ?? null,
+        sku: row.sku,
+        name: row.name,
+        description: row.description,
+        unit_id: unit.id,
+        unit_cost: Number(row.unit_cost ?? 0),
+        sale_price: Number(row.sale_price ?? 0),
+        waste_percentage: Number(row.waste_percentage ?? 0),
+        default_unit_cost: Number(row.default_unit_cost ?? 0),
+        default_sale_price: Number(row.default_sale_price ?? 0),
+        default_waste_percentage: Number(
+          row.default_waste_percentage ?? 0,
+        ),
+        has_override: Boolean(row.has_override),
+        active: Boolean(row.active),
+        created_at: timestamp,
+        updated_at: timestamp,
+        unit,
+        category,
+      };
+    });
 
   return {
     items,
@@ -76,19 +110,30 @@ export async function updateCatalogItemPricing(input: {
     100,
   );
 
-  const { error } = await supabase
-    .from("catalog_items")
-    .update({
-      unit_cost: unitCost,
-      sale_price: salePrice,
-      waste_percentage: wastePercentage,
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.itemId);
+  const { error } = await supabase.rpc(
+    "set_personal_catalog_pricing",
+    {
+      requested_item_id: input.itemId,
+      requested_unit_cost: unitCost,
+      requested_sale_price: salePrice,
+      requested_waste_percentage: wastePercentage,
+    },
+  );
 
   return {
     error: error?.message ?? null,
   };
+}
+
+export async function resetCatalogItemPricing(input: {
+  itemId: string;
+}): Promise<{ error: string | null }> {
+  const { error } = await supabase.rpc(
+    "reset_personal_catalog_pricing",
+    { requested_item_id: input.itemId },
+  );
+
+  return { error: error?.message ?? null };
 }
 
 export async function deactivateCatalogItem(input: {
@@ -406,5 +451,4 @@ export async function deactivateCatalogYield(input: {
     error: error?.message ?? null,
   };
 }
-
 

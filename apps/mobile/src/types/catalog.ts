@@ -51,6 +51,10 @@ export type CatalogItem = {
   unit_cost: number;
   sale_price: number;
   waste_percentage: number;
+  default_unit_cost?: number;
+  default_sale_price?: number;
+  default_waste_percentage?: number;
+  has_override?: boolean;
   active: boolean;
   created_at: string;
   updated_at: string;

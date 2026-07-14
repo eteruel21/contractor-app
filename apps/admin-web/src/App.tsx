@@ -34,12 +34,15 @@ import {
   type Formula,
   type FormulaDraft,
   type FormulaParameter,
+  type GlobalCatalogItem,
+  type GlobalCatalogItemDraft,
   type ItemDraft,
   type ItemType,
   loadAdminData,
   type PlatformUser,
   saveCategory,
   saveFormula,
+  saveGlobalCatalogPricing,
   saveItem,
   saveUnit,
   saveUser,
@@ -59,6 +62,7 @@ type Editor =
   | { kind: "user"; draft: UserDraft }
   | { kind: "category"; draft: CategoryDraft }
   | { kind: "item"; draft: ItemDraft }
+  | { kind: "globalPrice"; draft: GlobalCatalogItemDraft }
   | { kind: "unit"; draft: UnitDraft }
   | { kind: "yield"; draft: YieldDraft }
   | { kind: "formula"; draft: FormulaDraft };
@@ -68,6 +72,7 @@ const EMPTY_DATA: AdminData = {
   companies: [],
   categories: [],
   items: [],
+  globalItems: [],
   units: [],
   yields: [],
   formulas: [],
@@ -153,6 +158,17 @@ function itemDraft(item: CatalogItem): ItemDraft {
   return draft;
 }
 
+function globalCatalogItemDraft(
+  item: GlobalCatalogItem,
+): GlobalCatalogItemDraft {
+  return {
+    id: item.id,
+    unitCost: item.unitCost,
+    salePrice: item.salePrice,
+    wastePercentage: item.wastePercentage,
+  };
+}
+
 function unitDraft(unit: Unit): UnitDraft {
   const { companyName: _companyName, ...draft } = unit;
   return draft;
@@ -195,7 +211,7 @@ export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [priceCompanyId, setPriceCompanyId] = useState("");
+  const [priceType, setPriceType] = useState<"all" | "material" | "labor">("all");
   const [priceTarget, setPriceTarget] = useState<"unit_cost" | "sale_price">("sale_price");
   const [pricePercentage, setPricePercentage] = useState("5");
   const [priceNotes, setPriceNotes] = useState("");
@@ -248,7 +264,6 @@ export default function App() {
     try {
       const nextData = await loadAdminData();
       setData(nextData);
-      setPriceCompanyId((current) => current || nextData.companies[0]?.id || "");
     } catch (error) {
       setDataError(errorMessage(error));
     } finally {
@@ -322,6 +337,9 @@ export default function App() {
       if (editor.kind === "user") await saveUser(editor.draft, session.user.id);
       else if (editor.kind === "category") await saveCategory(editor.draft);
       else if (editor.kind === "item") await saveItem(editor.draft);
+      else if (editor.kind === "globalPrice") {
+        await saveGlobalCatalogPricing(editor.draft);
+      }
       else if (editor.kind === "unit") await saveUnit(editor.draft);
       else if (editor.kind === "yield") await saveYield(editor.draft);
       else await saveFormula(editor.draft);
@@ -338,18 +356,21 @@ export default function App() {
   async function handlePriceAdjustment(event: FormEvent) {
     event.preventDefault();
     const percentage = Number(pricePercentage.replace(",", "."));
-    const itemIds = data.items
-      .filter((item) => item.companyId === priceCompanyId && item.active)
+    const itemIds = data.globalItems
+      .filter((item) =>
+        item.active &&
+        (item.itemType === "material" || item.itemType === "labor") &&
+        (priceType === "all" || item.itemType === priceType),
+      )
       .map((item) => item.id);
     if (!Number.isFinite(percentage) || percentage <= -100 || itemIds.length === 0) {
-      setDataError("Revisa la empresa, el porcentaje y los elementos activos.");
+      setDataError("Revisa el tipo, el porcentaje y los elementos activos.");
       return;
     }
     setAdjustingPrices(true);
     setDataError(null);
     try {
       await adjustPrices({
-        companyId: priceCompanyId,
         itemIds,
         target: priceTarget,
         percentage,
@@ -478,7 +499,7 @@ export default function App() {
     users: ["Usuarios", "Aprueba registros y edita cada perfil."],
     catalog: ["Catálogo", "Categorías, materiales, mano de obra y servicios."],
     calculations: ["Cálculos", "Fórmulas, parámetros, unidades y rendimientos."],
-    pricing: ["Precios", "Costos, venta, desperdicio e historial de cambios."],
+    pricing: ["Precios globales", "Valores predeterminados para todos los usuarios."],
     system: ["Sistema", "Estado de la conexión y sesión administrativa."],
   };
 
@@ -529,7 +550,7 @@ export default function App() {
               <CalculationsTab formulas={data.formulas} units={data.units} yields={data.yields} onNewFormula={newFormula} onNewUnit={newUnit} onNewYield={newYield} onEditFormula={(formula) => setEditor({ kind: "formula", draft: formulaDraft(formula) })} onEditUnit={(unit) => setEditor({ kind: "unit", draft: unitDraft(unit) })} onEditYield={(value) => setEditor({ kind: "yield", draft: yieldDraft(value) })} />
             )}
             {activeTab === "pricing" && (
-              <PricingTab data={data} companyId={priceCompanyId} setCompanyId={setPriceCompanyId} target={priceTarget} setTarget={setPriceTarget} percentage={pricePercentage} setPercentage={setPricePercentage} notes={priceNotes} setNotes={setPriceNotes} adjusting={adjustingPrices} onSubmit={handlePriceAdjustment} onEdit={(item) => setEditor({ kind: "item", draft: itemDraft(item) })} />
+              <PricingTab data={data} itemType={priceType} setItemType={setPriceType} target={priceTarget} setTarget={setPriceTarget} percentage={pricePercentage} setPercentage={setPricePercentage} notes={priceNotes} setNotes={setPriceNotes} adjusting={adjustingPrices} onSubmit={handlePriceAdjustment} onEdit={(item) => setEditor({ kind: "globalPrice", draft: globalCatalogItemDraft(item) })} />
             )}
             {activeTab === "system" && <SystemTab data={data} email={session.user.email ?? ""} onSignOut={handleSignOut} />}
           </>
@@ -569,7 +590,7 @@ function Dashboard({ data, pendingUsers, onEdit, onToggle }: { data: AdminData; 
       <StatCard label="Usuarios" value={data.users.length} detail={`${pendingUsers.length} pendientes`} />
       <StatCard label="Empresas" value={data.companies.length} detail="Organizaciones registradas" />
       <StatCard label="Proyectos" value={data.projectCount} detail="Proyectos totales" />
-      <StatCard label="Catálogo" value={data.items.length} detail="Conceptos editables" />
+      <StatCard label="Precios globales" value={data.globalItems.length} detail="Conceptos predeterminados" />
     </div>
     <section className="data-card">
       <SectionHeader title="Solicitudes pendientes" subtitle="Aprueba el acceso o revisa los datos antes de aceptar." />
@@ -610,30 +631,37 @@ function CalculationsTab({ formulas, units, yields, onNewFormula, onNewUnit, onN
   </>;
 }
 
-function PricingTab({ data, companyId, setCompanyId, target, setTarget, percentage, setPercentage, notes, setNotes, adjusting, onSubmit, onEdit }: { data: AdminData; companyId: string; setCompanyId: (value: string) => void; target: "unit_cost" | "sale_price"; setTarget: (value: "unit_cost" | "sale_price") => void; percentage: string; setPercentage: (value: string) => void; notes: string; setNotes: (value: string) => void; adjusting: boolean; onSubmit: (event: FormEvent) => Promise<void>; onEdit: (item: CatalogItem) => void }) {
-  const items = data.items.filter((item) => item.companyId === companyId);
+function PricingTab({ data, itemType, setItemType, target, setTarget, percentage, setPercentage, notes, setNotes, adjusting, onSubmit, onEdit }: { data: AdminData; itemType: "all" | "material" | "labor"; setItemType: (value: "all" | "material" | "labor") => void; target: "unit_cost" | "sale_price"; setTarget: (value: "unit_cost" | "sale_price") => void; percentage: string; setPercentage: (value: string) => void; notes: string; setNotes: (value: string) => void; adjusting: boolean; onSubmit: (event: FormEvent) => Promise<void>; onEdit: (item: GlobalCatalogItem) => void }) {
+  const items = data.globalItems.filter((item) =>
+    (item.itemType === "material" || item.itemType === "labor") &&
+    (itemType === "all" || item.itemType === itemType),
+  );
   return <>
     <form className="data-card" onSubmit={onSubmit}>
-      <div className="card-toolbar"><SectionHeader title="Ajuste masivo" subtitle={`Aplicará a ${items.filter((item) => item.active).length} elementos activos.`} /><span className="history-pill"><History size={15} /> {data.priceHistoryCount} cambios</span></div>
-      <div className="form-grid four-columns"><SelectField label="Empresa" value={companyId} onChange={setCompanyId} options={data.companies.map((company) => ({ value: company.id, label: company.name }))} /><SelectField label="Campo" value={target} onChange={(value) => setTarget(value as "unit_cost" | "sale_price")} options={[{ value: "unit_cost", label: "Costo unitario" }, { value: "sale_price", label: "Precio de venta" }]} /><TextField label="Porcentaje" type="number" value={percentage} onChange={setPercentage} suffix="%" /><TextField label="Nota" value={notes} onChange={setNotes} /></div>
+      <div className="card-toolbar"><SectionHeader title="Ajuste masivo global" subtitle={`Aplicará a ${items.filter((item) => item.active).length} elementos activos y será el nuevo valor predeterminado.`} /><span className="history-pill"><History size={15} /> {data.priceHistoryCount} cambios</span></div>
+      <div className="form-grid four-columns"><SelectField label="Conceptos" value={itemType} onChange={(value) => setItemType(value as "all" | "material" | "labor")} options={[{ value: "all", label: "Materiales y mano de obra" }, { value: "material", label: "Solo materiales" }, { value: "labor", label: "Solo mano de obra" }]} /><SelectField label="Campo" value={target} onChange={(value) => setTarget(value as "unit_cost" | "sale_price")} options={[{ value: "unit_cost", label: "Costo unitario" }, { value: "sale_price", label: "Precio de venta" }]} /><TextField label="Porcentaje" type="number" value={percentage} onChange={setPercentage} suffix="%" /><TextField label="Nota" value={notes} onChange={setNotes} /></div>
       <button className="button button-primary" disabled={adjusting}>{adjusting ? <Loader2 className="spin" size={17} /> : <SlidersHorizontal size={17} />} Aplicar ajuste</button>
     </form>
-    <section className="data-card"><SectionHeader title="Precios por empresa" subtitle="Edita costo, venta y desperdicio individualmente." /><Table><thead><tr><th>Elemento</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Desperdicio</th><th></th></tr></thead><tbody>{items.map((item) => { const margin = item.salePrice > 0 ? ((item.salePrice - item.unitCost) / item.salePrice) * 100 : 0; return <tr key={item.id}><td><strong>{item.name}</strong><small>{item.sku || "Sin código"}</small></td><td>{formatMoney(item.unitCost)}</td><td>{formatMoney(item.salePrice)}</td><td>{margin.toFixed(1)}%</td><td>{item.wastePercentage}%</td><td><button className="icon-button" onClick={() => onEdit(item)}><Edit3 size={17} /></button></td></tr>; })}</tbody></Table></section>
+    <section className="data-card"><SectionHeader title="Catálogo maestro" subtitle="Estos precios no pertenecen a ninguna empresa. Cada usuario puede guardar un ajuste privado sin modificar esta lista." /><Table><thead><tr><th>Elemento</th><th>Tipo</th><th>Unidad</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Desperdicio</th><th></th></tr></thead><tbody>{items.map((item) => { const margin = item.salePrice > 0 ? ((item.salePrice - item.unitCost) / item.salePrice) * 100 : 0; return <tr key={item.id}><td><strong>{item.name}</strong><small>{item.categoryName} · {item.sku || "Sin código"}</small></td><td>{item.itemType === "labor" ? "Mano de obra" : "Material"}</td><td>{item.unitSymbol}</td><td>{formatMoney(item.unitCost)}</td><td>{formatMoney(item.salePrice)}</td><td>{margin.toFixed(1)}%</td><td>{item.wastePercentage}%</td><td><button className="icon-button" onClick={() => onEdit(item)}><Edit3 size={17} /></button></td></tr>; })}</tbody></Table></section>
   </>;
 }
 
 function SystemTab({ data, email, onSignOut }: { data: AdminData; email: string; onSignOut: () => Promise<void> }) {
-  return <div className="two-column-grid"><section className="data-card system-card"><BookOpen size={26} /><h2>Datos centrales</h2><p>{data.companies.length} empresas, {data.items.length} conceptos y {data.formulas.length} fórmulas.</p><span className="badge badge-active">Supabase conectado</span></section><section className="data-card system-card"><UserCheck size={26} /><h2>Sesión administrativa</h2><p>{email}</p><button className="button button-danger" onClick={() => void onSignOut()}><LogOut size={16} /> Cerrar sesión</button></section></div>;
+  return <div className="two-column-grid"><section className="data-card system-card"><BookOpen size={26} /><h2>Datos centrales</h2><p>{data.companies.length} empresas, {data.globalItems.length} precios globales y {data.formulas.length} fórmulas.</p><span className="badge badge-active">Supabase conectado</span></section><section className="data-card system-card"><UserCheck size={26} /><h2>Sesión administrativa</h2><p>{email}</p><button className="button button-danger" onClick={() => void onSignOut()}><LogOut size={16} /> Cerrar sesión</button></section></div>;
 }
 
 function EditorModal({ editor, setEditor, data, currentUserId, saving, onSave, onClose }: { editor: Editor; setEditor: (editor: Editor) => void; data: AdminData; currentUserId: string; saving: boolean; onSave: () => Promise<void>; onClose: () => void }) {
   const companyOptions = data.companies.map((company) => ({ value: company.id, label: company.name }));
-  const title = { user: "Editar usuario", category: "Editar categoría", item: "Editar elemento", unit: "Editar unidad", yield: "Editar rendimiento", formula: "Editar cálculo" }[editor.kind];
+  const title = { user: "Editar usuario", category: "Editar categoría", item: "Editar elemento", globalPrice: "Editar precio global", unit: "Editar unidad", yield: "Editar rendimiento", formula: "Editar cálculo" }[editor.kind];
   const isSelf = editor.kind === "user" && editor.draft.id === currentUserId;
+  const globalItem = editor.kind === "globalPrice"
+    ? data.globalItems.find((item) => item.id === editor.draft.id)
+    : null;
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="modal-card" role="dialog" aria-modal="true"><div className="modal-header"><div><h2>{title}</h2><p>Los cambios se guardarán directamente en Supabase.</p></div><button className="icon-button" onClick={onClose}><X size={19} /></button></div><div className="modal-body">
     {editor.kind === "user" && <div className="form-grid"><TextField label="Nombre completo" value={editor.draft.fullName} onChange={(fullName) => setEditor({ ...editor, draft: { ...editor.draft, fullName } })} /><TextField label="Teléfono" value={editor.draft.phone} onChange={(phone) => setEditor({ ...editor, draft: { ...editor.draft, phone } })} /><SelectField label="Rol" value={editor.draft.role} disabled={isSelf} onChange={(role) => setEditor({ ...editor, draft: { ...editor.draft, role: role as UserRole } })} options={[{ value: "contractor", label: "Contratista" }, { value: "client", label: "Cliente" }, { value: "super_admin", label: "Superadministrador" }]} /><ToggleField label={editor.draft.active ? "Cuenta activa" : editor.draft.approvedAt ? "Cuenta suspendida" : "Pendiente de aprobación"} checked={editor.draft.active} disabled={isSelf} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} />{isSelf && <p className="form-note">Tu propio rol y acceso están protegidos.</p>}</div>}
     {editor.kind === "category" && <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Categoría activa" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>}
     {editor.kind === "item" && (() => { const categories = data.categories.filter((value) => value.companyId === editor.draft.companyId); const units = data.units.filter((value) => value.companyId === editor.draft.companyId); return <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId, categoryId: data.categories.find((value) => value.companyId === companyId)?.id ?? null, unitId: data.units.find((value) => value.companyId === companyId)?.id ?? "" } })} options={companyOptions} /><TextField label="Código / SKU" value={editor.draft.sku} onChange={(sku) => setEditor({ ...editor, draft: { ...editor.draft, sku } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><SelectField label="Tipo" value={editor.draft.itemType} onChange={(itemType) => setEditor({ ...editor, draft: { ...editor.draft, itemType: itemType as ItemType } })} options={ITEM_TYPES} /><SelectField label="Categoría" value={editor.draft.categoryId ?? ""} onChange={(categoryId) => setEditor({ ...editor, draft: { ...editor.draft, categoryId: categoryId || null } })} options={[{ value: "", label: "Sin categoría" }, ...categories.map((value) => ({ value: value.id, label: value.name }))]} /><SelectField label="Unidad" value={editor.draft.unitId} onChange={(unitId) => setEditor({ ...editor, draft: { ...editor.draft, unitId } })} options={units.map((value) => ({ value: value.id, label: `${value.name} (${value.symbol})` }))} /><TextField label="Costo unitario" type="number" value={String(editor.draft.unitCost)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, unitCost: Number(value) } })} /><TextField label="Precio de venta" type="number" value={String(editor.draft.salePrice)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, salePrice: Number(value) } })} /><TextField label="Desperdicio" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Elemento activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>; })()}
+    {editor.kind === "globalPrice" && <div><p className="form-note"><strong>{globalItem?.name ?? "Concepto global"}</strong> · {globalItem?.unitName ?? "Unidad"} ({globalItem?.unitSymbol ?? "und."})</p><div className="form-grid"><TextField label="Costo unitario predeterminado" type="number" value={String(editor.draft.unitCost)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, unitCost: Number(value) } })} /><TextField label="Precio de venta predeterminado" type="number" value={String(editor.draft.salePrice)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, salePrice: Number(value) } })} /><TextField label="Desperdicio predeterminado" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /></div><p className="form-note">El cambio llegará a todos los usuarios que no tengan un ajuste personal para este concepto.</p></div>}
     {editor.kind === "unit" && <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Código" value={editor.draft.code} onChange={(code) => setEditor({ ...editor, draft: { ...editor.draft, code } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Símbolo" value={editor.draft.symbol} onChange={(symbol) => setEditor({ ...editor, draft: { ...editor.draft, symbol } })} /><SelectField label="Tipo" value={editor.draft.unitType} onChange={(unitType) => setEditor({ ...editor, draft: { ...editor.draft, unitType: unitType as UnitType } })} options={UNIT_TYPES} /><TextField label="Factor" type="number" value={String(editor.draft.conversionFactor)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, conversionFactor: Number(value) } })} /><ToggleField label="Unidad activa" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>}
     {editor.kind === "yield" && (() => { const items = data.items.filter((value) => value.companyId === editor.draft.companyId); const units = data.units.filter((value) => value.companyId === editor.draft.companyId); return <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId, catalogItemId: data.items.find((value) => value.companyId === companyId)?.id ?? "", outputUnitId: data.units.find((value) => value.companyId === companyId)?.id ?? "" } })} options={companyOptions} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><SelectField label="Concepto" value={editor.draft.catalogItemId} onChange={(catalogItemId) => setEditor({ ...editor, draft: { ...editor.draft, catalogItemId } })} options={items.map((value) => ({ value: value.id, label: value.name }))} /><SelectField label="Unidad de salida" value={editor.draft.outputUnitId} onChange={(outputUnitId) => setEditor({ ...editor, draft: { ...editor.draft, outputUnitId } })} options={units.map((value) => ({ value: value.id, label: value.name }))} /><TextField label="Producción" type="number" value={String(editor.draft.outputQuantity)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, outputQuantity: Number(value) } })} /><TextField label="Horas" type="number" value={String(editor.draft.laborHours)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, laborHours: Number(value) } })} /><TextField label="Cuadrilla" type="number" value={String(editor.draft.crewSize)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, crewSize: Number(value) } })} /><TextField label="Desperdicio" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /><TextField label="Notas" value={editor.draft.notes} onChange={(notes) => setEditor({ ...editor, draft: { ...editor.draft, notes } })} /><ToggleField label="Rendimiento activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>; })()}
     {editor.kind === "formula" && <div className="formula-editor"><div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Código" value={editor.draft.code} onChange={(code) => setEditor({ ...editor, draft: { ...editor.draft, code } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Cálculo activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div><div className="parameter-header"><SectionHeader title="Parámetros" subtitle="Valores consumidos por la calculadora." /><button className="button button-secondary" onClick={() => { const parameter: FormulaParameter = { parameterKey: "", label: "", numericValue: 0, unitLabel: "", description: "", active: true, sortOrder: editor.draft.parameters.length * 10 + 10 }; setEditor({ ...editor, draft: { ...editor.draft, parameters: [...editor.draft.parameters, parameter] } }); }}><Plus size={15} /> Parámetro</button></div><div className="parameter-list">{editor.draft.parameters.map((parameter, index) => <div className="parameter-row" key={parameter.id ?? index}><TextField label="Clave" value={parameter.parameterKey} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { parameterKey: value }))} /><TextField label="Etiqueta" value={parameter.label} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { label: value }))} /><TextField label="Valor" type="number" value={String(parameter.numericValue)} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { numericValue: Number(value) }))} /><TextField label="Unidad" value={parameter.unitLabel} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { unitLabel: value }))} /><ToggleField label="Activo" checked={parameter.active} onChange={(active) => setEditor(updateFormulaParameter(editor, index, { active }))} /></div>)}</div></div>}
