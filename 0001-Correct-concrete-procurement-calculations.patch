@@ -1,0 +1,196 @@
+From ddb5071a9f98feedc161b32fd402d9a870f3e9e6 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 15 Jul 2026 00:30:10 +0200
+Subject: [PATCH] Correct concrete procurement calculations
+
+---
+ apps/mobile/src/app/calculos/concreto.tsx | 36 +++++++++++++----------
+ apps/mobile/src/utils/calculations.ts     | 27 +++++++++++++----
+ 2 files changed, 43 insertions(+), 20 deletions(-)
+
+diff --git a/apps/mobile/src/app/calculos/concreto.tsx b/apps/mobile/src/app/calculos/concreto.tsx
+index 1c11fd6..4483e76 100644
+--- a/apps/mobile/src/app/calculos/concreto.tsx
++++ b/apps/mobile/src/app/calculos/concreto.tsx
+@@ -404,13 +404,21 @@ export default function ConcreteCalculatorScreen() {
+       return;
+     }
+ 
+-    const ratioTotal =
+-      parseNumber(form.cementRatio) +
+-      parseNumber(form.sandRatio) +
+-      parseNumber(form.gravelRatio);
++    const cementRatio = parseNumber(form.cementRatio);
++    const sandRatio = parseNumber(form.sandRatio);
++    const gravelRatio = parseNumber(form.gravelRatio);
+ 
+-    if (ratioTotal <= 0) {
+-      setError("La proporción de mezcla no es válida.");
++    if (cementRatio <= 0 || sandRatio <= 0 || gravelRatio <= 0) {
++      setError(
++        "Cada componente de la mezcla debe tener una proporción mayor que cero.",
++      );
++      setResult(null);
++      return;
++    }
++
++    const wastePercentage = parseNumber(form.wastePercentage);
++    if (wastePercentage < 0 || wastePercentage > 100) {
++      setError("El desperdicio debe estar entre 0% y 100%.");
+       setResult(null);
+       return;
+     }
+@@ -439,13 +447,11 @@ export default function ConcreteCalculatorScreen() {
+         length,
+         width,
+         thickness,
+-        wastePercentage: parseNumber(
+-          form.wastePercentage,
+-        ),
++        wastePercentage,
+ 
+-        mixCement: parseNumber(form.cementRatio),
+-        mixSand: parseNumber(form.sandRatio),
+-        mixGravel: parseNumber(form.gravelRatio),
++        mixCement: cementRatio,
++        mixSand: sandRatio,
++        mixGravel: gravelRatio,
+ 
+         cementBagWeight: parseNumber(
+           form.cementBagWeight,
+@@ -1383,7 +1389,7 @@ function Results({
+           result.cementKilograms,
+           1,
+         )} kg · Comprar ${formatNumber(
+-          Math.ceil(result.cementBags),
++          result.cementBagsToBuy,
+           0,
+         )} sacos`}
+       />
+@@ -1398,7 +1404,7 @@ function Results({
+           result.sandBags,
+           2,
+         )} sacos · Comprar ${formatNumber(
+-          Math.ceil(result.sandBags),
++          result.sandBagsToBuy,
+           0,
+         )} sacos`}
+       />
+@@ -1413,7 +1419,7 @@ function Results({
+           result.gravelBags,
+           2,
+         )} sacos · Comprar ${formatNumber(
+-          Math.ceil(result.gravelBags),
++          result.gravelBagsToBuy,
+           0,
+         )} sacos`}
+       />
+diff --git a/apps/mobile/src/utils/calculations.ts b/apps/mobile/src/utils/calculations.ts
+index 8794de9..0292dbb 100644
+--- a/apps/mobile/src/utils/calculations.ts
++++ b/apps/mobile/src/utils/calculations.ts
+@@ -40,13 +40,16 @@ export type ConcreteResult = {
+   dryVolume: number;
+ 
+   cementBags: number;
++  cementBagsToBuy: number;
+   cementKilograms: number;
+ 
+   sandVolume: number;
+   sandBags: number;
++  sandBagsToBuy: number;
+ 
+   gravelVolume: number;
+   gravelBags: number;
++  gravelBagsToBuy: number;
+ 
+   cementCost: number;
+   sandCost: number;
+@@ -76,13 +79,16 @@ function createEmptyResult(): ConcreteResult {
+     dryVolume: 0,
+ 
+     cementBags: 0,
++    cementBagsToBuy: 0,
+     cementKilograms: 0,
+ 
+     sandVolume: 0,
+     sandBags: 0,
++    sandBagsToBuy: 0,
+ 
+     gravelVolume: 0,
+     gravelBags: 0,
++    gravelBagsToBuy: 0,
+ 
+     cementCost: 0,
+     sandCost: 0,
+@@ -101,7 +107,10 @@ export function calculateConcrete(
+   const length = sanitizeNumber(input.length);
+   const width = sanitizeNumber(input.width);
+   const thickness = sanitizeNumber(input.thickness);
+-  const wastePercentage = sanitizeNumber(input.wastePercentage);
++  const wastePercentage = Math.min(
++    sanitizeNumber(input.wastePercentage),
++    100,
++  );
+ 
+   const cementPart = sanitizeNumber(input.mixCement);
+   const sandPart = sanitizeNumber(input.mixSand);
+@@ -137,7 +146,9 @@ export function calculateConcrete(
+     length === 0 ||
+     width === 0 ||
+     thickness === 0 ||
+-    totalParts === 0
++    cementPart === 0 ||
++    sandPart === 0 ||
++    gravelPart === 0
+   ) {
+     return createEmptyResult();
+   }
+@@ -157,21 +168,24 @@ export function calculateConcrete(
+   const cementKilograms =
+     cementVolume * cementDensityKgM3;
+   const cementBags = cementKilograms / cementBagWeight;
++  const cementBagsToBuy = Math.ceil(cementBags);
+ 
+   const sandBags = sandVolume / sandBagVolume;
+   const gravelBags = gravelVolume / gravelBagVolume;
++  const sandBagsToBuy = Math.ceil(sandBags);
++  const gravelBagsToBuy = Math.ceil(gravelBags);
+ 
+   const cementCost =
+-    cementBags * sanitizeNumber(prices.cementBag);
++    cementBagsToBuy * sanitizeNumber(prices.cementBag);
+ 
+   const sandCost =
+     input.sandPriceMode === "bag"
+-      ? sandBags * sanitizeNumber(prices.sandBag)
++      ? sandBagsToBuy * sanitizeNumber(prices.sandBag)
+       : sandVolume * sanitizeNumber(prices.sandCubicMeter);
+ 
+   const gravelCost =
+     input.gravelPriceMode === "bag"
+-      ? gravelBags * sanitizeNumber(prices.gravelBag)
++      ? gravelBagsToBuy * sanitizeNumber(prices.gravelBag)
+       : gravelVolume * sanitizeNumber(prices.gravelCubicMeter);
+ 
+   const laborCost =
+@@ -188,13 +202,16 @@ export function calculateConcrete(
+     dryVolume,
+ 
+     cementBags,
++    cementBagsToBuy,
+     cementKilograms,
+ 
+     sandVolume,
+     sandBags,
++    sandBagsToBuy,
+ 
+     gravelVolume,
+     gravelBags,
++    gravelBagsToBuy,
+ 
+     cementCost,
+     sandCost,
+-- 
+2.51.1
+

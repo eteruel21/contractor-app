@@ -58,17 +58,18 @@ export default function CatalogScreen() {
       else setLoading(true);
 
       const result = await listCatalogItems(
-        activeCompany?.id ?? "platform",
+        activeCompany?.id ?? "",
       );
 
       if (result.error) {
-        Alert.alert(
-          "No fue posible cargar los precios",
-          result.error,
-        );
-      } else {
-        setItems(result.items);
+        if (!result.items.length) {
+          Alert.alert(
+            "No fue posible cargar los precios",
+            result.error,
+          );
+        }
       }
+      setItems(result.items);
 
       setLoading(false);
       setRefreshing(false);
@@ -103,6 +104,10 @@ export default function CatalogScreen() {
         .includes(query);
     });
   }, [filter, items, search]);
+
+  const isLegacyCatalog = items.some(
+    (item) => item.pricing_source === "legacy",
+  );
 
   if (loading) {
     return (
@@ -139,7 +144,9 @@ export default function CatalogScreen() {
               <View style={styles.headerCopy}>
                 <Text style={styles.title}>Precios del catálogo</Text>
                 <Text style={styles.subtitle}>
-                  Valores globales con ajustes privados para tu cuenta.
+                  {isLegacyCatalog
+                    ? "Mostrando temporalmente los precios anteriores de tu empresa."
+                    : "Valores globales con ajustes privados para tu cuenta."}
                 </Text>
               </View>
             </View>
@@ -151,9 +158,9 @@ export default function CatalogScreen() {
                 color={colors.info}
               />
               <Text style={styles.infoText}>
-                El administrador actualiza el precio predeterminado. Si lo
-                personalizas, el cambio solo será visible para ti y podrás
-                restaurarlo cuando quieras.
+                {isLegacyCatalog
+                  ? "El catálogo global está pendiente de activación. Puedes seguir consultando y editando los precios anteriores."
+                  : "El administrador actualiza el precio predeterminado. Si lo personalizas, el cambio solo será visible para ti y podrás restaurarlo cuando quieras."}
               </Text>
             </View>
 
@@ -317,7 +324,11 @@ function CatalogPriceCard({
           color={colors.primary}
         />
         <Text style={styles.editButtonText}>
-          {item.has_override ? "Editar mi precio" : "Personalizar para mí"}
+          {item.pricing_source === "legacy"
+            ? "Editar precio"
+            : item.has_override
+              ? "Editar mi precio"
+              : "Personalizar para mí"}
         </Text>
       </Pressable>
     </View>
@@ -401,6 +412,7 @@ function EditPersonalPriceModal({
       unitCost: nextUnitCost,
       salePrice: nextSalePrice,
       wastePercentage: nextWaste,
+      pricingSource: item.pricing_source,
     });
     setSaving(false);
 
@@ -460,7 +472,9 @@ function EditPersonalPriceModal({
             <Pressable onPress={onClose} disabled={saving}>
               <Text style={styles.cancelText}>Cancelar</Text>
             </Pressable>
-            <Text style={styles.modalTitle}>Mi precio</Text>
+            <Text style={styles.modalTitle}>
+              {item?.pricing_source === "legacy" ? "Precio" : "Mi precio"}
+            </Text>
             <View style={styles.modalSpacer} />
           </View>
 
@@ -470,45 +484,47 @@ function EditPersonalPriceModal({
               {item?.unit?.name ?? "Unidad"} ({item?.unit?.symbol ?? "und."})
             </Text>
 
-            <View style={styles.globalPriceCard}>
-              <View style={styles.globalPriceTitle}>
-                <Ionicons
-                  name="globe-outline"
-                  size={19}
-                  color={colors.info}
-                />
-                <Text style={styles.globalPriceTitleText}>
-                  Precio predeterminado
+            {item?.pricing_source !== "legacy" && (
+              <View style={styles.globalPriceCard}>
+                <View style={styles.globalPriceTitle}>
+                  <Ionicons
+                    name="globe-outline"
+                    size={19}
+                    color={colors.info}
+                  />
+                  <Text style={styles.globalPriceTitleText}>
+                    Precio predeterminado
+                  </Text>
+                </View>
+                <Text style={styles.globalPriceText}>
+                  Costo {formatMoney(item?.default_unit_cost ?? 0)} · Venta{" "}
+                  {formatMoney(item?.default_sale_price ?? 0)} · Desperdicio{" "}
+                  {item?.default_waste_percentage ?? 0}%
                 </Text>
               </View>
-              <Text style={styles.globalPriceText}>
-                Costo {formatMoney(item?.default_unit_cost ?? 0)} · Venta{" "}
-                {formatMoney(item?.default_sale_price ?? 0)} · Desperdicio{" "}
-                {item?.default_waste_percentage ?? 0}%
-              </Text>
-            </View>
+            )}
 
             <MoneyInput
-              label="Mi costo unitario"
+              label={item?.pricing_source === "legacy" ? "Costo unitario" : "Mi costo unitario"}
               value={unitCost}
               onChangeText={setUnitCost}
             />
             <MoneyInput
-              label="Mi precio de venta"
+              label={item?.pricing_source === "legacy" ? "Precio de venta" : "Mi precio de venta"}
               value={salePrice}
               onChangeText={setSalePrice}
             />
             <MoneyInput
-              label="Mi desperdicio"
+              label={item?.pricing_source === "legacy" ? "Desperdicio" : "Mi desperdicio"}
               value={wastePercentage}
               onChangeText={setWastePercentage}
               suffix="%"
             />
 
             <Text style={styles.privateNote}>
-              Este cambio se guardará en tu cuenta y será usado por tus
-              calculadoras. No modifica el catálogo global ni los precios de
-              otros usuarios.
+              {item?.pricing_source === "legacy"
+                ? "Este cambio actualizará el precio anterior de tu empresa mientras se activa el catálogo global."
+                : "Este cambio se guardará en tu cuenta y será usado por tus calculadoras. No modifica el catálogo global ni los precios de otros usuarios."}
             </Text>
 
             <Pressable
@@ -529,7 +545,11 @@ function EditPersonalPriceModal({
                     size={19}
                     color={colors.textLight}
                   />
-                  <Text style={styles.saveButtonText}>Guardar para mí</Text>
+                  <Text style={styles.saveButtonText}>
+                    {item?.pricing_source === "legacy"
+                      ? "Guardar precio"
+                      : "Guardar para mí"}
+                  </Text>
                 </>
               )}
             </Pressable>

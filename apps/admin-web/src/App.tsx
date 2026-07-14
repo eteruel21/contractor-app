@@ -537,6 +537,9 @@ export default function App() {
         </header>
 
         {dataError && <AlertBanner message={dataError} onClose={() => setDataError(null)} />}
+        {data.warnings.map((warning) => (
+          <AlertBanner key={warning} message={warning} />
+        ))}
         {success && <SuccessBanner message={success} />}
 
         {loadingData ? (
@@ -646,7 +649,7 @@ function PricingTab({ data, itemType, setItemType, target, setTarget, percentage
     <form className="data-card" onSubmit={onSubmit}>
       <div className="card-toolbar"><SectionHeader title="Ajuste masivo global" subtitle={`Aplicará a ${items.filter((item) => item.active).length} elementos activos y será el nuevo valor predeterminado.`} /><span className="history-pill"><History size={15} /> {data.priceHistoryCount} cambios</span></div>
       <div className="form-grid four-columns"><SelectField label="Conceptos" value={itemType} onChange={(value) => setItemType(value as "all" | "material" | "labor")} options={[{ value: "all", label: "Materiales y mano de obra" }, { value: "material", label: "Solo materiales" }, { value: "labor", label: "Solo mano de obra" }]} /><SelectField label="Campo" value={target} onChange={(value) => setTarget(value as "unit_cost" | "sale_price")} options={[{ value: "unit_cost", label: "Costo unitario" }, { value: "sale_price", label: "Precio de venta" }]} /><TextField label="Porcentaje" type="number" value={percentage} onChange={setPercentage} suffix="%" /><TextField label="Nota" value={notes} onChange={setNotes} /></div>
-      <button className="button button-primary" disabled={adjusting}>{adjusting ? <Loader2 className="spin" size={17} /> : <SlidersHorizontal size={17} />} Aplicar ajuste</button>
+      <button className="button button-primary" disabled={adjusting || items.length === 0}>{adjusting ? <Loader2 className="spin" size={17} /> : <SlidersHorizontal size={17} />} Aplicar ajuste</button>
     </form>
     <section className="data-card"><SectionHeader title="Catálogo maestro" subtitle="Estos precios no pertenecen a ninguna empresa. Cada usuario puede guardar un ajuste privado sin modificar esta lista." /><Table><thead><tr><th>Elemento</th><th>Tipo</th><th>Unidad</th><th>Costo</th><th>Venta</th><th>Margen</th><th>Desperdicio</th><th></th></tr></thead><tbody>{items.map((item) => { const margin = item.salePrice > 0 ? ((item.salePrice - item.unitCost) / item.salePrice) * 100 : 0; return <tr key={item.id}><td><strong>{item.name}</strong><small>{item.categoryName} · {item.sku || "Sin código"}</small></td><td>{item.itemType === "labor" ? "Mano de obra" : "Material"}</td><td>{item.unitSymbol}</td><td>{formatMoney(item.unitCost)}</td><td>{formatMoney(item.salePrice)}</td><td>{margin.toFixed(1)}%</td><td>{item.wastePercentage}%</td><td><button className="icon-button" onClick={() => onEdit(item)}><Edit3 size={17} /></button></td></tr>; })}</tbody></Table></section>
   </>;

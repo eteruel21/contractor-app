@@ -271,8 +271,6 @@ export async function loadAdminData(): Promise<AdminData> {
       .select("id", { count: "exact", head: true }),
   ]);
 
-  results.slice(0, 10).forEach((result) => throwIfError(result.error));
-
   const [
     usersResult,
     membershipsResult,
@@ -288,17 +286,30 @@ export async function loadAdminData(): Promise<AdminData> {
     historyResult,
   ] = results;
 
-  const warnings: string[] = [];
-  if (globalItemsResult.error) {
-    warnings.push(
-      `El catálogo global no está disponible: ${globalItemsResult.error.message}`,
-    );
-  }
-  if (historyResult.error) {
-    warnings.push(
-      `El historial de precios no está disponible: ${historyResult.error.message}`,
-    );
-  }
+  [
+    usersResult,
+    membershipsResult,
+    companiesResult,
+    projectsResult,
+    clientsResult,
+    categoriesResult,
+    itemsResult,
+    unitsResult,
+    yieldsResult,
+    formulasResult,
+  ].forEach((result) => throwIfError(result.error));
+
+  const platformErrors = [
+    globalItemsResult.error,
+    historyResult.error,
+  ].filter(Boolean);
+  const warnings = platformErrors.length > 0
+    ? [
+        "El catálogo global todavía no está disponible en Supabase. " +
+          "Los usuarios, empresas y datos anteriores siguen visibles; " +
+          "aplica la migración pendiente para habilitar los precios globales.",
+      ]
+    : [];
 
   const companyByUser = new Map<string, string>();
   for (const membership of membershipsResult.data ?? []) {

@@ -55,6 +55,7 @@ export type CatalogItem = {
   default_sale_price?: number;
   default_waste_percentage?: number;
   has_override?: boolean;
+  pricing_source?: "platform" | "legacy";
   active: boolean;
   created_at: string;
   updated_at: string;

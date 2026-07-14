@@ -23,12 +23,7 @@ export async function listCatalogItems(
       ascending: true,
     });
 
-  if (error) {
-    return {
-      items: [],
-      error: error.message,
-    };
-  }
+  if (error) return listLegacyCatalogItems(companyId, error.message);
 
   const items: CatalogItemWithDetails[] = (data ?? [])
     .filter(
@@ -80,6 +75,7 @@ export async function listCatalogItems(
           row.default_waste_percentage ?? 0,
         ),
         has_override: Boolean(row.has_override),
+        pricing_source: "platform",
         active: Boolean(row.active),
         created_at: timestamp,
         updated_at: timestamp,
@@ -94,12 +90,59 @@ export async function listCatalogItems(
   };
 }
 
+async function listLegacyCatalogItems(
+  companyId: string,
+  platformError: string,
+): Promise<{
+  items: CatalogItemWithDetails[];
+  error: string | null;
+}> {
+  const { data, error } = await supabase
+    .from("catalog_items")
+    .select(`
+      *,
+      unit:units (*),
+      category:catalog_categories (*)
+    `)
+    .eq("company_id", companyId)
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return {
+      items: [],
+      error: `${platformError} | ${error.message}`,
+    };
+  }
+
+  const items: CatalogItemWithDetails[] = (data ?? []).map((row) => {
+    const unit = Array.isArray(row.unit) ? row.unit[0] : row.unit;
+    const category = Array.isArray(row.category)
+      ? row.category[0]
+      : row.category;
+
+    return {
+      ...(row as CatalogItem),
+      default_unit_cost: Number(row.unit_cost ?? 0),
+      default_sale_price: Number(row.sale_price ?? 0),
+      default_waste_percentage: Number(row.waste_percentage ?? 0),
+      has_override: false,
+      pricing_source: "legacy",
+      unit: (unit ?? null) as Unit | null,
+      category: (category ?? null) as CatalogCategory | null,
+    };
+  });
+
+  return { items, error: null };
+}
+
 export async function updateCatalogItemPricing(input: {
   companyId: string;
   itemId: string;
   unitCost: number;
   salePrice: number;
   wastePercentage: number;
+  pricingSource?: "platform" | "legacy";
 }): Promise<{
   error: string | null;
 }> {
@@ -109,6 +152,20 @@ export async function updateCatalogItemPricing(input: {
     Math.max(input.wastePercentage, 0),
     100,
   );
+
+  if (input.pricingSource === "legacy") {
+    const { error } = await supabase
+      .from("catalog_items")
+      .update({
+        unit_cost: unitCost,
+        sale_price: salePrice,
+        waste_percentage: wastePercentage,
+      })
+      .eq("company_id", input.companyId)
+      .eq("id", input.itemId);
+
+    return { error: error?.message ?? null };
+  }
 
   const { error } = await supabase.rpc(
     "set_personal_catalog_pricing",
