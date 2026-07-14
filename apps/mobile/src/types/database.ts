@@ -1257,6 +1257,10 @@ export type Database = {
       }
     }
     Functions: {
+      update_own_profile: {
+        Args: { p_full_name: string; p_phone?: string | null }
+        Returns: Database["public"]["Tables"]["profiles"]["Row"]
+      }
       admin_save_catalog_item: {
         Args: { requested_active: boolean; requested_category_id: string | null; requested_company_id: string; requested_description: string; requested_item_id: string | null; requested_item_type: Database["public"]["Enums"]["catalog_item_type"]; requested_name: string; requested_sale_price: number; requested_sku: string; requested_unit_cost: number; requested_unit_id: string; requested_waste_percentage: number }
         Returns: string

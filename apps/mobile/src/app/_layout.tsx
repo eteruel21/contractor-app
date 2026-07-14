@@ -107,6 +107,10 @@ function RootNavigator() {
       <Stack.Protected guard={isClientAuthenticated}>
         <Stack.Screen name="(client-tabs)" />
       </Stack.Protected>
+
+      <Stack.Protected guard={hasActiveCompany || isClientAuthenticated}>
+        <Stack.Screen name="perfil" />
+      </Stack.Protected>
     </Stack>
   );
 }
