@@ -9,7 +9,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius } from "../../constants/theme";
+import {
+  colors,
+  layout,
+  radius,
+  shadows,
+} from "@/constants/theme";
 
 type CalculationCategory = {
   id: string;
@@ -139,6 +144,7 @@ export default function CalculationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
+          <View style={styles.headerOrb} />
           <View style={styles.headerIcon}>
             <Ionicons
               name="calculator-outline"
@@ -148,11 +154,17 @@ export default function CalculationsScreen() {
           </View>
 
           <View style={styles.headerText}>
+            <Text style={styles.headerEyebrow}>HERRAMIENTAS DE OBRA</Text>
             <Text style={styles.title}>Calculadoras</Text>
 
             <Text style={styles.subtitle}>
-              Selecciona el tipo de trabajo que deseas calcular.
+              Estimaciones rápidas con los datos de tu empresa.
             </Text>
+          </View>
+
+          <View style={styles.countBadge}>
+            <Text style={styles.countValue}>10</Text>
+            <Text style={styles.countLabel}>tipos</Text>
           </View>
         </View>
 
@@ -256,12 +268,25 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 28,
+    minHeight: 174,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: 24,
+    paddingBottom: 30,
     backgroundColor: colors.surfaceDark,
     flexDirection: "row",
     alignItems: "center",
+    overflow: "hidden",
+  },
+
+  headerOrb: {
+    position: "absolute",
+    width: 190,
+    height: 190,
+    top: -90,
+    right: -80,
+    borderRadius: 95,
+    borderWidth: 32,
+    borderColor: "rgba(255,255,255,0.035)",
   },
 
   headerIcon: {
@@ -278,6 +303,14 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
 
+  headerEyebrow: {
+    marginBottom: 4,
+    color: colors.primary,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
   title: {
     color: colors.textLight,
     fontSize: 25,
@@ -286,16 +319,41 @@ const styles = StyleSheet.create({
 
   subtitle: {
     marginTop: 4,
-    color: "#94A3B8",
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.textLightMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+
+  countBadge: {
+    minWidth: 50,
+    marginLeft: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+  },
+
+  countValue: {
+    color: colors.textLight,
+    fontSize: 17,
+    fontWeight: "900",
+  },
+
+  countLabel: {
+    marginTop: 1,
+    color: colors.textLightMuted,
+    fontSize: 9,
+    fontWeight: "700",
   },
 
   notice: {
     margin: 20,
     padding: 16,
     borderRadius: radius.md,
-    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#D7E4F8",
+    backgroundColor: colors.infoSoft,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
@@ -326,6 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.soft,
   },
 
   disabledCard: {
@@ -402,5 +461,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 });
-
 

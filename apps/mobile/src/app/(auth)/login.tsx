@@ -16,8 +16,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    colors,
-    radius,
+  colors,
+  layout,
+  radius,
+  shadows,
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -105,26 +107,58 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.backgroundOrbLarge} />
+          <View style={styles.backgroundOrbSmall} />
+
           <View style={styles.brand}>
-            <View style={styles.logo}>
-              <Ionicons
-                name="construct-outline"
-                size={34}
-                color={colors.textLight}
-              />
+            <View style={styles.brandRow}>
+              <View style={styles.logo}>
+                <Ionicons
+                  name="construct"
+                  size={23}
+                  color={colors.surfaceDark}
+                />
+              </View>
+
+              <Text style={styles.brandName}>
+                CONTRACTOR PRO
+              </Text>
             </View>
 
-            <Text style={styles.brandName}>
-              Contractor Pro
+            <Text style={styles.brandEyebrow}>
+              GESTIÓN PARA CONTRATISTAS
+            </Text>
+
+            <Text style={styles.brandHeadline}>
+              Construye mejor.{"\n"}Administra fácil.
             </Text>
 
             <Text style={styles.brandDescription}>
-              Administra tus obras, clientes,
-              presupuestos y cálculos desde un solo lugar.
+              Obras, clientes, presupuestos y cálculos siempre organizados.
             </Text>
+
+            <View style={styles.benefitsRow}>
+              <View style={styles.benefit}>
+                <Ionicons
+                  name="shield-checkmark"
+                  size={15}
+                  color={colors.primary}
+                />
+                <Text style={styles.benefitText}>Seguro</Text>
+              </View>
+              <View style={styles.benefit}>
+                <Ionicons
+                  name="cloud-done"
+                  size={15}
+                  color={colors.primary}
+                />
+                <Text style={styles.benefitText}>En la nube</Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.card}>
+            <Text style={styles.formEyebrow}>BIENVENIDO DE NUEVO</Text>
             <Text style={styles.title}>
               Iniciar sesión
             </Text>
@@ -312,55 +346,132 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     justifyContent: "center",
-    padding: 20,
-    paddingVertical: 40,
+    width: "100%",
+    maxWidth: layout.maxContentWidth,
+    alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: 34,
+    paddingBottom: 34,
+    overflow: "hidden",
+  },
+
+  backgroundOrbLarge: {
+    position: "absolute",
+    width: 310,
+    height: 310,
+    top: -145,
+    right: -155,
+    borderRadius: 155,
+    borderWidth: 48,
+    borderColor: "rgba(255,255,255,0.035)",
+  },
+
+  backgroundOrbSmall: {
+    position: "absolute",
+    width: 150,
+    height: 150,
+    top: 235,
+    left: -90,
+    borderRadius: 75,
+    backgroundColor: "rgba(22,155,98,0.10)",
   },
 
   brand: {
+    marginBottom: 30,
+  },
+
+  brandRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 28,
+    gap: 11,
   },
 
   logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
+    width: 43,
+    height: 43,
+    borderRadius: 13,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
 
   brandName: {
-    marginTop: 15,
     color: colors.textLight,
-    fontSize: 27,
+    fontSize: 13,
     fontWeight: "900",
+    letterSpacing: 1.4,
+  },
+
+  brandEyebrow: {
+    marginTop: 35,
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  brandHeadline: {
+    marginTop: 8,
+    color: colors.textLight,
+    fontSize: 35,
+    fontWeight: "900",
+    lineHeight: 40,
+    letterSpacing: -1.2,
   },
 
   brandDescription: {
-    maxWidth: 340,
-    marginTop: 8,
-    color: "#94A3B8",
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
+    maxWidth: 360,
+    marginTop: 12,
+    color: colors.textLightMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+
+  benefitsRow: {
+    marginTop: 18,
+    flexDirection: "row",
+    gap: 18,
+  },
+
+  benefit: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  benefitText: {
+    color: colors.textLightMuted,
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   card: {
-    padding: 20,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.55)",
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    ...shadows.raised,
+  },
+
+  formEyebrow: {
+    marginBottom: 6,
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.1,
   },
 
   title: {
     color: colors.text,
-    fontSize: 23,
+    fontSize: 26,
     fontWeight: "900",
+    letterSpacing: -0.6,
   },
 
   subtitle: {
-    marginTop: 6,
-    marginBottom: 22,
+    marginTop: 7,
+    marginBottom: 24,
     color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
@@ -383,7 +494,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,

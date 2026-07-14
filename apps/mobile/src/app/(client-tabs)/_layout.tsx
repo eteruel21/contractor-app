@@ -1,28 +1,61 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import {
+  type ColorValue,
+  StyleSheet,
+  View,
+} from "react-native";
 
-import { colors } from "../../constants/theme";
+import { colors } from "@/constants/theme";
+
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+function TabIcon({
+  focused,
+  active,
+  inactive,
+  color,
+}: {
+  focused: boolean;
+  active: IconName;
+  inactive: IconName;
+  color: ColorValue;
+}) {
+  return (
+    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+      <Ionicons
+        name={focused ? active : inactive}
+        size={21}
+        color={color}
+      />
+    </View>
+  );
+}
 
 export default function ClientTabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: "#94A3B8",
-
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          height: 72,
-          paddingTop: 8,
-          paddingBottom: 10,
+          height: 76,
+          paddingTop: 7,
+          paddingBottom: 9,
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
+          borderTopWidth: 0,
+          shadowColor: colors.surfaceDark,
+          shadowOffset: { width: 0, height: -5 },
+          shadowOpacity: 0.06,
+          shadowRadius: 15,
+          elevation: 12,
         },
-
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "700",
+          marginTop: 2,
+          fontSize: 10,
+          fontWeight: "800",
         },
       }}
     >
@@ -30,8 +63,8 @@ export default function ClientTabsLayout() {
         name="index"
         options={{
           title: "Inicio",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} active="home" inactive="home-outline" color={color} />
           ),
         }}
       />
@@ -40,8 +73,8 @@ export default function ClientTabsLayout() {
         name="proyectos"
         options={{
           title: "Proyectos",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="business-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} active="business" inactive="business-outline" color={color} />
           ),
         }}
       />
@@ -50,8 +83,8 @@ export default function ClientTabsLayout() {
         name="presupuestos"
         options={{
           title: "Presupuestos",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} active="document-text" inactive="document-text-outline" color={color} />
           ),
         }}
       />
@@ -60,11 +93,24 @@ export default function ClientTabsLayout() {
         name="cuenta"
         options={{
           title: "Cuenta",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon focused={focused} active="person" inactive="person-outline" color={color} />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    width: 40,
+    height: 29,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconWrapActive: {
+    backgroundColor: colors.primarySoft,
+  },
+});

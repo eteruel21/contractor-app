@@ -16,8 +16,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
-    colors,
-    radius,
+  colors,
+  layout,
+  radius,
+  shadows,
 } from "@/constants/theme";
 import {
   type PublicAppRole,
@@ -142,19 +144,36 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons
-              name="arrow-back-outline"
-              size={22}
-              color={colors.text}
-            />
-          </Pressable>
+          <View style={styles.backgroundOrb} />
+
+          <View style={styles.topBar}>
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Ionicons
+                name="arrow-back-outline"
+                size={21}
+                color={colors.textLight}
+              />
+            </Pressable>
+
+            <View style={styles.brandLockup}>
+              <View style={styles.brandMark}>
+                <Ionicons
+                  name="construct"
+                  size={17}
+                  color={colors.surfaceDark}
+                />
+              </View>
+              <Text style={styles.brandName}>CONTRACTOR PRO</Text>
+            </View>
+          </View>
+
+          <Text style={styles.pageEyebrow}>NUEVA CUENTA</Text>
 
           <Text style={styles.title}>
-            Crear cuenta
+            Empieza a trabajar{"\n"}con más control.
           </Text>
 
           <Text style={styles.subtitle}>
@@ -164,9 +183,12 @@ export default function RegisterScreen() {
           </Text>
 
           <View style={styles.card}>
-            <Text style={styles.accountTypeLabel}>
-              Tipo de cuenta
-            </Text>
+            <View style={styles.cardHeading}>
+              <Text style={styles.cardTitle}>Crea tu acceso</Text>
+              <Text style={styles.cardDescription}>
+                Elige cómo utilizarás la plataforma.
+              </Text>
+            </View>
 
             <View style={styles.roleSelector}>
               <Pressable
@@ -177,6 +199,15 @@ export default function RegisterScreen() {
                     styles.roleButtonActive,
                 ]}
               >
+                <Ionicons
+                  name="hammer-outline"
+                  size={20}
+                  color={
+                    accountRole === "contractor"
+                      ? colors.primary
+                      : colors.textMuted
+                  }
+                />
                 <Text
                   style={[
                     styles.roleButtonText,
@@ -196,6 +227,15 @@ export default function RegisterScreen() {
                     styles.roleButtonActive,
                 ]}
               >
+                <Ionicons
+                  name="person-outline"
+                  size={20}
+                  color={
+                    accountRole === "client"
+                      ? colors.primary
+                      : colors.textMuted
+                  }
+                />
                 <Text
                   style={[
                     styles.roleButtonText,
@@ -254,6 +294,17 @@ export default function RegisterScreen() {
               secureTextEntry
               autoCapitalize="none"
             />
+
+            <View style={styles.approvalNotice}>
+              <Ionicons
+                name="time-outline"
+                size={19}
+                color={colors.warning}
+              />
+              <Text style={styles.approvalNoticeText}>
+                Por seguridad, un administrador revisará tu registro antes de activar el acceso.
+              </Text>
+            </View>
 
             <Pressable
               onPress={() =>
@@ -389,54 +440,120 @@ const styles = StyleSheet.create({
 
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceDark,
   },
 
   content: {
     flexGrow: 1,
-    padding: 20,
-    paddingBottom: 50,
+    width: "100%",
+    maxWidth: layout.maxContentWidth,
+    alignSelf: "center",
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: 12,
+    paddingBottom: 40,
+    overflow: "hidden",
+  },
+
+  backgroundOrb: {
+    position: "absolute",
+    width: 260,
+    height: 260,
+    top: -125,
+    right: -125,
+    borderRadius: 130,
+    borderWidth: 42,
+    borderColor: "rgba(255,255,255,0.035)",
+  },
+
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   backButton: {
-    width: 46,
-    height: 46,
-    marginBottom: 20,
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: colors.surfaceDarkRaised,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  title: {
-    color: colors.text,
-    fontSize: 27,
+  brandLockup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  brandMark: {
+    width: 31,
+    height: 31,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  brandName: {
+    color: colors.textLight,
+    fontSize: 10,
     fontWeight: "900",
+    letterSpacing: 1.1,
+  },
+
+  pageEyebrow: {
+    marginTop: 38,
+    color: colors.primary,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  title: {
+    marginTop: 7,
+    color: colors.textLight,
+    fontSize: 31,
+    fontWeight: "900",
+    lineHeight: 36,
+    letterSpacing: -0.9,
   },
 
   subtitle: {
-    marginTop: 7,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
+    maxWidth: 430,
+    marginTop: 10,
+    color: colors.textLightMuted,
+    fontSize: 14,
+    lineHeight: 21,
   },
 
   card: {
-    marginTop: 25,
-    padding: 18,
+    marginTop: 28,
+    padding: 20,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: "rgba(255,255,255,0.5)",
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+    ...shadows.raised,
   },
 
-  accountTypeLabel: {
-    marginBottom: 9,
+  cardHeading: {
+    marginBottom: 16,
+  },
+
+  cardTitle: {
     color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+    letterSpacing: -0.4,
+  },
+
+  cardDescription: {
+    marginTop: 4,
+    color: colors.textSecondary,
     fontSize: 12,
-    fontWeight: "800",
   },
 
   roleSelector: {
@@ -447,18 +564,19 @@ const styles = StyleSheet.create({
 
   roleButton: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 66,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
   },
 
   roleButtonActive: {
     borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.primaryWash,
   },
 
   roleButtonText: {
@@ -488,7 +606,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -509,6 +627,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
+  },
+
+  approvalNotice: {
+    marginTop: 1,
+    marginBottom: 7,
+    padding: 12,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+  },
+
+  approvalNoticeText: {
+    flex: 1,
+    color: "#7B581C",
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "600",
   },
 
   primaryButtonDisabled: {
