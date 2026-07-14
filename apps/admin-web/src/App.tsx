@@ -545,7 +545,7 @@ export default function App() {
         {loadingData ? (
           <div className="content-loader"><Loader2 className="spin" size={34} /><span>Sincronizando con Supabase...</span></div>
         ) : (
-          <>
+          <div key={activeTab} className="tab-pane">
             {activeTab === "dashboard" && (
               <Dashboard data={data} pendingUsers={pendingUsers} onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })} onToggle={toggleUser} />
             )}
@@ -562,7 +562,7 @@ export default function App() {
               <PricingTab data={data} itemType={priceType} setItemType={setPriceType} target={priceTarget} setTarget={setPriceTarget} percentage={pricePercentage} setPercentage={setPricePercentage} notes={priceNotes} setNotes={setPriceNotes} adjusting={adjustingPrices} onSubmit={handlePriceAdjustment} onEdit={(item) => setEditor({ kind: "globalPrice", draft: globalCatalogItemDraft(item) })} />
             )}
             {activeTab === "system" && <SystemTab data={data} email={session.user.email ?? ""} onSignOut={handleSignOut} />}
-          </>
+          </div>
         )}
       </main>
 

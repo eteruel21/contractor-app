@@ -315,6 +315,67 @@ export default function ConcreteCalculatorScreen() {
     gravelPriceMode,
   ]);
 
+  // Real-time calculation effect
+  useEffect(() => {
+    const length = parseNumber(form.length);
+    const width = parseNumber(form.width);
+    const thickness = parseNumber(form.thickness);
+    const cementRatio = parseNumber(form.cementRatio);
+    const sandRatio = parseNumber(form.sandRatio);
+    const gravelRatio = parseNumber(form.gravelRatio);
+    const wastePercentage = parseNumber(form.wastePercentage);
+    const cementBagWeight = parseNumber(form.cementBagWeight);
+    const sandBagVolume = parseNumber(form.sandBagVolume);
+    const gravelBagVolume = parseNumber(form.gravelBagVolume);
+
+    if (
+      length > 0 &&
+      width > 0 &&
+      thickness > 0 &&
+      cementRatio > 0 &&
+      sandRatio > 0 &&
+      gravelRatio > 0 &&
+      wastePercentage >= 0 &&
+      wastePercentage <= 100 &&
+      cementBagWeight > 0 &&
+      sandBagVolume > 0 &&
+      gravelBagVolume > 0
+    ) {
+      try {
+        const calculatedResult = calculateConcrete(
+          {
+            length,
+            width,
+            thickness,
+            wastePercentage,
+            mixCement: cementRatio,
+            mixSand: sandRatio,
+            mixGravel: gravelRatio,
+            cementBagWeight,
+            sandBagVolume,
+            gravelBagVolume,
+          },
+          {
+            cementBag: parseNumber(form.cementPrice),
+            sandCubicMeter: parseNumber(form.sandCubicMeterPrice),
+            sandBag: parseNumber(form.sandBagPrice),
+            sandPriceMode,
+            gravelCubicMeter: parseNumber(form.gravelCubicMeterPrice),
+            gravelBag: parseNumber(form.gravelBagPrice),
+            gravelPriceMode,
+            laborCubicMeter: parseNumber(form.laborPrice),
+          }
+        );
+        setResult(calculatedResult);
+        setError("");
+      } catch (err) {
+        // Silently catch live calculation parsing errors
+      }
+    } else {
+      setResult(null);
+    }
+  }, [form, sandPriceMode, gravelPriceMode]);
+
   const canCalculate = useMemo(() => {
     return (
       parseNumber(form.length) > 0 &&

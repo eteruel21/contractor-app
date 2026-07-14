@@ -1,24 +1,23 @@
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
 
+git am --abort
+
 git status --short
-git switch main
-git pull --ff-only origin main
+
 git add .
-git commit -m "WIP"
+git commit -m "fix: resolver migración duplicada e implementar fallback de catálogo"
 git push origin main
 
-cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
-
-npx supabase db push
-
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\admin-web"
-
 npm install
 npm run build
 npx wrangler pages deploy dist --project-name contractor-admin-web --branch main
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\mobile"
-
 npm install
 npm run build:web
 npx wrangler pages deploy dist --project-name contractor-pro-web --branch main
+
+cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
+
+npx supabase db push
