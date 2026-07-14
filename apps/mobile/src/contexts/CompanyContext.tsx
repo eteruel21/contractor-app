@@ -50,8 +50,12 @@ const CompanyContext =
 export function CompanyProvider({
   children,
 }: PropsWithChildren) {
-  const { user, loading: authLoading } = useAuth();
-  const userId = user?.id ?? null;
+  const {
+    user,
+    profile,
+    loading: authLoading,
+  } = useAuth();
+  const userId = profile?.active ? user?.id ?? null : null;
 
   const [memberships, setMemberships] =
     useState<CompanyMembership[]>([]);

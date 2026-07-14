@@ -99,13 +99,25 @@ export default function RegisterScreen() {
 
       if (requiresEmailConfirmation) {
         Alert.alert(
-          "Confirma tu correo",
-          "La cuenta fue creada. Revisa tu correo para confirmar el registro.",
+          "Registro recibido",
+          "Revisa tu correo para confirmar la cuenta. Después deberás esperar a que el administrador apruebe tu acceso a la plataforma.",
           [
             {
               text: "Ir a iniciar sesión",
               onPress: () =>
                 router.replace("/login")
+            },
+          ],
+        );
+      } else {
+        Alert.alert(
+          "Registro recibido",
+          "Tu cuenta fue creada y está pendiente de aprobación. La revisión puede tomar un tiempo.",
+          [
+            {
+              text: "Entendido",
+              onPress: () =>
+                router.replace("/pendiente"),
             },
           ],
         );
