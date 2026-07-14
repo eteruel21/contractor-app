@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -31,6 +32,30 @@ export default function InvoiceSettingsScreen() {
   const [invoicePrefix, setInvoicePrefix] = useState("");
   const [taxRate, setTaxRate] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const handleSelectLogoFile = () => {
+    if (Platform.OS === "web") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setLogoUrl(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    } else {
+      Alert.alert(
+        "Cargar logotipo",
+        "Para cargar una imagen local, abre la plataforma web o introduce la dirección URL del logotipo."
+      );
+    }
+  };
 
   useEffect(() => {
     if (activeCompany) {
@@ -177,15 +202,51 @@ export default function InvoiceSettingsScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>URL del Logotipo (imagen JPG/PNG)</Text>
-            <TextInput
-              value={logoUrl}
-              onChangeText={setLogoUrl}
-              autoCapitalize="none"
-              placeholder="Ej. https://empresa.com/logo.png"
-              placeholderTextColor="#94A3B8"
-              style={styles.input}
-            />
+            <Text style={styles.label}>Logotipo de la empresa</Text>
+            
+            {logoUrl ? (
+              <View style={styles.logoPreviewContainer}>
+                <Image
+                  source={{ uri: logoUrl }}
+                  style={styles.logoPreview}
+                  resizeMode="contain"
+                />
+                <Pressable
+                  onPress={() => setLogoUrl("")}
+                  style={styles.removeLogoButton}
+                >
+                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                  <Text style={styles.removeLogoText}>Quitar logotipo</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.noLogoBox}>
+                <Ionicons name="image-outline" size={32} color="#94A3B8" />
+                <Text style={styles.noLogoText}>Sin logotipo seleccionado</Text>
+              </View>
+            )}
+
+            <View style={styles.logoUploadActions}>
+              <Pressable
+                onPress={handleSelectLogoFile}
+                style={({ pressed }) => [
+                  styles.uploadFileButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
+                <Text style={styles.uploadFileButtonText}>Cargar archivo de imagen</Text>
+              </Pressable>
+
+              <TextInput
+                value={logoUrl}
+                onChangeText={setLogoUrl}
+                autoCapitalize="none"
+                placeholder="O pega la URL de la imagen aquí..."
+                placeholderTextColor="#94A3B8"
+                style={[styles.input, styles.logoUrlInput]}
+              />
+            </View>
           </View>
 
           <View style={styles.row}>
@@ -339,5 +400,89 @@ const styles = StyleSheet.create({
 
   pressed: {
     opacity: 0.78,
+  },
+
+  logoPreviewContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+
+  logoPreview: {
+    width: 100,
+    height: 50,
+    backgroundColor: "#F8FAFC",
+    borderRadius: radius.sm,
+  },
+
+  removeLogoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
+  },
+
+  removeLogoText: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  noLogoBox: {
+    minHeight: 80,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 10,
+    backgroundColor: "#F8FAFC",
+  },
+
+  noLogoText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  logoUploadActions: {
+    flexDirection: "column",
+    gap: 8,
+  },
+
+  uploadFileButton: {
+    minHeight: 44,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+
+  uploadFileButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  logoUrlInput: {
+    minHeight: 40,
+    fontSize: 12,
   },
 });

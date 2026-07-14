@@ -82,7 +82,7 @@ export default function HomeScreen() {
 
             <Text style={styles.greeting}>Hola, {firstName}</Text>
             <Text style={styles.heroTitle}>
-              Tu operación, bajo control.
+              Toda tu operación, bajo control.
             </Text>
             <Text style={styles.heroDescription}>
               Calcula, cotiza y organiza cada trabajo desde un solo lugar.

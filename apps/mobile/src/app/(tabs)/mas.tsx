@@ -4,6 +4,7 @@ import {
   router,
 } from "expo-router";
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radius } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
 
 type OptionItem = {
   id: string;
@@ -58,7 +60,35 @@ const baseOptions: OptionItem[] = [
 ];
 
 export default function MoreScreen() {
-  const options = baseOptions;
+  const { signOut } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Cerrar sesión",
+      "¿Estás seguro de que deseas salir de tu cuenta?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Salir",
+          style: "destructive",
+          onPress: async () => {
+            await signOut();
+          },
+        },
+      ],
+    );
+  };
+
+  const options = [
+    ...baseOptions,
+    {
+      id: "logout",
+      title: "Cerrar sesión",
+      description: "Salir de tu cuenta actual.",
+      icon: "log-out-outline" as const,
+      onPress: handleLogout,
+    },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>

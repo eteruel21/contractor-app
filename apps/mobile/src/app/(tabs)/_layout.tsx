@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Tabs } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Tabs, router, useSegments } from "expo-router";
+import { useEffect, useRef } from "react";
 import {
   type ColorValue,
   StyleSheet,
@@ -33,6 +35,36 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const segments = useSegments() as any;
+  const hasRestored = useRef(false);
+
+  useEffect(() => {
+    // Save last tab
+    if (segments.length === 2 && segments[0] === "(tabs)") {
+      const activeTab = segments[1] === "index" ? "inicio" : segments[1];
+      void AsyncStorage.setItem("@contractor-pro:last-tab", activeTab);
+    }
+  }, [segments]);
+
+  useEffect(() => {
+    // Restore last tab on mount
+    const restoreTab = async () => {
+      if (hasRestored.current) return;
+      try {
+        const saved = await AsyncStorage.getItem("@contractor-pro:last-tab");
+        if (saved && saved !== "inicio") {
+          hasRestored.current = true;
+          router.replace(`/(tabs)/${saved}` as any);
+        } else {
+          hasRestored.current = true;
+        }
+      } catch (e) {
+        hasRestored.current = true;
+      }
+    };
+    void restoreTab();
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
