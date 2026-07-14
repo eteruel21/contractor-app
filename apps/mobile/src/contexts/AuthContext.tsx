@@ -13,7 +13,10 @@ import {
   useState,
 } from "react";
 
-import { supabase } from "@/services/supabase";
+import {
+  configureSupabaseAutoRefresh,
+  supabase,
+} from "@/services/supabase";
 
 export type AppRole = "super_admin" | "contractor" | "client";
 
@@ -101,13 +104,14 @@ export function AuthProvider({
         return;
       }
 
-      setProfile(data as unknown as AppProfile | null);
+      setProfile(data);
       setProfileLoading(false);
     },
     [],
   );
 
   useEffect(() => {
+    const stopAutoRefresh = configureSupabaseAutoRefresh();
     let mounted = true;
 
     async function applySession(
@@ -164,6 +168,7 @@ export function AuthProvider({
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      stopAutoRefresh();
     };
   }, [loadProfile]);
 
@@ -246,12 +251,7 @@ export function AuthProvider({
     authLoading || (Boolean(session) && profileLoading);
 
   const isAdmin = Boolean(
-    profile?.active && (
-      profile.role === "contractor" ||
-      profile.role === "super_admin" ||
-      (profile.role as string) === "admin" ||
-      !profile.role
-    ),
+    profile?.active && profile.role === "super_admin",
   );
 
   const value = useMemo<AuthContextValue>(

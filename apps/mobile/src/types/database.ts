@@ -19,6 +19,7 @@ export type Database = {
           budget_id: string
           calculation_run_id: string | null
           catalog_item_id: string | null
+          platform_catalog_item_id: string | null
           company_id: string
           created_at: string
           description: string
@@ -40,6 +41,7 @@ export type Database = {
           budget_id: string
           calculation_run_id?: string | null
           catalog_item_id?: string | null
+          platform_catalog_item_id?: string | null
           company_id: string
           created_at?: string
           description: string
@@ -61,6 +63,7 @@ export type Database = {
           budget_id?: string
           calculation_run_id?: string | null
           catalog_item_id?: string | null
+          platform_catalog_item_id?: string | null
           company_id?: string
           created_at?: string
           description?: string
@@ -689,6 +692,23 @@ export type Database = {
           },
         ]
       }
+      calculation_formulas: {
+        Row: { active: boolean; code: string; company_id: string; created_at: string; description: string | null; id: string; name: string; updated_at: string }
+        Insert: { active?: boolean; code: string; company_id: string; created_at?: string; description?: string | null; id?: string; name: string; updated_at?: string }
+        Update: { active?: boolean; code?: string; company_id?: string; created_at?: string; description?: string | null; id?: string; name?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "calculation_formulas_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+        ]
+      }
+      calculation_formula_parameters: {
+        Row: { active: boolean; company_id: string; created_at: string; description: string | null; formula_id: string; id: string; label: string; numeric_value: number; parameter_key: string; sort_order: number; unit_label: string | null; updated_at: string }
+        Insert: { active?: boolean; company_id: string; created_at?: string; description?: string | null; formula_id: string; id?: string; label: string; numeric_value: number; parameter_key: string; sort_order?: number; unit_label?: string | null; updated_at?: string }
+        Update: { active?: boolean; company_id?: string; created_at?: string; description?: string | null; formula_id?: string; id?: string; label?: string; numeric_value?: number; parameter_key?: string; sort_order?: number; unit_label?: string | null; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "calculation_formula_parameters_company_id_fkey"; columns: ["company_id"]; isOneToOne: false; referencedRelation: "companies"; referencedColumns: ["id"] },
+          { foreignKeyName: "calculation_formula_parameters_formula_fk"; columns: ["formula_id", "company_id"]; isOneToOne: false; referencedRelation: "calculation_formulas"; referencedColumns: ["id", "company_id"] },
+        ]
+      }
       companies: {
         Row: {
           active: boolean
@@ -881,6 +901,8 @@ export type Database = {
       profiles: {
         Row: {
           active: boolean
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           created_at: string
           full_name: string | null
@@ -891,6 +913,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
@@ -901,6 +925,8 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           created_at?: string
           full_name?: string | null
@@ -1138,6 +1164,24 @@ export type Database = {
           },
         ]
       }
+      platform_catalog_items: {
+        Row: { active: boolean; category_name: string | null; code: string; created_at: string; default_sale_price: number; default_unit_cost: number; default_waste_percentage: number; description: string | null; id: string; item_type: Database["public"]["Enums"]["catalog_item_type"]; name: string; sku: string | null; unit_name: string; unit_symbol: string; updated_at: string }
+        Insert: { active?: boolean; category_name?: string | null; code: string; created_at?: string; default_sale_price?: number; default_unit_cost?: number; default_waste_percentage?: number; description?: string | null; id?: string; item_type?: Database["public"]["Enums"]["catalog_item_type"]; name: string; sku?: string | null; unit_name?: string; unit_symbol?: string; updated_at?: string }
+        Update: { active?: boolean; category_name?: string | null; code?: string; created_at?: string; default_sale_price?: number; default_unit_cost?: number; default_waste_percentage?: number; description?: string | null; id?: string; item_type?: Database["public"]["Enums"]["catalog_item_type"]; name?: string; sku?: string | null; unit_name?: string; unit_symbol?: string; updated_at?: string }
+        Relationships: []
+      }
+      user_catalog_price_overrides: {
+        Row: { catalog_item_id: string; created_at: string; sale_price: number; unit_cost: number; updated_at: string; user_id: string; waste_percentage: number }
+        Insert: { catalog_item_id: string; created_at?: string; sale_price: number; unit_cost: number; updated_at?: string; user_id: string; waste_percentage: number }
+        Update: { catalog_item_id?: string; created_at?: string; sale_price?: number; unit_cost?: number; updated_at?: string; user_id?: string; waste_percentage?: number }
+        Relationships: []
+      }
+      platform_catalog_price_history: {
+        Row: { catalog_item_id: string; changed_by: string | null; created_at: string; id: string; notes: string | null; previous_sale_price: number; previous_unit_cost: number; previous_waste_percentage: number; sale_price: number; source: string | null; unit_cost: number; waste_percentage: number }
+        Insert: { catalog_item_id: string; changed_by?: string | null; created_at?: string; id?: string; notes?: string | null; previous_sale_price: number; previous_unit_cost: number; previous_waste_percentage: number; sale_price: number; source?: string | null; unit_cost: number; waste_percentage: number }
+        Update: { catalog_item_id?: string; changed_by?: string | null; created_at?: string; id?: string; notes?: string | null; previous_sale_price?: number; previous_unit_cost?: number; previous_waste_percentage?: number; sale_price?: number; source?: string | null; unit_cost?: number; waste_percentage?: number }
+        Relationships: []
+      }
       units: {
         Row: {
           active: boolean
@@ -1213,6 +1257,22 @@ export type Database = {
       }
     }
     Functions: {
+      admin_save_catalog_item: {
+        Args: { requested_active: boolean; requested_category_id: string | null; requested_company_id: string; requested_description: string; requested_item_id: string | null; requested_item_type: Database["public"]["Enums"]["catalog_item_type"]; requested_name: string; requested_sale_price: number; requested_sku: string; requested_unit_cost: number; requested_unit_id: string; requested_waste_percentage: number }
+        Returns: string
+      }
+      admin_save_formula: {
+        Args: { requested_active: boolean; requested_code: string; requested_company_id: string; requested_description: string; requested_formula_id: string | null; requested_name: string; requested_parameters: Json }
+        Returns: string
+      }
+      admin_adjust_platform_catalog_prices: {
+        Args: { change_notes?: string | null; requested_item_ids: string[]; requested_percentage: number; requested_target: string }
+        Returns: number
+      }
+      admin_update_platform_catalog_pricing: {
+        Args: { change_notes?: string; change_source?: string; requested_item_id: string; requested_sale_price: number; requested_unit_cost: number; requested_waste_percentage: number }
+        Returns: undefined
+      }
       create_company: {
         Args: {
           company_email?: string

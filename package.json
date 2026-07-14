@@ -3,5 +3,11 @@
   "private": true,
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
+    "build:admin": "npm run build -w apps/admin-web",
+    "build:mobile": "npm run build:web -w apps/mobile",
+    "validate": "npm run typecheck && npm run build:admin"
+  }
 }

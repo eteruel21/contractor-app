@@ -885,7 +885,7 @@ function AddCatalogItemModal({
         companyId,
         budgetId,
         sectionId,
-        catalogItemId: item.id,
+        platformCatalogItemId: item.id,
         itemType: item.item_type,
         description: item.name,
         unitName:

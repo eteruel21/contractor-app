@@ -42,12 +42,23 @@ export const supabase = createClient<Database>(
   },
 );
 
-if (Platform.OS !== "web") {
-  AppState.addEventListener("change", (state) => {
+export function configureSupabaseAutoRefresh(): () => void {
+  if (Platform.OS === "web") return () => undefined;
+
+  const subscription = AppState.addEventListener("change", (state) => {
     if (state === "active") {
       supabase.auth.startAutoRefresh();
     } else {
       supabase.auth.stopAutoRefresh();
     }
   });
+
+  if (AppState.currentState === "active") {
+    supabase.auth.startAutoRefresh();
+  }
+
+  return () => {
+    subscription.remove();
+    supabase.auth.stopAutoRefresh();
+  };
 }
