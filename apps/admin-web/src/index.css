@@ -131,6 +131,44 @@ button { cursor: pointer; }
 .alert-banner button { margin-left: auto; border: 0; color: inherit; background: transparent; }
 .empty-state { min-height: 160px; color: #71849d; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
+/* ─── Pricing tab: filter bar ─── */
+.pricing-filters { margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.pricing-filters .field { min-width: 0; }
+.pricing-filters .search-field { flex: 1 1 260px; }
+.pricing-filters .category-field { flex: 0 1 240px; }
+.pricing-filters .type-field { flex: 0 1 180px; }
+
+.pricing-result-count { margin-bottom: 8px; color: #778aa3; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; }
+
+/* ─── Pricing tab: category chip ─── */
+.category-chip { display: inline-block; max-width: 180px; padding: 3px 8px; border-radius: 6px; color: #93c5fd; background: rgba(59, 130, 246, .1); font-size: 10px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ─── Pricing tab: item type labels ─── */
+.type-label { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.type-label--service { color: #a78bfa; background: rgba(139, 92, 246, .12); }
+.type-label--material { color: #fbbf24; background: rgba(245, 158, 11, .12); }
+.type-label--labor { color: #34d399; background: rgba(16, 185, 129, .12); }
+.type-label--equipment { color: #60a5fa; background: rgba(59, 130, 246, .12); }
+.type-label--subcontract { color: #fb923c; background: rgba(249, 115, 22, .12); }
+
+/* ─── Pricing tab: inline editing ─── */
+.editable-cell { position: relative; cursor: pointer; border-radius: 6px; padding: 2px 4px; transition: background .14s; }
+.editable-cell:hover { background: rgba(34, 197, 94, .08); }
+.editable-cell input { width: 90px; min-height: 30px; padding: 2px 8px; border: 1px solid #22c55e; border-radius: 6px; color: #f8fafc; background: #0b1728; font-size: 13px; outline: none; box-shadow: 0 0 0 3px rgba(34, 197, 94, .12); }
+
+/* ─── Pricing tab: expandable description ─── */
+.item-description-toggle { margin-top: 2px; border: 0; padding: 0; color: #6f839d; background: transparent; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: underline dotted; }
+.item-description-toggle:hover { color: #93c5fd; }
+.item-description-box { margin-top: 6px; padding: 8px 10px; border-radius: 8px; color: #91a3ba; background: #0e1e33; font-size: 11px; line-height: 1.5; white-space: pre-line; max-height: 150px; overflow-y: auto; }
+
+/* ─── Pagination ─── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px 0 4px; }
+.pagination button { min-width: 36px; height: 36px; border: 1px solid #2b4059; border-radius: 8px; color: #91a3ba; background: #15263a; font-size: 12px; font-weight: 700; cursor: pointer; transition: .14s ease; display: inline-flex; align-items: center; justify-content: center; }
+.pagination button:hover:not(:disabled) { color: white; background: #1d3554; transform: translateY(-1px); }
+.pagination button.active { color: #052e16; background: #4ade80; border-color: #4ade80; }
+.pagination button:disabled { opacity: .4; cursor: not-allowed; }
+.pagination .page-info { color: #778aa3; font-size: 12px; font-weight: 700; padding: 0 8px; }
+
 @media (max-width: 1050px) {
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .four-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -151,6 +189,8 @@ button { cursor: pointer; }
   .toolbar-actions { align-items: stretch; flex-direction: column; }
   .search-input { width: 100%; }
   .two-column-grid, .form-grid, .four-columns { grid-template-columns: 1fr; }
+  .pricing-filters { flex-direction: column; }
+  .pricing-filters .search-field, .pricing-filters .category-field, .pricing-filters .type-field { flex: 1 1 100%; }
   .modal-backdrop { padding: 8px; }
   .modal-card { max-height: 97vh; }
 }

@@ -68,6 +68,7 @@ export type GlobalCatalogItem = {
   id: string;
   sku: string;
   name: string;
+  description: string;
   itemType: ItemType;
   categoryName: string;
   unitName: string;
@@ -260,7 +261,7 @@ export async function loadAdminData(): Promise<AdminData> {
     db
       .from("platform_catalog_items")
       .select(`
-        id, sku, name, item_type, category_name, unit_name, unit_symbol,
+        id, sku, name, description, item_type, category_name, unit_name, unit_symbol,
         default_unit_cost, default_sale_price,
         default_waste_percentage, active
       `)
@@ -353,6 +354,7 @@ export async function loadAdminData(): Promise<AdminData> {
       id: row.id,
       sku: row.sku ?? "",
       name: row.name,
+      description: row.description ?? "",
       itemType: row.item_type as ItemType,
       categoryName: row.category_name ?? "Sin categoría",
       unitName: row.unit_name ?? "Unidad",
