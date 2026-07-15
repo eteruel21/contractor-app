@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -167,6 +168,8 @@ export function AuthProvider({
   const [profileError, setProfileError] =
     useState<string | null>(null);
 
+  const sessionRef = useRef<Session | null>(null);
+
   const loadProfile = useCallback(
     async (userId: string) => {
       setProfileLoading(true);
@@ -205,6 +208,7 @@ export function AuthProvider({
       if (!mounted) return;
 
       setSession(nextSession);
+      sessionRef.current = nextSession;
 
       if (nextSession?.user) {
         await loadProfile(nextSession.user.id);
@@ -234,6 +238,7 @@ export function AuthProvider({
         );
       }
 
+      sessionRef.current = currentSession;
       await applySession(currentSession);
     }
 
@@ -244,6 +249,17 @@ export function AuthProvider({
     } = supabase.auth.onAuthStateChange(
       (_event, nextSession) => {
         if (!mounted) return;
+
+        const currentUserId = sessionRef.current?.user?.id;
+        const nextUserId = nextSession?.user?.id;
+
+        // Si el usuario es el mismo (ej: refresco silencioso del token al enfocar la pestaña),
+        // actualizamos la sesión de fondo sin mostrar la pantalla de carga ni desmontar la app.
+        if (currentUserId && nextUserId && currentUserId === nextUserId) {
+          setSession(nextSession);
+          sessionRef.current = nextSession;
+          return;
+        }
 
         setAuthLoading(true);
         void applySession(nextSession);

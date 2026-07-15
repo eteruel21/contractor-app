@@ -229,75 +229,79 @@ export function CompanyProvider({
     void refreshCompanies();
   }, [authLoading, refreshCompanies]);
 
-  async function setActiveCompanyId(
-    companyId: string,
-  ) {
-    const exists = memberships.some(
-      (membership) =>
-        membership.company_id === companyId,
-    );
-
-    if (!exists) {
-      throw new Error(
-        "No tienes acceso a esta empresa.",
+  const setActiveCompanyId = useCallback(
+    async (companyId: string) => {
+      const exists = memberships.some(
+        (membership) =>
+          membership.company_id === companyId,
       );
-    }
 
-    setActiveCompanyIdState(companyId);
+      if (!exists) {
+        throw new Error(
+          "No tienes acceso a esta empresa.",
+        );
+      }
 
-    await AsyncStorage.setItem(
-      ACTIVE_COMPANY_KEY,
-      companyId,
-    );
-  }
+      setActiveCompanyIdState(companyId);
 
-  async function createCompany({
-    name,
-    phone = "",
-    email = "",
-  }: CreateCompanyInput) {
-    const cleanName = name.trim();
-
-    if (cleanName.length < 2) {
-      return {
-        companyId: null,
-        error: "El nombre de la empresa es obligatorio.",
-      };
-    }
-
-    const { data, error } =
-      await supabase.rpc("create_company", {
-        company_name: cleanName,
-        company_phone: phone.trim() || undefined,
-        company_email:
-          email.trim().toLowerCase() || undefined,
-      });
-
-    if (error) {
-      return {
-        companyId: null,
-        error: error.message,
-      };
-    }
-
-    const newCompanyId =
-      typeof data === "string" ? data : null;
-
-    await refreshCompanies();
-
-    if (newCompanyId) {
-      setActiveCompanyIdState(newCompanyId);
       await AsyncStorage.setItem(
         ACTIVE_COMPANY_KEY,
-        newCompanyId,
+        companyId,
       );
-    }
+    },
+    [memberships],
+  );
 
-    return {
-      companyId: newCompanyId,
-      error: null,
-    };
-  }
+  const createCompany = useCallback(
+    async ({
+      name,
+      phone = "",
+      email = "",
+    }: CreateCompanyInput) => {
+      const cleanName = name.trim();
+
+      if (cleanName.length < 2) {
+        return {
+          companyId: null,
+          error: "El nombre de la empresa es obligatorio.",
+        };
+      }
+
+      const { data, error } =
+        await supabase.rpc("create_company", {
+          company_name: cleanName,
+          company_phone: phone.trim() || undefined,
+          company_email:
+            email.trim().toLowerCase() || undefined,
+        });
+
+      if (error) {
+        return {
+          companyId: null,
+          error: error.message,
+        };
+      }
+
+      const newCompanyId =
+        typeof data === "string" ? data : null;
+
+      await refreshCompanies();
+
+      if (newCompanyId) {
+        setActiveCompanyIdState(newCompanyId);
+        await AsyncStorage.setItem(
+          ACTIVE_COMPANY_KEY,
+          newCompanyId,
+        );
+      }
+
+      return {
+        companyId: newCompanyId,
+        error: null,
+      };
+    },
+    [refreshCompanies],
+  );
 
   const value = useMemo<CompanyContextValue>(
     () => ({
@@ -318,6 +322,9 @@ export function CompanyProvider({
       activeMembership,
       loading,
       refreshing,
+      refreshCompanies,
+      setActiveCompanyId,
+      createCompany,
     ],
   );
 

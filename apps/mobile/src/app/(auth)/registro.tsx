@@ -3,7 +3,6 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,20 +24,8 @@ import {
   type PublicAppRole,
   useAuth,
 } from "@/contexts/AuthContext";
+import { showAlert } from "@/utils/alert";
 
-const showAlert = (title: string, message: string, buttons?: any[]) => {
-  if (Platform.OS === "web") {
-    alert(`${title}\n\n${message}`);
-    if (buttons && buttons.length > 0) {
-      const okButton = buttons.find((b: any) => b.text === "Entendido" || b.text === "OK" || b.onPress) || buttons[0];
-      if (okButton && okButton.onPress) {
-        okButton.onPress();
-      }
-    }
-  } else {
-    Alert.alert(title, message, buttons);
-  }
-};
 
 function getPasswordStrength(pass: string) {
   if (!pass) return { score: 0, label: "Falta contraseña", color: "#94A3B8" };

@@ -47,7 +47,10 @@ export async function getInvoiceById(
     return { invoice: null, error: invoiceError.message };
   }
 
-  const invoice = invoiceData as InvoiceWithDetails;
+  const invoice = {
+    ...invoiceData,
+    budget: null,
+  } as InvoiceWithDetails;
 
   if (invoice.budget_id) {
     const { budget, error: budgetError } = await getBudgetById(

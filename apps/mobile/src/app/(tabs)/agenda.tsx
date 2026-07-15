@@ -11,17 +11,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius } from "../../constants/theme";
-import { useCompany } from "../../contexts/CompanyContext";
-import { formatDate as formatDateUtil } from "../../utils/format";
+import { colors, radius } from "@/constants/theme";
+import { useCompany } from "@/contexts/CompanyContext";
+import { formatDate as formatDateUtil } from "@/utils/format";
 import {
   deleteAppointment,
   getAppointments,
   type Appointment,
   type AppointmentStatus,
   type AppointmentType,
-} from "../../utils/appointment-storage";
-import { cancelScheduledNotification } from "../../utils/appointment-notifications";
+} from "@/utils/appointment-storage";
+import { cancelScheduledNotification } from "@/utils/appointment-notifications";
 
 const statusLabels: Record<AppointmentStatus, string> = {
   scheduled: "Programada",

@@ -218,6 +218,10 @@ export async function listPricingHistory(
     .select(
       `
       *,
+      changed_by_profile:profiles!changed_by (
+        id,
+        full_name
+      ),
       item:catalog_items (
         id,
         name,
@@ -243,33 +247,6 @@ export async function listPricingHistory(
     };
   }
 
-  const actorIds = Array.from(
-    new Set(
-      (data ?? [])
-        .map((row) => row.changed_by)
-        .filter(
-          (value): value is string =>
-            typeof value === "string",
-        ),
-    ),
-  );
-
-  const actorNames = new Map<string, string>();
-
-  if (actorIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .in("id", actorIds);
-
-    for (const profile of profiles ?? []) {
-      actorNames.set(
-        profile.id,
-        profile.full_name ?? "Usuario",
-      );
-    }
-  }
-
   const previousByItem = new Map<
     string,
     {
@@ -287,6 +264,12 @@ export async function listPricingHistory(
       itemValue && Array.isArray(itemValue.unit)
         ? itemValue.unit[0]
         : itemValue?.unit;
+
+    const actorProfile = Array.isArray(
+      (row as Record<string, unknown>).changed_by_profile,
+    )
+      ? ((row as Record<string, unknown>).changed_by_profile as Array<{ full_name: string | null }>)[0]
+      : (row as Record<string, unknown>).changed_by_profile as { full_name: string | null } | null;
 
     const previous = previousByItem.get(
       row.catalog_item_id,
@@ -311,7 +294,7 @@ export async function listPricingHistory(
       created_at: row.created_at,
       changed_by: row.changed_by,
       changed_by_name: row.changed_by
-        ? actorNames.get(row.changed_by) ?? "Usuario"
+        ? (actorProfile?.full_name ?? "Usuario")
         : "Sistema",
       source: row.source,
       notes: row.notes,

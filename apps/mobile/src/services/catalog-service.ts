@@ -15,6 +15,11 @@ export async function listCatalogItems(
   items: CatalogItemWithDetails[];
   error: string | null;
 }> {
+  // Nota: `companyId` no se usa como filtro en la query porque la vista
+  // `effective_platform_catalog_prices` aplica la seguridad por RLS usando
+  // `auth.uid()` internamente — devuelve el catálogo global con los precios
+  // personalizados del usuario autenticado. El parámetro se conserva para
+  // construir objetos locales y mantener la firma consistente con el resto de servicios.
   const { data, error } = await supabase
     .from("effective_platform_catalog_prices")
     .select("*")

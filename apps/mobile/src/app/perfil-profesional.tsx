@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useReducer, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -16,22 +15,74 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { CONTRACTOR_CATEGORIES } from "@/constants/contractor-categories";
 import { colors, layout, radius } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import { showAlert } from "@/utils/alert";
 
-const showAlert = (title: string, message: string, buttons?: any[]) => {
-  if (Platform.OS === "web") {
-    alert(`${title}\n\n${message}`);
-    if (buttons && buttons.length > 0) {
-      const okButton = buttons.find((b: any) => b.text === "Entendido" || b.text === "OK" || b.onPress) || buttons[0];
-      if (okButton && okButton.onPress) {
-        okButton.onPress();
-      }
-    }
-  } else {
-    Alert.alert(title, message, buttons);
-  }
+type FormState = {
+  // Paso 1: Info General
+  businessName: string;
+  idDocument: string;
+  taxId: string;
+  taxDv: string;
+  primaryCategory: string;
+  specialties: string;
+  experienceYears: string;
+  workAreas: string;
+  availability: string;
+  preferredContactMethod: string;
+  emitsInvoice: boolean;
+  hasTransport: boolean;
+  workMode: string;
+  professionalDescription: string;
+  // Paso 2: Multimedia
+  avatarUrl: string;
+  companyLogoUrl: string;
+  portfolioUrls: string;
+  certifications: string;
+  // Paso 3: Documentos
+  docIdUrl: string;
+  docOperationNoticeUrl: string;
+  docTechnicalCertsUrls: string;
+  docReferencesUrl: string;
+  docAddressProofUrl: string;
 };
+
+type FormAction = {
+  field: keyof FormState;
+  value: string | boolean;
+};
+
+const INITIAL_FORM: FormState = {
+  businessName: "",
+  idDocument: "",
+  taxId: "",
+  taxDv: "",
+  primaryCategory: "",
+  specialties: "",
+  experienceYears: "",
+  workAreas: "",
+  availability: "Inmediata",
+  preferredContactMethod: "WhatsApp",
+  emitsInvoice: false,
+  hasTransport: false,
+  workMode: "solo",
+  professionalDescription: "",
+  avatarUrl: "",
+  companyLogoUrl: "",
+  portfolioUrls: "",
+  certifications: "",
+  docIdUrl: "",
+  docOperationNoticeUrl: "",
+  docTechnicalCertsUrls: "",
+  docReferencesUrl: "",
+  docAddressProofUrl: "",
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  return { ...state, [action.field]: action.value };
+}
 
 export default function ProfessionalProfileScreen() {
   const { profile, updateContractorProfile, signOut } = useAuth();
@@ -40,48 +91,11 @@ export default function ProfessionalProfileScreen() {
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [form, dispatch] = useReducer(formReducer, INITIAL_FORM);
 
-  // Paso 1: Info General
-  const [businessName, setBusinessName] = useState("");
-  const [idDocument, setIdDocument] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [taxDv, setTaxDv] = useState("");
-  const [primaryCategory, setPrimaryCategory] = useState("");
-  const [specialties, setSpecialties] = useState("");
-  const [experienceYears, setExperienceYears] = useState("");
-  const [workAreas, setWorkAreas] = useState("");
-  const [availability, setAvailability] = useState("Inmediata");
-  const [preferredContactMethod, setPreferredContactMethod] = useState("WhatsApp");
-  const [emitsInvoice, setEmitsInvoice] = useState(false);
-  const [hasTransport, setHasTransport] = useState(false);
-  const [workMode, setWorkMode] = useState("solo"); // 'solo' o 'crew'
-  const [professionalDescription, setProfessionalDescription] = useState("");
-
-  // Paso 2: Multimedia
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [companyLogoUrl, setCompanyLogoUrl] = useState("");
-  const [portfolioUrls, setPortfolioUrls] = useState(""); // Lista separada por comas de urls/base64
-  const [certifications, setCertifications] = useState(""); // Especialidades/certificados
-
-  // Paso 3: Documentos
-  const [docIdUrl, setDocIdUrl] = useState("");
-  const [docOperationNoticeUrl, setDocOperationNoticeUrl] = useState("");
-  const [docTechnicalCertsUrls, setDocTechnicalCertsUrls] = useState("");
-  const [docReferencesUrl, setDocReferencesUrl] = useState("");
-  const [docAddressProofUrl, setDocAddressProofUrl] = useState("");
-
-  // Categorías principales de contratistas
-  const CATEGORIES = [
-    "Albañilería",
-    "Electricidad",
-    "Plomería",
-    "Pintura",
-    "Gypsum",
-    "Carpintería",
-    "Sistemas especiales",
-    "Aire acondicionado",
-    "Energía solar",
-  ];
+  const setField = (field: keyof FormState) =>
+    (value: string | boolean) =>
+      dispatch({ field, value });
 
   const handleSelectCategory = () => {
     setShowCategoryModal(true);
@@ -117,12 +131,12 @@ export default function ProfessionalProfileScreen() {
       return;
     }
 
-    if (!primaryCategory) {
+    if (!form.primaryCategory) {
       showAlert("Categoría obligatoria", "Por favor selecciona tu categoría principal de trabajo.");
       return;
     }
 
-    if (!idDocument.trim()) {
+    if (!form.idDocument.trim()) {
       showAlert("Identificación obligatoria", "Introduce tu Cédula o número de Pasaporte.");
       return;
     }
@@ -130,46 +144,46 @@ export default function ProfessionalProfileScreen() {
     try {
       setSaving(true);
 
-      const parsedSpecialties = specialties
+      const parsedSpecialties = form.specialties
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const parsedWorkAreas = workAreas
+      const parsedWorkAreas = form.workAreas
         .split(",")
         .map((a) => a.trim())
         .filter(Boolean);
-      const parsedPortfolio = portfolioUrls
+      const parsedPortfolio = form.portfolioUrls
         .split(",")
         .map((p) => p.trim())
         .filter(Boolean);
-      const parsedCertifications = certifications
+      const parsedCertifications = form.certifications
         .split(",")
         .map((c) => c.trim())
         .filter(Boolean);
 
       const result = await updateContractorProfile({
-        businessName: businessName.trim() || null,
-        idDocument: idDocument.trim(),
-        taxId: taxId.trim() || null,
-        taxDv: taxDv.trim() || null,
-        primaryCategory,
+        businessName: form.businessName.trim() || null,
+        idDocument: form.idDocument.trim(),
+        taxId: form.taxId.trim() || null,
+        taxDv: form.taxDv.trim() || null,
+        primaryCategory: form.primaryCategory,
         specialties: parsedSpecialties.length ? parsedSpecialties : null,
-        experienceYears: parseInt(experienceYears) || null,
+        experienceYears: parseInt(form.experienceYears) || null,
         workAreas: parsedWorkAreas.length ? parsedWorkAreas : null,
-        professionalDescription: professionalDescription.trim() || null,
-        companyLogoUrl: companyLogoUrl || null,
+        professionalDescription: form.professionalDescription.trim() || null,
+        companyLogoUrl: form.companyLogoUrl || null,
         portfolioUrls: parsedPortfolio.length ? parsedPortfolio : null,
         certifications: parsedCertifications.length ? parsedCertifications : null,
-        availability,
-        preferredContactMethod,
-        emitsInvoice,
-        hasTransport,
-        workMode,
-        docIdUrl: docIdUrl || null,
-        docOperationNoticeUrl: docOperationNoticeUrl || null,
+        availability: form.availability,
+        preferredContactMethod: form.preferredContactMethod,
+        emitsInvoice: form.emitsInvoice,
+        hasTransport: form.hasTransport,
+        workMode: form.workMode,
+        docIdUrl: form.docIdUrl || null,
+        docOperationNoticeUrl: form.docOperationNoticeUrl || null,
         docTechnicalCertsUrls: null,
-        docReferencesUrl: docReferencesUrl || null,
-        docAddressProofUrl: docAddressProofUrl || null,
+        docReferencesUrl: form.docReferencesUrl || null,
+        docAddressProofUrl: form.docAddressProofUrl || null,
       });
 
       if (result.error) {
@@ -234,8 +248,8 @@ export default function ProfessionalProfileScreen() {
               
               <FormField
                 label="Nombre Comercial / Razón Social"
-                value={businessName}
-                onChangeText={setBusinessName}
+                value={form.businessName}
+                onChangeText={setField("businessName")}
                 placeholder="Ej. Construcciones Generales S.A."
                 icon="business-outline"
               />
@@ -244,8 +258,8 @@ export default function ProfessionalProfileScreen() {
                 <View style={[styles.col, { flex: 2 }]}>
                   <FormField
                     label="Cédula o Pasaporte *"
-                    value={idDocument}
-                    onChangeText={setIdDocument}
+                    value={form.idDocument}
+                    onChangeText={setField("idDocument")}
                     placeholder="Ej. 8-999-999"
                     icon="card-outline"
                   />
@@ -253,8 +267,8 @@ export default function ProfessionalProfileScreen() {
                 <View style={styles.col}>
                   <FormField
                     label="Años Experiencia"
-                    value={experienceYears}
-                    onChangeText={setExperienceYears}
+                    value={form.experienceYears}
+                    onChangeText={setField("experienceYears")}
                     placeholder="Ej. 5"
                     icon="ribbon-outline"
                     keyboardType="numeric"
@@ -266,8 +280,8 @@ export default function ProfessionalProfileScreen() {
                 <View style={[styles.col, { flex: 3 }]}>
                   <FormField
                     label="RUC de la empresa (si aplica)"
-                    value={taxId}
-                    onChangeText={setTaxId}
+                    value={form.taxId}
+                    onChangeText={setField("taxId")}
                     placeholder="Ej. 1234567-1-88"
                     icon="shield-outline"
                   />
@@ -275,8 +289,8 @@ export default function ProfessionalProfileScreen() {
                 <View style={styles.col}>
                   <FormField
                     label="D.V."
-                    value={taxDv}
-                    onChangeText={setTaxDv}
+                    value={form.taxDv}
+                    onChangeText={setField("taxDv")}
                     placeholder="00"
                     icon="key-outline"
                   />
@@ -286,8 +300,8 @@ export default function ProfessionalProfileScreen() {
               <View style={styles.formGroup}>
                 <Text style={styles.label}>Categoría Principal de Trabajo *</Text>
                 <Pressable onPress={handleSelectCategory} style={styles.selectButton}>
-                  <Text style={primaryCategory ? styles.selectButtonText : styles.selectPlaceholderText}>
-                    {primaryCategory || "Selecciona tu especialidad principal"}
+                  <Text style={form.primaryCategory ? styles.selectButtonText : styles.selectPlaceholderText}>
+                    {form.primaryCategory || "Selecciona tu especialidad principal"}
                   </Text>
                   <Ionicons name="chevron-down-outline" size={16} color={colors.textSecondary} />
                 </Pressable>
@@ -295,32 +309,32 @@ export default function ProfessionalProfileScreen() {
 
               <FormField
                 label="Especialidades adicionales (separadas por comas)"
-                value={specialties}
-                onChangeText={setSpecialties}
+                value={form.specialties}
+                onChangeText={setField("specialties")}
                 placeholder="Ej. Soldadura, Techos, Albañilería"
                 icon="options-outline"
               />
 
               <FormField
                 label="Áreas de Cobertura / Trabajo (separadas por comas)"
-                value={workAreas}
-                onChangeText={setWorkAreas}
+                value={form.workAreas}
+                onChangeText={setField("workAreas")}
                 placeholder="Ej. Panamá Centro, Chorrera, San Miguelito"
                 icon="map-outline"
               />
 
               <FormField
                 label="Disponibilidad Horaria"
-                value={availability}
-                onChangeText={setAvailability}
+                value={form.availability}
+                onChangeText={setField("availability")}
                 placeholder="Ej. Lunes a Sábados 8:00 AM - 5:00 PM"
                 icon="time-outline"
               />
 
               <FormField
                 label="Método de contacto preferido"
-                value={preferredContactMethod}
-                onChangeText={setPreferredContactMethod}
+                value={form.preferredContactMethod}
+                onChangeText={setField("preferredContactMethod")}
                 placeholder="Ej. WhatsApp o Llamada"
                 icon="chatbox-ellipses-outline"
               />
@@ -328,25 +342,25 @@ export default function ProfessionalProfileScreen() {
               {/* Switches */}
               <View style={styles.switchesBlock}>
                 <Pressable
-                  onPress={() => setEmitsInvoice(!emitsInvoice)}
+                  onPress={() => setField("emitsInvoice")(!form.emitsInvoice)}
                   style={styles.switchRow}
                 >
                   <Ionicons
-                    name={emitsInvoice ? "checkbox" : "square-outline"}
+                    name={form.emitsInvoice ? "checkbox" : "square-outline"}
                     size={22}
-                    color={emitsInvoice ? colors.primary : colors.textSecondary}
+                    color={form.emitsInvoice ? colors.primary : colors.textSecondary}
                   />
                   <Text style={styles.switchLabel}>¿Emite factura fiscal?</Text>
                 </Pressable>
 
                 <Pressable
-                  onPress={() => setHasTransport(!hasTransport)}
+                  onPress={() => setField("hasTransport")(!form.hasTransport)}
                   style={styles.switchRow}
                 >
                   <Ionicons
-                    name={hasTransport ? "checkbox" : "square-outline"}
+                    name={form.hasTransport ? "checkbox" : "square-outline"}
                     size={22}
-                    color={hasTransport ? colors.primary : colors.textSecondary}
+                    color={form.hasTransport ? colors.primary : colors.textSecondary}
                   />
                   <Text style={styles.switchLabel}>¿Cuenta con vehículo propio o transporte?</Text>
                 </Pressable>
@@ -356,18 +370,18 @@ export default function ProfessionalProfileScreen() {
                 <Text style={styles.label}>Modalidad de Trabajo</Text>
                 <View style={styles.workModeSelector}>
                   <Pressable
-                    onPress={() => setWorkMode("solo")}
-                    style={[styles.workModeButton, workMode === "solo" && styles.workModeActive]}
+                    onPress={() => setField("workMode")("solo")}
+                    style={[styles.workModeButton, form.workMode === "solo" && styles.workModeActive]}
                   >
-                    <Text style={[styles.workModeText, workMode === "solo" && styles.workModeTextActive]}>
+                    <Text style={[styles.workModeText, form.workMode === "solo" && styles.workModeTextActive]}>
                       Trabajo Solo
                     </Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => setWorkMode("crew")}
-                    style={[styles.workModeButton, workMode === "crew" && styles.workModeActive]}
+                    onPress={() => setField("workMode")("crew")}
+                    style={[styles.workModeButton, form.workMode === "crew" && styles.workModeActive]}
                   >
-                    <Text style={[styles.workModeText, workMode === "crew" && styles.workModeTextActive]}>
+                    <Text style={[styles.workModeText, form.workMode === "crew" && styles.workModeTextActive]}>
                       Tengo Cuadrilla
                     </Text>
                   </Pressable>
@@ -376,8 +390,8 @@ export default function ProfessionalProfileScreen() {
 
               <FormField
                 label="Descripción Profesional / Perfil"
-                value={professionalDescription}
-                onChangeText={setProfessionalDescription}
+                value={form.professionalDescription}
+                onChangeText={setField("professionalDescription")}
                 placeholder="Escribe brevemente sobre tu trayectoria y servicios..."
                 icon="document-text-outline"
               />
@@ -392,16 +406,16 @@ export default function ProfessionalProfileScreen() {
               {/* Foto de Perfil */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Foto de Perfil Profesional</Text>
-                {avatarUrl ? (
+                {form.avatarUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: avatarUrl }} style={styles.avatarPreview} />
-                    <Pressable onPress={() => setAvatarUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.avatarUrl }} style={styles.avatarPreview} />
+                    <Pressable onPress={() => setField("avatarUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setAvatarUrl, "Foto de Perfil")}
+                    onPress={() => handleUploadImage(setField("avatarUrl") as (v: string) => void, "Foto de Perfil")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="camera-outline" size={24} color={colors.primary} />
@@ -413,16 +427,16 @@ export default function ProfessionalProfileScreen() {
               {/* Logo de Empresa */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Logotipo de Empresa (opcional)</Text>
-                {companyLogoUrl ? (
+                {form.companyLogoUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: companyLogoUrl }} style={styles.logoPreview} resizeMode="contain" />
-                    <Pressable onPress={() => setCompanyLogoUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.companyLogoUrl }} style={styles.logoPreview} resizeMode="contain" />
+                    <Pressable onPress={() => setField("companyLogoUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setCompanyLogoUrl, "Logo de Empresa")}
+                    onPress={() => handleUploadImage(setField("companyLogoUrl") as (v: string) => void, "Logo de Empresa")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="image-outline" size={24} color={colors.primary} />
@@ -433,16 +447,16 @@ export default function ProfessionalProfileScreen() {
 
               <FormField
                 label="Licencias / Certificaciones (URL o texto descriptivo)"
-                value={certifications}
-                onChangeText={setCertifications}
+                value={form.certifications}
+                onChangeText={setField("certifications")}
                 placeholder="Ej. ID de electricista JT, Certificación CAPAC"
                 icon="ribbon-outline"
               />
 
               <FormField
                 label="Enlaces a fotos de tus trabajos (separados por comas)"
-                value={portfolioUrls}
-                onChangeText={setPortfolioUrls}
+                value={form.portfolioUrls}
+                onChangeText={setField("portfolioUrls")}
                 placeholder="Ej. https://tusfotos.com/1.jpg, https://tusfotos.com/2.jpg"
                 icon="images-outline"
               />
@@ -460,16 +474,16 @@ export default function ProfessionalProfileScreen() {
               {/* Foto de Cédula */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Foto de Cédula o Pasaporte *</Text>
-                {docIdUrl ? (
+                {form.docIdUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: docIdUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setDocIdUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.docIdUrl }} style={styles.docImagePreview} />
+                    <Pressable onPress={() => setField("docIdUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setDocIdUrl, "Foto de Cédula")}
+                    onPress={() => handleUploadImage(setField("docIdUrl") as (v: string) => void, "Foto de Cédula")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="document-attach-outline" size={24} color={colors.primary} />
@@ -481,16 +495,16 @@ export default function ProfessionalProfileScreen() {
               {/* Aviso de Operación */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Aviso de Operación (si aplica)</Text>
-                {docOperationNoticeUrl ? (
+                {form.docOperationNoticeUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: docOperationNoticeUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setDocOperationNoticeUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.docOperationNoticeUrl }} style={styles.docImagePreview} />
+                    <Pressable onPress={() => setField("docOperationNoticeUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setDocOperationNoticeUrl, "Aviso de Operación")}
+                    onPress={() => handleUploadImage(setField("docOperationNoticeUrl") as (v: string) => void, "Aviso de Operación")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
@@ -502,16 +516,16 @@ export default function ProfessionalProfileScreen() {
               {/* Referencias comerciales */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Referencias Comerciales o de Obras</Text>
-                {docReferencesUrl ? (
+                {form.docReferencesUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: docReferencesUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setDocReferencesUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.docReferencesUrl }} style={styles.docImagePreview} />
+                    <Pressable onPress={() => setField("docReferencesUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setDocReferencesUrl, "Referencias Comerciales")}
+                    onPress={() => handleUploadImage(setField("docReferencesUrl") as (v: string) => void, "Referencias Comerciales")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="people-outline" size={24} color={colors.primary} />
@@ -523,16 +537,16 @@ export default function ProfessionalProfileScreen() {
               {/* Comprobante de Domicilio */}
               <View style={styles.uploadCard}>
                 <Text style={styles.uploadLabel}>Comprobante de Domicilio (Opcional)</Text>
-                {docAddressProofUrl ? (
+                {form.docAddressProofUrl ? (
                   <View style={styles.previewBox}>
-                    <Image source={{ uri: docAddressProofUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setDocAddressProofUrl("")} style={styles.clearImageButton}>
+                    <Image source={{ uri: form.docAddressProofUrl }} style={styles.docImagePreview} />
+                    <Pressable onPress={() => setField("docAddressProofUrl")('')} style={styles.clearImageButton}>
                       <Ionicons name="trash-outline" size={16} color="#DC2626" />
                     </Pressable>
                   </View>
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setDocAddressProofUrl, "Comprobante de Domicilio")}
+                    onPress={() => handleUploadImage(setField("docAddressProofUrl") as (v: string) => void, "Comprobante de Domicilio")}
                     style={styles.uploadButton}
                   >
                     <Ionicons name="home-outline" size={24} color={colors.primary} />
@@ -590,11 +604,11 @@ export default function ProfessionalProfileScreen() {
           <View style={styles.dropdownModalContent}>
             <Text style={styles.dropdownModalTitle}>Selecciona tu Categoría Principal</Text>
             <ScrollView style={{ maxHeight: 300, width: "100%" }}>
-              {CATEGORIES.map((cat) => (
+              {CONTRACTOR_CATEGORIES.map((cat) => (
                 <Pressable
                   key={cat}
                   onPress={() => {
-                    setPrimaryCategory(cat);
+                    setField("primaryCategory")(cat);
                     setShowCategoryModal(false);
                   }}
                   style={styles.dropdownItem}
