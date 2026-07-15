@@ -19,12 +19,27 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, layout, radius } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
+const showAlert = (title: string, message: string, buttons?: any[]) => {
+  if (Platform.OS === "web") {
+    alert(`${title}\n\n${message}`);
+    if (buttons && buttons.length > 0) {
+      const okButton = buttons.find((b: any) => b.text === "Entendido" || b.text === "OK" || b.onPress) || buttons[0];
+      if (okButton && okButton.onPress) {
+        okButton.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
+
 export default function ProfessionalProfileScreen() {
   const { profile, updateContractorProfile, signOut } = useAuth();
 
   // Paso actual (1: Info General, 2: Multimedia, 3: Documentos de Aprobación)
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // Paso 1: Info General
   const [businessName, setBusinessName] = useState("");
@@ -69,18 +84,7 @@ export default function ProfessionalProfileScreen() {
   ];
 
   const handleSelectCategory = () => {
-    Alert.alert(
-      "Selecciona tu Categoría Principal",
-      "",
-      [
-        ...CATEGORIES.map((cat) => ({
-          text: cat,
-          onPress: () => setPrimaryCategory(cat),
-        })),
-        { text: "Cancelar", style: "cancel" as const },
-      ],
-      { cancelable: true }
-    );
+    setShowCategoryModal(true);
   };
 
   const handleUploadImage = (setter: (val: string) => void, title: string) => {
@@ -100,7 +104,7 @@ export default function ProfessionalProfileScreen() {
       };
       input.click();
     } else {
-      Alert.alert(
+      showAlert(
         "Cargar Archivo",
         `Para subir tu archivo para "${title}", abre la aplicación en tu navegador web o introduce una URL válida.`
       );
@@ -114,12 +118,12 @@ export default function ProfessionalProfileScreen() {
     }
 
     if (!primaryCategory) {
-      Alert.alert("Categoría obligatoria", "Por favor selecciona tu categoría principal de trabajo.");
+      showAlert("Categoría obligatoria", "Por favor selecciona tu categoría principal de trabajo.");
       return;
     }
 
     if (!idDocument.trim()) {
-      Alert.alert("Identificación obligatoria", "Introduce tu Cédula o número de Pasaporte.");
+      showAlert("Identificación obligatoria", "Introduce tu Cédula o número de Pasaporte.");
       return;
     }
 
@@ -169,11 +173,11 @@ export default function ProfessionalProfileScreen() {
       });
 
       if (result.error) {
-        Alert.alert("Error al actualizar perfil", result.error);
+        showAlert("Error al actualizar perfil", result.error);
         return;
       }
 
-      Alert.alert(
+      showAlert(
         "Perfil enviado",
         "Tu información profesional ha sido guardada. Los administradores revisarán tus datos y documentos para autorizar tu acceso.",
         [
@@ -184,7 +188,7 @@ export default function ProfessionalProfileScreen() {
         ]
       );
     } catch (e: any) {
-      Alert.alert("Error", e.message || "Error al actualizar perfil.");
+      showAlert("Error", e.message || "Error al actualizar perfil.");
     } finally {
       setSaving(false);
     }
@@ -579,6 +583,35 @@ export default function ProfessionalProfileScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Selector de Categoría Modal */}
+      {showCategoryModal && (
+        <View style={styles.dropdownModalOverlay}>
+          <View style={styles.dropdownModalContent}>
+            <Text style={styles.dropdownModalTitle}>Selecciona tu Categoría Principal</Text>
+            <ScrollView style={{ maxHeight: 300, width: "100%" }}>
+              {CATEGORIES.map((cat) => (
+                <Pressable
+                  key={cat}
+                  onPress={() => {
+                    setPrimaryCategory(cat);
+                    setShowCategoryModal(false);
+                  }}
+                  style={styles.dropdownItem}
+                >
+                  <Text style={styles.dropdownItemText}>{cat}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable
+              onPress={() => setShowCategoryModal(false)}
+              style={styles.dropdownCloseButton}
+            >
+              <Text style={styles.dropdownCloseButtonText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -949,5 +982,71 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.78,
     transform: [{ scale: 0.99 }],
+  },
+
+  dropdownModalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    zIndex: 2000,
+  },
+
+  dropdownModalContent: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  dropdownModalTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 16,
+  },
+
+  dropdownItem: {
+    width: "100%",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  dropdownItemText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: "700",
+  },
+
+  dropdownCloseButton: {
+    width: "100%",
+    minHeight: 48,
+    marginTop: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  dropdownCloseButtonText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

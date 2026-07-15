@@ -26,6 +26,20 @@ import {
   useAuth,
 } from "@/contexts/AuthContext";
 
+const showAlert = (title: string, message: string, buttons?: any[]) => {
+  if (Platform.OS === "web") {
+    alert(`${title}\n\n${message}`);
+    if (buttons && buttons.length > 0) {
+      const okButton = buttons.find((b: any) => b.text === "Entendido" || b.text === "OK" || b.onPress) || buttons[0];
+      if (okButton && okButton.onPress) {
+        okButton.onPress();
+      }
+    }
+  } else {
+    Alert.alert(title, message, buttons);
+  }
+};
+
 function getPasswordStrength(pass: string) {
   if (!pass) return { score: 0, label: "Falta contraseña", color: "#94A3B8" };
   let score = 0;
@@ -90,77 +104,67 @@ export default function RegisterScreen() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [showProvinceModal, setShowProvinceModal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSelectProvince = () => {
-    const PROVINCES = [
-      "Bocas del Toro",
-      "Coclé",
-      "Colón",
-      "Chiriquí",
-      "Darién",
-      "Herrera",
-      "Los Santos",
-      "Panamá",
-      "Panamá Oeste",
-      "Veraguas",
-      "Comarca Guna Yala",
-      "Comarca Ngäbe-Buglé",
-    ];
+  const PROVINCES = [
+    "Bocas del Toro",
+    "Coclé",
+    "Colón",
+    "Chiriquí",
+    "Darién",
+    "Herrera",
+    "Los Santos",
+    "Panamá",
+    "Panamá Oeste",
+    "Veraguas",
+    "Comarca Guna Yala",
+    "Comarca Ngäbe-Buglé",
+  ];
 
-    Alert.alert(
-      "Selecciona tu Provincia",
-      "",
-      [
-        ...PROVINCES.map((prov) => ({
-          text: prov,
-          onPress: () => setProvince(prov),
-        })),
-        { text: "Cancelar", style: "cancel" as const },
-      ],
-      { cancelable: true }
-    );
+  const handleSelectProvince = () => {
+    setShowProvinceModal(true);
   };
 
   async function handleRegisterClick() {
     if (!firstName.trim() || !lastName.trim()) {
-      Alert.alert("Campos requeridos", "Introduce tu nombre y apellido.");
+      showAlert("Campos requeridos", "Introduce tu nombre y apellido.");
       return;
     }
 
     if (!phone.trim()) {
-      Alert.alert("Teléfono requerido", "Introduce tu número de teléfono.");
+      showAlert("Teléfono requerido", "Introduce tu número de teléfono.");
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert("Correo requerido", "Introduce tu correo electrónico.");
+      showAlert("Correo requerido", "Introduce tu correo electrónico.");
       return;
     }
 
     if (!province || !district.trim() || !corregimiento.trim()) {
-      Alert.alert("Ubicación requerida", "Completa los datos de tu provincia, distrito y corregimiento.");
+      showAlert("Ubicación requerida", "Completa los datos de tu provincia, distrito y corregimiento.");
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert("Contraseña insegura", "La contraseña debe tener al menos 8 caracteres.");
+      showAlert("Contraseña insegura", "La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Las contraseñas no coinciden", "Verifica la contraseña introducida.");
+      showAlert("Las contraseñas no coinciden", "Verifica la contraseña introducida.");
       return;
     }
 
     if (!termsAccepted) {
-      Alert.alert("Aviso legal", "Debes aceptar los términos y condiciones de servicio.");
+      showAlert("Aviso legal", "Debes aceptar los términos y condiciones de servicio.");
       return;
     }
 
     if (!isRobotChecked) {
-      Alert.alert("Protección contra robots", "Por favor marca la casilla 'No soy un robot' para continuar.");
+      showAlert("Protección contra robots", "Por favor marca la casilla 'No soy un robot' para continuar.");
       return;
     }
 
@@ -170,7 +174,7 @@ export default function RegisterScreen() {
 
   async function handleConfirmOtp() {
     if (otpCode !== "123456") {
-      Alert.alert("Código incorrecto", "Para fines de demostración e integración, utiliza el código 123456.");
+      showAlert("Código incorrecto", "Para fines de demostración e integración, utiliza el código 123456.");
       return;
     }
 
@@ -211,12 +215,12 @@ export default function RegisterScreen() {
       });
 
       if (error) {
-        Alert.alert("No fue posible crear la cuenta", translateRegisterError(error.message));
+        showAlert("No fue posible crear la cuenta", translateRegisterError(error.message));
         return;
       }
 
       if (requiresEmailConfirmation) {
-        Alert.alert(
+        showAlert(
           "Registro recibido",
           "Revisa tu correo para confirmar la cuenta. Después, los contratistas deberán completar su perfil profesional antes de esperar la aprobación del administrador.",
           [
@@ -228,10 +232,10 @@ export default function RegisterScreen() {
         );
       } else {
         // El usuario inicia sesión de inmediato si no hay confirmación obligatoria por correo
-        Alert.alert("¡Registro Exitoso!", "Tu cuenta ha sido creada. A continuación completa tu perfil profesional.");
+        showAlert("¡Registro Exitoso!", "Tu cuenta ha sido creada. A continuación completa tu perfil profesional.");
       }
     } catch (err: any) {
-      Alert.alert("Error de Registro", err.message || "Ocurrió un error inesperado.");
+      showAlert("Error de Registro", err.message || "Ocurrió un error inesperado.");
     } finally {
       setVerifyingOtp(false);
       setSubmitting(false);
@@ -527,6 +531,35 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Province Selector Modal */}
+      {showProvinceModal && (
+        <View style={styles.dropdownModalOverlay}>
+          <View style={styles.dropdownModalContent}>
+            <Text style={styles.dropdownModalTitle}>Selecciona tu Provincia</Text>
+            <ScrollView style={{ maxHeight: 300, width: "100%" }}>
+              {PROVINCES.map((prov) => (
+                <Pressable
+                  key={prov}
+                  onPress={() => {
+                    setProvince(prov);
+                    setShowProvinceModal(false);
+                  }}
+                  style={styles.dropdownItem}
+                >
+                  <Text style={styles.dropdownItemText}>{prov}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable
+              onPress={() => setShowProvinceModal(false)}
+              style={styles.dropdownCloseButton}
+            >
+              <Text style={styles.dropdownCloseButtonText}>Cancelar</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* OTP Verification Modal */}
       {showOtpModal && (
@@ -1086,5 +1119,71 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontSize: 14,
     fontWeight: "900",
+  },
+
+  dropdownModalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    zIndex: 2000,
+  },
+
+  dropdownModalContent: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  dropdownModalTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 16,
+  },
+
+  dropdownItem: {
+    width: "100%",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  dropdownItemText: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: "700",
+  },
+
+  dropdownCloseButton: {
+    width: "100%",
+    minHeight: 48,
+    marginTop: 16,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  dropdownCloseButtonText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
