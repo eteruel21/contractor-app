@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -41,10 +42,32 @@ export default function ClientHomeScreen() {
       });
   }, [profile?.id]);
 
+  const performSignOut = async () => {
+    const { error } = await signOut();
+
+    if (!error) return;
+
+    if (Platform.OS === "web") {
+      console.error("No se pudo cerrar sesión:", error.message);
+      return;
+    }
+
+    Alert.alert("No se pudo cerrar sesión", error.message);
+  };
+
   const handleSignOut = () => {
+    if (Platform.OS === "web") {
+      void performSignOut();
+      return;
+    }
+
     Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas salir?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Salir", style: "destructive", onPress: () => void signOut() },
+      {
+        text: "Salir",
+        style: "destructive",
+        onPress: () => void performSignOut(),
+      },
     ]);
   };
 
