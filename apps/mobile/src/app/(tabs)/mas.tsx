@@ -5,6 +5,7 @@ import {
 } from "expo-router";
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -62,7 +63,25 @@ const baseOptions: OptionItem[] = [
 export default function MoreScreen() {
   const { signOut } = useAuth();
 
+  const performLogout = async () => {
+    const { error } = await signOut();
+
+    if (!error) return;
+
+    if (Platform.OS === "web") {
+      console.error("No se pudo cerrar sesión:", error.message);
+      return;
+    }
+
+    Alert.alert("No se pudo cerrar sesión", error.message);
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      void performLogout();
+      return;
+    }
+
     Alert.alert(
       "Cerrar sesión",
       "¿Estás seguro de que deseas salir de tu cuenta?",
@@ -71,9 +90,7 @@ export default function MoreScreen() {
         {
           text: "Salir",
           style: "destructive",
-          onPress: async () => {
-            await signOut();
-          },
+          onPress: () => void performLogout(),
         },
       ],
     );
