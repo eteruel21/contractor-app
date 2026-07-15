@@ -2,16 +2,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,105 +26,214 @@ import {
   useAuth,
 } from "@/contexts/AuthContext";
 
+function getPasswordStrength(pass: string) {
+  if (!pass) return { score: 0, label: "Falta contraseña", color: "#94A3B8" };
+  let score = 0;
+  if (pass.length >= 8) score++;
+  if (/[A-Z]/.test(pass)) score++;
+  if (/[a-z]/.test(pass)) score++;
+  if (/[0-9]/.test(pass)) score++;
+  if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+  if (score <= 2) return { score, label: "Débil", color: "#EF4444" };
+  if (score <= 4) return { score, label: "Media", color: "#F59E0B" };
+  return { score, label: "Fuerte", color: "#10B981" };
+}
+
+function PasswordStrengthIndicator({ password }: { password: string }) {
+  const strength = getPasswordStrength(password);
+  if (!password) return null;
+
+  return (
+    <View style={styles.strengthContainer}>
+      <View style={styles.strengthBarBackground}>
+        <View
+          style={[
+            styles.strengthBarActive,
+            {
+              width: `${(strength.score / 5) * 100}%`,
+              backgroundColor: strength.color,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.strengthText, { color: strength.color }]}>
+        Seguridad: {strength.label}
+      </Text>
+    </View>
+  );
+}
+
 export default function RegisterScreen() {
   const { signUp } = useAuth();
 
-  const [fullName, setFullName] =
-    useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] =
-    useState("");
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
-  const [accountRole, setAccountRole] =
-    useState<PublicAppRole>("contractor");
-  const [submitting, setSubmitting] =
-    useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [accountRole, setAccountRole] = useState<PublicAppRole>("contractor");
+  
+  const [province, setProvince] = useState("");
+  const [district, setDistrict] = useState("");
+  const [corregimiento, setCorregimiento] = useState("");
+  
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [notificationsOptIn, setNotificationsOptIn] = useState(false);
+  const [isRobotChecked, setIsRobotChecked] = useState(false);
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  async function handleRegister() {
-    if (!fullName.trim()) {
-      Alert.alert(
-        "Nombre requerido",
-        "Introduce tu nombre completo.",
-      );
+  // OTP Verification Modal
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSelectProvince = () => {
+    const PROVINCES = [
+      "Bocas del Toro",
+      "Coclé",
+      "Colón",
+      "Chiriquí",
+      "Darién",
+      "Herrera",
+      "Los Santos",
+      "Panamá",
+      "Panamá Oeste",
+      "Veraguas",
+      "Comarca Guna Yala",
+      "Comarca Ngäbe-Buglé",
+    ];
+
+    Alert.alert(
+      "Selecciona tu Provincia",
+      "",
+      [
+        ...PROVINCES.map((prov) => ({
+          text: prov,
+          onPress: () => setProvince(prov),
+        })),
+        { text: "Cancelar", style: "cancel" as const },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  async function handleRegisterClick() {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert("Campos requeridos", "Introduce tu nombre y apellido.");
+      return;
+    }
+
+    if (!phone.trim()) {
+      Alert.alert("Teléfono requerido", "Introduce tu número de teléfono.");
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert(
-        "Correo requerido",
-        "Introduce tu correo electrónico.",
-      );
+      Alert.alert("Correo requerido", "Introduce tu correo electrónico.");
+      return;
+    }
+
+    if (!province || !district.trim() || !corregimiento.trim()) {
+      Alert.alert("Ubicación requerida", "Completa los datos de tu provincia, distrito y corregimiento.");
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert(
-        "Contraseña insegura",
-        "La contraseña debe tener al menos 8 caracteres.",
-      );
+      Alert.alert("Contraseña insegura", "La contraseña debe tener al menos 8 caracteres.");
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(
-        "Las contraseñas no coinciden",
-        "Verifica la contraseña introducida.",
-      );
+      Alert.alert("Las contraseñas no coinciden", "Verifica la contraseña introducida.");
+      return;
+    }
+
+    if (!termsAccepted) {
+      Alert.alert("Aviso legal", "Debes aceptar los términos y condiciones de servicio.");
+      return;
+    }
+
+    if (!isRobotChecked) {
+      Alert.alert("Protección contra robots", "Por favor marca la casilla 'No soy un robot' para continuar.");
+      return;
+    }
+
+    // Si todo está correcto, abrimos el modal de verificación de teléfono (OTP)
+    setShowOtpModal(true);
+  }
+
+  async function handleConfirmOtp() {
+    if (otpCode !== "123456") {
+      Alert.alert("Código incorrecto", "Para fines de demostración e integración, utiliza el código 123456.");
       return;
     }
 
     try {
+      setVerifyingOtp(true);
       setSubmitting(true);
+      setShowOtpModal(false);
 
-      const {
-        error,
-        requiresEmailConfirmation,
-      } = await signUp({
+      // Obtener IP pública y detalles del dispositivo
+      let userIp = "127.0.0.1";
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const data = await res.json();
+        userIp = data.ip || "127.0.0.1";
+      } catch (e) {
+        // Fallback
+      }
+
+      const deviceDetail = `${Platform.OS === "web" ? "Navegador Web" : Platform.OS === "ios" ? "Dispositivo iOS" : "Dispositivo Android"} (${Platform.Version})`;
+
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+      const { error, requiresEmailConfirmation } = await signUp({
         fullName,
+        firstName,
+        lastName,
         phone,
         email,
         password,
         role: accountRole,
+        province,
+        district,
+        corregimiento,
+        termsAccepted,
+        notificationsOptIn,
+        registrationIp: userIp,
+        registrationDevice: deviceDetail,
       });
 
       if (error) {
-        Alert.alert(
-          "No fue posible crear la cuenta",
-          translateRegisterError(
-            error.message,
-          ),
-        );
+        Alert.alert("No fue posible crear la cuenta", translateRegisterError(error.message));
         return;
       }
 
       if (requiresEmailConfirmation) {
         Alert.alert(
           "Registro recibido",
-          "Revisa tu correo para confirmar la cuenta. Después deberás esperar a que el administrador apruebe tu acceso a la plataforma.",
+          "Revisa tu correo para confirmar la cuenta. Después, los contratistas deberán completar su perfil profesional antes de esperar la aprobación del administrador.",
           [
             {
               text: "Ir a iniciar sesión",
-              onPress: () =>
-                router.replace("/login")
+              onPress: () => router.replace("/login"),
             },
-          ],
+          ]
         );
       } else {
-        Alert.alert(
-          "Registro recibido",
-          "Tu cuenta fue creada y está pendiente de aprobación. La revisión puede tomar un tiempo.",
-          [
-            {
-              text: "Entendido",
-              onPress: () =>
-                router.replace("/pendiente"),
-            },
-          ],
-        );
+        // El usuario inicia sesión de inmediato si no hay confirmación obligatoria por correo
+        Alert.alert("¡Registro Exitoso!", "Tu cuenta ha sido creada. A continuación completa tu perfil profesional.");
       }
+    } catch (err: any) {
+      Alert.alert("Error de Registro", err.message || "Ocurrió un error inesperado.");
     } finally {
+      setVerifyingOtp(false);
       setSubmitting(false);
     }
   }
@@ -133,11 +242,7 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={
-          Platform.OS === "ios"
-            ? "padding"
-            : undefined
-        }
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.content}
@@ -166,7 +271,7 @@ export default function RegisterScreen() {
                   color={colors.surfaceDark}
                 />
               </View>
-              <Text style={styles.brandName}>CONTRACTOR PRO</Text>
+              <Text style={brandNameStyle()}>CONTRACTOR PRO</Text>
             </View>
           </View>
 
@@ -195,24 +300,18 @@ export default function RegisterScreen() {
                 onPress={() => setAccountRole("contractor")}
                 style={[
                   styles.roleButton,
-                  accountRole === "contractor" &&
-                    styles.roleButtonActive,
+                  accountRole === "contractor" && styles.roleButtonActive,
                 ]}
               >
                 <Ionicons
                   name="hammer-outline"
                   size={20}
-                  color={
-                    accountRole === "contractor"
-                      ? colors.primary
-                      : colors.textMuted
-                  }
+                  color={accountRole === "contractor" ? colors.primary : colors.textMuted}
                 />
                 <Text
                   style={[
                     styles.roleButtonText,
-                    accountRole === "contractor" &&
-                      styles.roleButtonTextActive,
+                    accountRole === "contractor" && styles.roleButtonTextActive,
                   ]}
                 >
                   Contratista
@@ -223,38 +322,48 @@ export default function RegisterScreen() {
                 onPress={() => setAccountRole("client")}
                 style={[
                   styles.roleButton,
-                  accountRole === "client" &&
-                    styles.roleButtonActive,
+                  accountRole === "client" && styles.roleButtonActive,
                 ]}
               >
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={
-                    accountRole === "client"
-                      ? colors.primary
-                      : colors.textMuted
-                  }
+                  color={accountRole === "client" ? colors.primary : colors.textMuted}
                 />
                 <Text
                   style={[
                     styles.roleButtonText,
-                    accountRole === "client" &&
-                      styles.roleButtonTextActive,
+                    accountRole === "client" && styles.roleButtonTextActive,
                   ]}
                 >
                   Cliente
                 </Text>
               </Pressable>
             </View>
-            <FormField
-              label="Nombre completo"
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Nombre y apellido"
-              icon="person-outline"
-              autoCapitalize="words"
-            />
+
+            {/* Campos de Nombre y Apellido */}
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <FormField
+                  label="Nombre"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Tu nombre"
+                  icon="person-outline"
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={styles.col}>
+                <FormField
+                  label="Apellido"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Tu apellido"
+                  icon="person-outline"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
             <FormField
               label="Teléfono"
@@ -275,15 +384,55 @@ export default function RegisterScreen() {
               autoCapitalize="none"
             />
 
+            {/* Sección de Ubicación */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Provincia</Text>
+              <Pressable
+                onPress={handleSelectProvince}
+                style={styles.selectButton}
+              >
+                <Text style={province ? styles.selectButtonText : styles.selectPlaceholderText}>
+                  {province || "Selecciona una provincia"}
+                </Text>
+                <Ionicons name="chevron-down-outline" size={16} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.col}>
+                <FormField
+                  label="Distrito"
+                  value={district}
+                  onChangeText={setDistrict}
+                  placeholder="Ej. Panamá"
+                  icon="map-outline"
+                />
+              </View>
+              <View style={styles.col}>
+                <FormField
+                  label="Corregimiento"
+                  value={corregimiento}
+                  onChangeText={setCorregimiento}
+                  placeholder="Ej. Bella Vista"
+                  icon="location-outline"
+                />
+              </View>
+            </View>
+
+            {/* Contraseña con mostrar/ocultar y medidor */}
             <FormField
               label="Contraseña"
               value={password}
               onChangeText={setPassword}
               placeholder="Mínimo 8 caracteres"
               icon="lock-closed-outline"
-              secureTextEntry
+              secureTextEntry={!showPassword}
               autoCapitalize="none"
+              rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+              onRightIconPress={() => setShowPassword(!showPassword)}
             />
+
+            <PasswordStrengthIndicator password={password} />
 
             <FormField
               label="Confirmar contraseña"
@@ -291,9 +440,56 @@ export default function RegisterScreen() {
               onChangeText={setConfirmPassword}
               placeholder="Repite la contraseña"
               icon="shield-checkmark-outline"
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               autoCapitalize="none"
+              rightIcon={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+              onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
             />
+
+            {/* Aceptaciones y Recaptcha */}
+            <Pressable
+              onPress={() => setTermsAccepted(!termsAccepted)}
+              style={styles.checkboxRow}
+            >
+              <Ionicons
+                name={termsAccepted ? "checkbox" : "square-outline"}
+                size={22}
+                color={termsAccepted ? colors.primary : colors.textSecondary}
+              />
+              <Text style={styles.checkboxLabel}>
+                Acepto los términos y condiciones de servicio y la política de privacidad.
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setNotificationsOptIn(!notificationsOptIn)}
+              style={styles.checkboxRow}
+            >
+              <Ionicons
+                name={notificationsOptIn ? "checkbox" : "square-outline"}
+                size={22}
+                color={notificationsOptIn ? colors.primary : colors.textSecondary}
+              />
+              <Text style={styles.checkboxLabel}>
+                Autorizo recibir notificaciones sobre presupuestos, estados y facturas.
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setIsRobotChecked(!isRobotChecked)}
+              style={[styles.checkboxRow, styles.robotRow]}
+            >
+              <Ionicons
+                name={isRobotChecked ? "checkmark-circle" : "ellipse-outline"}
+                size={22}
+                color={isRobotChecked ? "#10B981" : colors.textSecondary}
+              />
+              <View style={styles.robotLabelContainer}>
+                <Text style={styles.robotLabelText}>No soy un robot</Text>
+                <Text style={styles.robotLabelSub}>Protección de registro automatizado</Text>
+              </View>
+              <Ionicons name="shield-outline" size={20} color="#10B981" style={{ marginLeft: "auto" }} />
+            </Pressable>
 
             <View style={styles.approvalNotice}>
               <Ionicons
@@ -307,31 +503,21 @@ export default function RegisterScreen() {
             </View>
 
             <Pressable
-              onPress={() =>
-                void handleRegister()
-              }
+              onPress={handleRegisterClick}
               disabled={submitting}
               style={({ pressed }) => [
                 styles.primaryButton,
-                submitting &&
-                  styles.primaryButtonDisabled,
+                submitting && styles.primaryButtonDisabled,
                 pressed && styles.pressed,
               ]}
             >
               {submitting ? (
-                <ActivityIndicator
-                  color={colors.textLight}
-                />
+                <ActivityIndicator color={colors.textLight} />
               ) : (
                 <>
-                  <Text
-                    style={styles.primaryButtonText}
-                  >
-                    Crear cuenta
-                  </Text>
-
+                  <Text style={styles.primaryButtonText}>Siguiente paso</Text>
                   <Ionicons
-                    name="person-add-outline"
+                    name="arrow-forward-outline"
                     size={20}
                     color={colors.textLight}
                   />
@@ -341,6 +527,48 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <View style={styles.otpModalOverlay}>
+          <View style={styles.otpModalContent}>
+            <View style={styles.otpIconCircle}>
+              <Ionicons name="phone-portrait-outline" size={32} color={colors.primary} />
+            </View>
+            
+            <Text style={styles.otpTitle}>Verificación OTP</Text>
+            <Text style={styles.otpSubtitle}>
+              Hemos enviado un código SMS temporal a tu número {phone}. Utiliza el código de prueba: <Text style={{fontWeight:"900"}}>123456</Text>
+            </Text>
+
+            <TextInput
+              value={otpCode}
+              onChangeText={setOtpCode}
+              placeholder="Código de 6 dígitos"
+              placeholderTextColor="#94A3B8"
+              keyboardType="number-pad"
+              maxLength={6}
+              style={styles.otpInput}
+            />
+
+            <View style={styles.otpActions}>
+              <Pressable
+                onPress={() => setShowOtpModal(false)}
+                style={styles.otpCancelButton}
+              >
+                <Text style={styles.otpCancelButtonText}>Cancelar</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleConfirmOtp}
+                style={styles.otpConfirmButton}
+              >
+                <Text style={styles.otpConfirmButtonText}>Confirmar</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -350,22 +578,12 @@ type FormFieldProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
-  icon:
-    | "person-outline"
-    | "call-outline"
-    | "mail-outline"
-    | "lock-closed-outline"
-    | "shield-checkmark-outline";
-  keyboardType?:
-    | "default"
-    | "email-address"
-    | "phone-pad";
+  icon: string;
+  keyboardType?: "default" | "email-address" | "phone-pad" | "numeric";
   secureTextEntry?: boolean;
-  autoCapitalize?:
-    | "none"
-    | "sentences"
-    | "words"
-    | "characters";
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  rightIcon?: string;
+  onRightIconPress?: () => void;
 };
 
 function FormField({
@@ -377,6 +595,8 @@ function FormField({
   keyboardType = "default",
   secureTextEntry = false,
   autoCapitalize = "sentences",
+  rightIcon,
+  onRightIconPress,
 }: FormFieldProps) {
   return (
     <View style={styles.field}>
@@ -384,7 +604,7 @@ function FormField({
 
       <View style={styles.inputContainer}>
         <Ionicons
-          name={icon}
+          name={icon as any}
           size={20}
           color={colors.textSecondary}
         />
@@ -400,30 +620,26 @@ function FormField({
           autoCorrect={false}
           style={styles.input}
         />
+
+        {rightIcon && (
+          <Pressable onPress={onRightIconPress} hitSlop={12}>
+            <Ionicons name={rightIcon as any} size={18} color={colors.textSecondary} />
+          </Pressable>
+        )}
       </View>
     </View>
   );
 }
 
-function translateRegisterError(
-  message: string,
-): string {
+function translateRegisterError(message: string): string {
   const normalized = message.toLowerCase();
 
-  if (
-    normalized.includes(
-      "user already registered",
-    )
-  ) {
+  if (normalized.includes("user already registered")) {
     return "Ya existe una cuenta registrada con ese correo.";
   }
 
-  if (
-    normalized.includes(
-      "password should be at least",
-    )
-  ) {
-    return "La contraseña no cumple con la longitud mínima.";
+  if (normalized.includes("password should be at least")) {
+    return "La contraseña no cumple con la longitud mínima de 8 caracteres.";
   }
 
   if (normalized.includes("invalid email")) {
@@ -431,6 +647,10 @@ function translateRegisterError(
   }
 
   return message;
+}
+
+function brandNameStyle() {
+  return styles.brandName;
 }
 
 const styles = StyleSheet.create({
@@ -589,6 +809,15 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
   },
 
+  row: {
+    flexDirection: "row",
+    gap: 12,
+  },
+
+  col: {
+    flex: 1,
+  },
+
   field: {
     marginBottom: 16,
   },
@@ -618,6 +847,116 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  formGroup: {
+    marginBottom: 16,
+  },
+
+  selectButton: {
+    minHeight: 54,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  selectButtonText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+  },
+
+  selectPlaceholderText: {
+    flex: 1,
+    color: "#94A3B8",
+    fontSize: 14,
+  },
+
+  strengthContainer: {
+    marginBottom: 16,
+    marginTop: -8,
+  },
+
+  strengthBarBackground: {
+    height: 4,
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+
+  strengthBarActive: {
+    height: "100%",
+    width: "0%",
+  },
+
+  strengthText: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+
+  checkboxLabel: {
+    flex: 1,
+    color: colors.textSecondary,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+
+  robotRow: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FAFC",
+    padding: 14,
+    marginTop: 4,
+  },
+
+  robotLabelContainer: {
+    flexDirection: "column",
+  },
+
+  robotLabelText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  robotLabelSub: {
+    color: colors.textSecondary,
+    fontSize: 11,
+  },
+
+  approvalNotice: {
+    marginTop: 8,
+    marginBottom: 16,
+    padding: 14,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+
+  approvalNoticeText: {
+    flex: 1,
+    color: "#7B581C",
+    fontSize: 11,
+    lineHeight: 16,
+    fontWeight: "700",
+  },
+
   primaryButton: {
     minHeight: 56,
     marginTop: 8,
@@ -627,25 +966,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
-  },
-
-  approvalNotice: {
-    marginTop: 1,
-    marginBottom: 7,
-    padding: 12,
-    borderRadius: radius.md,
-    backgroundColor: colors.warningSoft,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 9,
-  },
-
-  approvalNoticeText: {
-    flex: 1,
-    color: "#7B581C",
-    fontSize: 11,
-    lineHeight: 16,
-    fontWeight: "600",
   },
 
   primaryButtonDisabled: {
@@ -661,5 +981,106 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.78,
     transform: [{ scale: 0.99 }],
+  },
+
+  // OTP Modal Styles
+  otpModalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15, 23, 42, 0.75)",
+    zIndex: 1000,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+
+  otpModalContent: {
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 24,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  otpIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.primaryWash,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+
+  otpTitle: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: colors.text,
+    marginBottom: 8,
+  },
+
+  otpSubtitle: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+
+  otpInput: {
+    width: "100%",
+    minHeight: 54,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    backgroundColor: colors.background,
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: 4,
+    marginBottom: 20,
+  },
+
+  otpActions: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+
+  otpCancelButton: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  otpCancelButtonText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  otpConfirmButton: {
+    flex: 1,
+    minHeight: 48,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  otpConfirmButtonText: {
+    color: colors.textLight,
+    fontSize: 14,
+    fontWeight: "900",
   },
 });

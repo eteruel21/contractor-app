@@ -910,6 +910,37 @@ export type Database = {
           phone: string | null
           updated_at: string
           role: Database["public"]["Enums"]["global_user_role"]
+          first_name: string | null
+          last_name: string | null
+          province: string | null
+          district: string | null
+          corregimiento: string | null
+          terms_accepted: boolean
+          notifications_opt_in: boolean
+          registration_ip: string | null
+          registration_device: string | null
+          business_name: string | null
+          id_document: string | null
+          tax_id: string | null
+          tax_dv: string | null
+          primary_category: string | null
+          specialties: string[] | null
+          experience_years: number | null
+          work_areas: string[] | null
+          professional_description: string | null
+          company_logo_url: string | null
+          portfolio_urls: string[] | null
+          certifications: string[] | null
+          availability: string | null
+          preferred_contact_method: string | null
+          emits_invoice: boolean
+          has_transport: boolean
+          work_mode: string | null
+          doc_id_url: string | null
+          doc_operation_notice_url: string | null
+          doc_technical_certs_urls: string[] | null
+          doc_references_url: string | null
+          doc_address_proof_url: string | null
         }
         Insert: {
           active?: boolean
@@ -922,6 +953,37 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           role?: Database["public"]["Enums"]["global_user_role"]
+          first_name?: string | null
+          last_name?: string | null
+          province?: string | null
+          district?: string | null
+          corregimiento?: string | null
+          terms_accepted?: boolean
+          notifications_opt_in?: boolean
+          registration_ip?: string | null
+          registration_device?: string | null
+          business_name?: string | null
+          id_document?: string | null
+          tax_id?: string | null
+          tax_dv?: string | null
+          primary_category?: string | null
+          specialties?: string[] | null
+          experience_years?: number | null
+          work_areas?: string[] | null
+          professional_description?: string | null
+          company_logo_url?: string | null
+          portfolio_urls?: string[] | null
+          certifications?: string[] | null
+          availability?: string | null
+          preferred_contact_method?: string | null
+          emits_invoice?: boolean
+          has_transport?: boolean
+          work_mode?: string | null
+          doc_id_url?: string | null
+          doc_operation_notice_url?: string | null
+          doc_technical_certs_urls?: string[] | null
+          doc_references_url?: string | null
+          doc_address_proof_url?: string | null
         }
         Update: {
           active?: boolean
@@ -934,6 +996,37 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           role?: Database["public"]["Enums"]["global_user_role"]
+          first_name?: string | null
+          last_name?: string | null
+          province?: string | null
+          district?: string | null
+          corregimiento?: string | null
+          terms_accepted?: boolean
+          notifications_opt_in?: boolean
+          registration_ip?: string | null
+          registration_device?: string | null
+          business_name?: string | null
+          id_document?: string | null
+          tax_id?: string | null
+          tax_dv?: string | null
+          primary_category?: string | null
+          specialties?: string[] | null
+          experience_years?: number | null
+          work_areas?: string[] | null
+          professional_description?: string | null
+          company_logo_url?: string | null
+          portfolio_urls?: string[] | null
+          certifications?: string[] | null
+          availability?: string | null
+          preferred_contact_method?: string | null
+          emits_invoice?: boolean
+          has_transport?: boolean
+          work_mode?: string | null
+          doc_id_url?: string | null
+          doc_operation_notice_url?: string | null
+          doc_technical_certs_urls?: string[] | null
+          doc_references_url?: string | null
+          doc_address_proof_url?: string | null
         }
         Relationships: []
       }
