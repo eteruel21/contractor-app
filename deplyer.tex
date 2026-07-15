@@ -1,27 +1,25 @@
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
-
-git add .
+git status --short
+git add
 git commit -m
 git push origin main
 
+cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\mobile"
 git status --short
 git switch main
 git pull --ff-only origin main
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP"
-
 cd apps/mobile
 npx supabase db push
 cd ../..
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\admin-web"
-
 npm install
 npm run build
 npx wrangler pages deploy dist --project-name contractor-admin-web --branch main
 
 cd "C:\Users\Eliel Teruel\CONTRACTOR-APP\apps\mobile"
-
 npm install
 npm run build:web
 npx wrangler pages deploy dist --project-name contractor-pro-web --branch main
