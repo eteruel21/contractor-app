@@ -45,10 +45,11 @@ function RootNavigator() {
   const hasActiveCompany = isContractorAuthenticated && Boolean(activeCompany);
   const needsCompanySetup = isContractorAuthenticated && !activeCompany;
 
-  if (
-    authLoading ||
-    (isContractorAuthenticated && companyLoading)
-  ) {
+  const isInitialLoading = authLoading && !profile;
+  const isCompanyInitialLoading =
+    isContractorAuthenticated && companyLoading && !activeCompany;
+
+  if (isInitialLoading || isCompanyInitialLoading) {
     return (
       <View style={styles.loading}>
         <View style={styles.loadingOrb} />
