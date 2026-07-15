@@ -1354,6 +1354,33 @@ export type Database = {
         Args: { p_full_name: string; p_phone?: string | null }
         Returns: Database["public"]["Tables"]["profiles"]["Row"]
       }
+      update_contractor_profile: {
+        Args: {
+          p_business_name: string | null
+          p_id_document: string
+          p_tax_id: string | null
+          p_tax_dv: string | null
+          p_primary_category: string | null
+          p_specialties: string[] | null
+          p_experience_years: number | null
+          p_work_areas: string[] | null
+          p_professional_description: string | null
+          p_company_logo_url: string | null
+          p_portfolio_urls: string[] | null
+          p_certifications: string[] | null
+          p_availability: string | null
+          p_preferred_contact_method: string | null
+          p_emits_invoice: boolean
+          p_has_transport: boolean
+          p_work_mode: string | null
+          p_doc_id_url: string | null
+          p_doc_operation_notice_url: string | null
+          p_doc_technical_certs_urls: string[] | null
+          p_doc_references_url: string | null
+          p_doc_address_proof_url: string | null
+        }
+        Returns: Database["public"]["Tables"]["profiles"]["Row"]
+      }
       admin_save_catalog_item: {
         Args: { requested_active: boolean; requested_category_id: string | null; requested_company_id: string; requested_description: string; requested_item_id: string | null; requested_item_type: Database["public"]["Enums"]["catalog_item_type"]; requested_name: string; requested_sale_price: number; requested_sku: string; requested_unit_cost: number; requested_unit_id: string; requested_waste_percentage: number }
         Returns: string

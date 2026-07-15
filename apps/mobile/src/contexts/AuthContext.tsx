@@ -88,7 +88,7 @@ type SignUpInput = {
 
 export type UpdateContractorProfileInput = {
   businessName: string | null;
-  idDocument: string | null;
+  idDocument: string;
   taxId: string | null;
   taxDv: string | null;
   primaryCategory: string | null;
@@ -363,7 +363,7 @@ export function AuthProvider({
         "update_contractor_profile",
         {
           p_business_name: input.businessName,
-          p_id_document: input.idDocument,
+          p_id_document: input.idDocument || "",
           p_tax_id: input.taxId,
           p_tax_dv: input.taxDv,
           p_primary_category: input.primaryCategory,
