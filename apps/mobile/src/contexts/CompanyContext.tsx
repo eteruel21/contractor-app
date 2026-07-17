@@ -104,6 +104,10 @@ export function CompanyProvider({
 
     setRefreshing(true);
 
+    // Flag para evitar actualizar el estado si el componente ya se desmontó
+    // (por ejemplo, si el usuario cierra sesión durante la carga).
+    let mounted = true;
+
     try {
       const { data, error } = await supabase
         .from("company_members")
@@ -144,6 +148,8 @@ export function CompanyProvider({
           ascending: true,
         });
 
+      if (!mounted) return;
+
       if (error) {
         throw error;
       }
@@ -175,12 +181,16 @@ export function CompanyProvider({
               Boolean(membership),
           );
 
+      if (!mounted) return;
+
       setMemberships(parsedMemberships);
 
       const storedCompanyId =
         await AsyncStorage.getItem(
           ACTIVE_COMPANY_KEY,
         );
+
+      if (!mounted) return;
 
       const storedCompanyExists =
         parsedMemberships.some(
@@ -217,8 +227,11 @@ export function CompanyProvider({
         error,
       );
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (mounted) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+      mounted = false;
     }
   }, [userId]);
 

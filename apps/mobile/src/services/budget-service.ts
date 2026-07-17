@@ -6,6 +6,8 @@ import type {
   BudgetSection,
   BudgetWithDetails,
 } from "@/types/budget";
+import type { Client, ClientAddress } from "@/types/client";
+import type { Project } from "@/types/project";
 
 type CreateBudgetItemInput = {
   companyId: string;
@@ -22,6 +24,12 @@ type CreateBudgetItemInput = {
   discountPercentage?: number;
   taxable?: boolean;
   notes?: string;
+};
+
+// Tipo para presupuestos visibles por el usuario cliente vinculado
+export type ClientBudgetSummary = Budget & {
+  project: { name: string } | null;
+  company: { name: string } | null;
 };
 
 export async function listBudgetsByProject(
@@ -209,9 +217,9 @@ export async function getBudgetById(
       sections:
         (sectionsData ?? []) as BudgetSection[],
       items: (itemsData ?? []) as BudgetItem[],
-      client: clientData ?? null,
-      project: projectData ?? null,
-      address: addressData ?? null,
+      client: (clientData ?? null) as Client | null,
+      project: (projectData ?? null) as Project | null,
+      address: (addressData ?? null) as ClientAddress | null,
     },
     error: null,
   };
@@ -301,66 +309,26 @@ export async function deleteBudgetItem(input: {
   };
 }
 
+/**
+ * Lista los presupuestos visibles para un usuario cliente usando una sola query
+ * con JOIN directo desde clients.user_id, en lugar de las tres queries
+ * secuenciales anteriores (clients → projects → budgets).
+ */
 export async function listBudgetsForClient(
   userId: string,
 ): Promise<{
-  budgets: any[];
+  budgets: ClientBudgetSummary[];
   error: string | null;
 }> {
-  const { data: clientsData, error: clientsError } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("user_id", userId);
-
-  if (clientsError) {
-    return {
-      budgets: [],
-      error: clientsError.message,
-    };
-  }
-
-  const clientIds = (clientsData ?? []).map((c) => c.id);
-
-  if (clientIds.length === 0) {
-    return {
-      budgets: [],
-      error: null,
-    };
-  }
-
-  const { data: projectsData, error: projectsError } = await supabase
-    .from("projects")
-    .select("id")
-    .in("client_id", clientIds);
-
-  if (projectsError) {
-    return {
-      budgets: [],
-      error: projectsError.message,
-    };
-  }
-
-  const projectIds = (projectsData ?? []).map((p) => p.id);
-
-  if (projectIds.length === 0) {
-    return {
-      budgets: [],
-      error: null,
-    };
-  }
-
   const { data, error } = await supabase
     .from("budgets")
     .select(`
       *,
-      project:projects (
-        name
-      ),
-      company:companies (
-        name
-      )
+      project:projects (name),
+      company:companies (name),
+      client:clients!inner (user_id)
     `)
-    .in("project_id", projectIds)
+    .eq("client.user_id", userId)
     .order("created_at", {
       ascending: false,
     });
@@ -372,8 +340,25 @@ export async function listBudgetsForClient(
     };
   }
 
+  const parsedBudgets = (data ?? []).map((budget) => {
+    const projectValue = Array.isArray(budget.project)
+      ? budget.project[0]
+      : budget.project;
+    const companyValue = Array.isArray(budget.company)
+      ? budget.company[0]
+      : budget.company;
+
+    return {
+      ...budget,
+      project: (projectValue ?? null) as { name: string } | null,
+      company: (companyValue ?? null) as { name: string } | null,
+      // Omitir la relación client que solo se usó como filtro
+      client: undefined,
+    };
+  });
+
   return {
-    budgets: data ?? [],
+    budgets: parsedBudgets as ClientBudgetSummary[],
     error: null,
   };
 }

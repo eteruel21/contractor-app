@@ -1,6 +1,5 @@
 import { supabase } from "@/services/supabase";
 import type { Invoice, InvoiceWithDetails, InvoiceStatus } from "@/types/invoice";
-import { getBudgetById } from "@/services/budget-service";
 
 export async function listInvoices(companyId: string): Promise<{
   invoices: InvoiceWithDetails[];
@@ -10,8 +9,25 @@ export async function listInvoices(companyId: string): Promise<{
     .from("invoices")
     .select(`
       *,
-      client:clients (*),
-      budget:budgets (*)
+      client:clients (
+        id,
+        company_id,
+        client_type,
+        first_name,
+        last_name,
+        business_name,
+        document_type,
+        document_number,
+        email,
+        phone,
+        secondary_phone,
+        notes,
+        active,
+        created_by,
+        created_at,
+        updated_at
+      ),
+      budget:budgets (id, title, status, total_amount)
     `)
     .eq("company_id", companyId)
     .order("created_at", { ascending: false });
@@ -37,7 +53,35 @@ export async function getInvoiceById(
     .from("invoices")
     .select(`
       *,
-      client:clients (*)
+      client:clients (
+        id,
+        company_id,
+        client_type,
+        first_name,
+        last_name,
+        business_name,
+        document_type,
+        document_number,
+        email,
+        phone,
+        secondary_phone,
+        notes,
+        active,
+        created_by,
+        created_at,
+        updated_at
+      ),
+      budget:budgets (
+        id,
+        title,
+        status,
+        total_amount,
+        project_id,
+        client_id,
+        company_id,
+        created_at,
+        updated_at
+      )
     `)
     .eq("company_id", companyId)
     .eq("id", invoiceId)
@@ -47,22 +91,10 @@ export async function getInvoiceById(
     return { invoice: null, error: invoiceError.message };
   }
 
-  const invoice = {
-    ...invoiceData,
-    budget: null,
-  } as InvoiceWithDetails;
-
-  if (invoice.budget_id) {
-    const { budget, error: budgetError } = await getBudgetById(
-      companyId,
-      invoice.budget_id,
-    );
-    if (!budgetError) {
-      invoice.budget = budget;
-    }
-  }
-
-  return { invoice, error: null };
+  return {
+    invoice: invoiceData as unknown as InvoiceWithDetails,
+    error: null,
+  };
 }
 
 export async function getInvoiceByBudgetId(
@@ -86,58 +118,71 @@ export async function getInvoiceByBudgetId(
   return { invoice: data as Invoice | null, error: null };
 }
 
+/**
+ * Crea una factura usando la función SQL `create_invoice` que genera el número
+ * de factura de forma atómica (sin race condition). Antes se generaba el número
+ * en el cliente con count() + insert en dos pasos, lo que producía colisiones
+ * cuando dos usuarios creaban facturas al mismo tiempo.
+ */
 export async function createInvoiceFromBudget(input: {
   companyId: string;
   budgetId: string;
   clientId: string;
+  dueDate?: string | null;
+  notes?: string | null;
 }): Promise<{
   invoice: Invoice | null;
   error: string | null;
 }> {
-  // 1. Obtener datos de la empresa para conseguir el prefijo
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .select("invoice_prefix")
-    .eq("id", input.companyId)
+  // Verificar primero que no exista ya una factura para este presupuesto
+  const { invoice: existing, error: checkError } = await getInvoiceByBudgetId(
+    input.companyId,
+    input.budgetId,
+  );
+
+  if (checkError) {
+    return { invoice: null, error: checkError };
+  }
+
+  if (existing) {
+    return {
+      invoice: null,
+      error: "Ya existe una factura para este presupuesto.",
+    };
+  }
+
+  // Usar RPC atómico para generar el número y crear el registro en una sola
+  // transacción — elimina la race condition del patrón count() + insert anterior
+  const { data, error } = await supabase.rpc("create_invoice", {
+    requested_company_id: input.companyId,
+    requested_client_id: input.clientId,
+    requested_budget_id: input.budgetId,
+    requested_due_date: input.dueDate ?? null,
+    requested_notes: input.notes?.trim() ?? null,
+  });
+
+  if (error) {
+    return { invoice: null, error: error.message };
+  }
+
+  const invoiceId = typeof data === "string" ? data : null;
+
+  if (!invoiceId) {
+    return { invoice: null, error: "No se pudo crear la factura." };
+  }
+
+  // Recuperar el registro creado
+  const { data: invoiceData, error: fetchError } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("id", invoiceId)
     .single();
 
-  if (companyError) {
-    return { invoice: null, error: companyError.message };
+  if (fetchError) {
+    return { invoice: null, error: fetchError.message };
   }
 
-  const prefix = company?.invoice_prefix?.trim() || "FAC";
-
-  // 2. Obtener el número de facturas existentes para generar el correlativo
-  const { count, error: countError } = await supabase
-    .from("invoices")
-    .select("id", { count: "exact", head: true })
-    .eq("company_id", input.companyId);
-
-  if (countError) {
-    return { invoice: null, error: countError.message };
-  }
-
-  const nextNumber = (count ?? 0) + 1;
-  const invoiceNumber = `${prefix}-${String(nextNumber).padStart(4, "0")}`;
-
-  // 3. Crear el registro de la factura
-  const { data: invoice, error: insertError } = await supabase
-    .from("invoices")
-    .insert({
-      company_id: input.companyId,
-      budget_id: input.budgetId,
-      client_id: input.clientId,
-      invoice_number: invoiceNumber,
-      status: "pending" as InvoiceStatus,
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    return { invoice: null, error: insertError.message };
-  }
-
-  return { invoice: invoice as Invoice, error: null };
+  return { invoice: invoiceData as Invoice, error: null };
 }
 
 export async function updateInvoiceStatus(input: {

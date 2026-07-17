@@ -1,5 +1,9 @@
 import { supabase } from "@/services/supabase";
 import type {
+  Client,
+  ClientAddress,
+} from "@/types/client";
+import type {
   Project,
   ProjectStatus,
   ProjectWithDetails,
@@ -12,6 +16,24 @@ type CreateProjectInput = {
   name: string;
   description?: string;
   budgetEstimate?: number;
+};
+
+// Tipo para el listado de proyectos con datos mínimos del cliente
+export type ProjectSummary = Project & {
+  client: {
+    id: string;
+    client_type: "person" | "business";
+    first_name: string | null;
+    last_name: string | null;
+    business_name: string | null;
+  } | null;
+};
+
+// Tipo para proyectos visibles por el usuario cliente vinculado
+export type ClientProjectSummary = Project & {
+  company: {
+    name: string;
+  } | null;
 };
 
 export async function listProjectsByClient(
@@ -119,6 +141,11 @@ export async function createProject(
   };
 }
 
+/**
+ * Obtiene el detalle completo de un proyecto en una sola query con JOINs,
+ * en lugar de las 2-3 queries secuenciales que había antes
+ * (proyecto → cliente → dirección).
+ */
 export async function getProjectById(
   companyId: string,
   projectId: string,
@@ -126,49 +153,37 @@ export async function getProjectById(
   project: ProjectWithDetails | null;
   error: string | null;
 }> {
-  const { data: projectData, error: projectError } =
-    await supabase
-      .from("projects")
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("id", projectId)
-      .single();
+  const { data, error } = await supabase
+    .from("projects")
+    .select(`
+      *,
+      client:clients (*),
+      address:client_addresses (*)
+    `)
+    .eq("company_id", companyId)
+    .eq("id", projectId)
+    .single();
 
-  if (projectError) {
+  if (error) {
     return {
       project: null,
-      error: projectError.message,
+      error: error.message,
     };
   }
 
-  const project = projectData as Project;
+  const clientValue = Array.isArray(data.client)
+    ? data.client[0]
+    : data.client;
 
-  const { data: clientData } = await supabase
-    .from("clients")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("id", project.client_id)
-    .maybeSingle();
-
-  let addressData = null;
-
-  if (project.address_id) {
-    const { data } = await supabase
-      .from("client_addresses")
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("client_id", project.client_id)
-      .eq("id", project.address_id)
-      .maybeSingle();
-
-    addressData = data;
-  }
+  const addressValue = Array.isArray(data.address)
+    ? data.address[0]
+    : data.address;
 
   return {
     project: {
-      ...project,
-      client: clientData ?? null,
-      address: addressData ?? null,
+      ...(data as unknown as Project),
+      client: (clientValue ?? null) as Client | null,
+      address: (addressValue ?? null) as ClientAddress | null,
     } as ProjectWithDetails,
     error: null,
   };
@@ -222,15 +237,7 @@ export async function updateProjectProgress(input: {
 export async function listProjectsByCompany(
   companyId: string,
 ): Promise<{
-  projects: (Project & {
-    client: {
-      id: string;
-      client_type: "person" | "business";
-      first_name: string | null;
-      last_name: string | null;
-      business_name: string | null;
-    } | null;
-  })[];
+  projects: ProjectSummary[];
   error: string | null;
 }> {
   const { data, error } = await supabase
@@ -269,47 +276,30 @@ export async function listProjectsByCompany(
   });
 
   return {
-    projects: parsedProjects as any,
+    projects: parsedProjects as ProjectSummary[],
     error: null,
   };
 }
 
+/**
+ * Lista los proyectos visibles para un usuario cliente usando una sola query
+ * con JOIN directo desde clients.user_id, en lugar de las dos queries
+ * secuenciales anteriores (clients → projects).
+ */
 export async function listProjectsForClient(
   userId: string,
 ): Promise<{
-  projects: any[];
+  projects: ClientProjectSummary[];
   error: string | null;
 }> {
-  const { data: clientsData, error: clientsError } = await supabase
-    .from("clients")
-    .select("id")
-    .eq("user_id", userId);
-
-  if (clientsError) {
-    return {
-      projects: [],
-      error: clientsError.message,
-    };
-  }
-
-  const clientIds = (clientsData ?? []).map((c) => c.id);
-
-  if (clientIds.length === 0) {
-    return {
-      projects: [],
-      error: null,
-    };
-  }
-
   const { data, error } = await supabase
     .from("projects")
     .select(`
       *,
-      company:companies (
-        name
-      )
+      company:companies (name),
+      client:clients!inner (user_id)
     `)
-    .in("client_id", clientIds)
+    .eq("client.user_id", userId)
     .order("created_at", {
       ascending: false,
     });
@@ -321,8 +311,21 @@ export async function listProjectsForClient(
     };
   }
 
+  const parsedProjects = (data ?? []).map((project) => {
+    const companyValue = Array.isArray(project.company)
+      ? project.company[0]
+      : project.company;
+
+    return {
+      ...project,
+      company: companyValue ?? null,
+      // Omitir la relación client que solo se usó como filtro
+      client: undefined,
+    };
+  });
+
   return {
-    projects: data ?? [],
+    projects: parsedProjects as ClientProjectSummary[],
     error: null,
   };
 }

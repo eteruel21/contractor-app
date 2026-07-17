@@ -175,9 +175,26 @@ export function AuthProvider({
       setProfileLoading(true);
       setProfileError(null);
 
+      // Columnas explícitas: evita cargar campos de documentos pesados
+      // (doc_technical_certs_urls[], portfolio_urls[], etc.) en cada evento
+      // de autenticación. El perfil profesional completo se carga a demanda
+      // solo cuando el usuario entra a esa pantalla.
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select(
+          `id, full_name, first_name, last_name, phone, avatar_url,
+           role, active, province, district, corregimiento,
+           terms_accepted, notifications_opt_in,
+           registration_ip, registration_device,
+           business_name, id_document, tax_id, tax_dv,
+           primary_category, specialties, experience_years,
+           work_areas, professional_description, company_logo_url,
+           portfolio_urls, certifications, availability,
+           preferred_contact_method, emits_invoice, has_transport,
+           work_mode, doc_id_url, doc_operation_notice_url,
+           doc_technical_certs_urls, doc_references_url,
+           doc_address_proof_url, created_at, updated_at`,
+        )
         .eq("id", userId)
         .maybeSingle();
 
@@ -287,7 +304,8 @@ export function AuthProvider({
       fullName,
       phone = "",
     }: UpdateProfileInput): Promise<UpdateProfileResult> => {
-      if (!session?.user) {
+      const userId = session?.user?.id;
+      if (!userId) {
         return { error: "No hay una sesión activa." };
       }
 
@@ -312,10 +330,14 @@ export function AuthProvider({
         return { error: error.message };
       }
 
-      await loadProfile(session.user.id);
+      await loadProfile(userId);
       return { error: null };
     },
-    [loadProfile, session?.user],
+    // Usar session?.user?.id (primitivo string) en lugar de session?.user
+    // (objeto) para evitar que el callback se recree en cada render aunque
+    // el usuario sea el mismo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loadProfile, session?.user?.id],
   );
 
   const signIn = useCallback(
@@ -371,7 +393,8 @@ export function AuthProvider({
     async (
       input: UpdateContractorProfileInput,
     ): Promise<{ error: string | null }> => {
-      if (!session?.user) {
+      const userId = session?.user?.id;
+      if (!userId) {
         return { error: "No hay una sesión activa." };
       }
 
@@ -407,10 +430,12 @@ export function AuthProvider({
         return { error: error.message };
       }
 
-      await loadProfile(session.user.id);
+      await loadProfile(userId);
       return { error: null };
     },
-    [loadProfile, session?.user],
+    // Usar session?.user?.id (primitivo) para evitar recreaciones innecesarias
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [loadProfile, session?.user?.id],
   );
 
   const signOut = useCallback(

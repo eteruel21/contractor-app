@@ -410,6 +410,8 @@ export type Database = {
           effective_at: string
           id: string
           notes: string | null
+          previous_sale_price: number | null
+          previous_unit_cost: number | null
           sale_price: number
           source: string | null
           unit_cost: number
@@ -422,6 +424,8 @@ export type Database = {
           effective_at?: string
           id?: string
           notes?: string | null
+          previous_sale_price?: number | null
+          previous_unit_cost?: number | null
           sale_price: number
           source?: string | null
           unit_cost: number
@@ -434,6 +438,8 @@ export type Database = {
           effective_at?: string
           id?: string
           notes?: string | null
+          previous_sale_price?: number | null
+          previous_unit_cost?: number | null
           sale_price?: number
           source?: string | null
           unit_cost?: number
@@ -1518,6 +1524,46 @@ export type Database = {
           requested_sale_price: number
           requested_unit_cost: number
           requested_waste_percentage: number
+        }
+        Returns: undefined
+      }
+      set_primary_client_address: {
+        Args: {
+          p_company_id: string
+          p_client_id: string
+          p_address_id: string
+        }
+        Returns: undefined
+      }
+      create_invoice: {
+        Args: {
+          requested_company_id: string
+          requested_client_id: string
+          requested_budget_id?: string | null
+          requested_due_date?: string | null
+          requested_notes?: string | null
+        }
+        Returns: string
+      }
+      admin_update_catalog_pricing: {
+        Args: {
+          requested_company_id: string
+          requested_item_id: string
+          requested_unit_cost: number
+          requested_sale_price: number
+          requested_waste_percentage: number
+          change_source?: string | null
+          change_notes?: string | null
+        }
+        Returns: undefined
+      }
+      admin_adjust_catalog_prices: {
+        Args: {
+          requested_company_id: string
+          requested_item_ids: string[]
+          requested_target: string
+          requested_percentage: number
+          change_notes?: string | null
         }
         Returns: undefined
       }

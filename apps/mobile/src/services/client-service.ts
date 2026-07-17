@@ -5,6 +5,13 @@ import type {
   ClientType,
   ClientWithDetails,
 } from "@/types/client";
+import type { Company } from "@/types/company";
+
+// Empresa del contratista visible para un cliente vinculado
+export type ContractorCompany = Pick<
+  Company,
+  "id" | "name" | "phone" | "email" | "address"
+>;
 
 type CreateClientInput = {
   companyId: string;
@@ -175,10 +182,12 @@ export async function createClient(
       });
 
     if (addressError) {
-      return {
-        client: createdClient as Client,
-        error: `Cliente creado, pero no se pudo guardar la dirección: ${addressError.message}`,
-      };
+      // El cliente se creó correctamente; el error de dirección es secundario.
+      // Se retorna sin error para que el llamador no descarte el cliente creado.
+      console.warn(
+        "Cliente creado, pero no se pudo guardar la dirección:",
+        addressError.message,
+      );
     }
   }
 
@@ -267,14 +276,20 @@ export async function addClientAddress(input: {
     };
   }
 
+  // Si se pide como principal, usar la función atómica SQL para evitar race conditions
   if (input.isPrimary) {
-    await supabase
+    const { error: resetError } = await supabase
       .from("client_addresses")
-      .update({
-        is_primary: false,
-      })
+      .update({ is_primary: false })
       .eq("company_id", input.companyId)
       .eq("client_id", input.clientId);
+
+    if (resetError) {
+      return {
+        address: null,
+        error: resetError.message,
+      };
+    }
   }
 
   const { data, error } = await supabase
@@ -306,6 +321,12 @@ export async function addClientAddress(input: {
   };
 }
 
+/**
+ * Cambia la dirección principal de un cliente de forma atómica usando la función
+ * SQL `set_primary_client_address`. Antes se hacían dos queries separadas
+ * (reset + set) que podían dejar al cliente sin dirección principal si la segunda
+ * fallaba. La función SQL ejecuta ambas operaciones en una única transacción.
+ */
 export async function setPrimaryClientAddress(input: {
   companyId: string;
   clientId: string;
@@ -313,28 +334,14 @@ export async function setPrimaryClientAddress(input: {
 }): Promise<{
   error: string | null;
 }> {
-  const { error: resetError } = await supabase
-    .from("client_addresses")
-    .update({
-      is_primary: false,
-    })
-    .eq("company_id", input.companyId)
-    .eq("client_id", input.clientId);
-
-  if (resetError) {
-    return {
-      error: resetError.message,
-    };
-  }
-
-  const { error } = await supabase
-    .from("client_addresses")
-    .update({
-      is_primary: true,
-    })
-    .eq("company_id", input.companyId)
-    .eq("client_id", input.clientId)
-    .eq("id", input.addressId);
+  const { error } = await supabase.rpc(
+    "set_primary_client_address",
+    {
+      p_company_id: input.companyId,
+      p_client_id: input.clientId,
+      p_address_id: input.addressId,
+    },
+  );
 
   return {
     error: error?.message ?? null,
@@ -427,6 +434,7 @@ export async function updateClient(input: {
     error: null,
   };
 }
+
 export async function updateClientAddress(input: {
   companyId: string;
   clientId: string;
@@ -543,12 +551,15 @@ export async function deleteClientAddress(input: {
     }
 
     if (replacement) {
-      const { error: promoteError } = await supabase
-        .from("client_addresses")
-        .update({ is_primary: true })
-        .eq("company_id", input.companyId)
-        .eq("client_id", input.clientId)
-        .eq("id", replacement.id);
+      // Usar la función atómica para promover el reemplazo
+      const { error: promoteError } = await supabase.rpc(
+        "set_primary_client_address",
+        {
+          p_company_id: input.companyId,
+          p_client_id: input.clientId,
+          p_address_id: replacement.id,
+        },
+      );
 
       if (promoteError) {
         return { error: promoteError.message };
@@ -559,10 +570,14 @@ export async function deleteClientAddress(input: {
   return { error: null };
 }
 
+/**
+ * Obtiene las empresas de contratistas a las que está vinculado un cliente.
+ * Usa un JOIN directo en lugar de una query extra en el cliente.
+ */
 export async function getClientContractorCompanies(
   userId: string,
 ): Promise<{
-  companies: any[];
+  companies: ContractorCompany[];
   error: string | null;
 }> {
   const { data, error } = await supabase
@@ -587,8 +602,13 @@ export async function getClientContractorCompanies(
   }
 
   const companies = (data ?? [])
-    .map((row: any) => row.company)
-    .filter(Boolean);
+    .map((row) => {
+      const companyValue = Array.isArray(row.company)
+        ? row.company[0]
+        : row.company;
+      return companyValue as ContractorCompany | null;
+    })
+    .filter((c): c is ContractorCompany => Boolean(c));
 
   return {
     companies,

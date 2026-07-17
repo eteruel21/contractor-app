@@ -32,17 +32,6 @@ export type PricingHistoryItem = {
   } | null;
 };
 
-type RpcResult = {
-  error: {
-    message: string;
-  } | null;
-};
-
-type UntypedRpc = (
-  functionName: string,
-  parameters?: Record<string, unknown>,
-) => Promise<RpcResult>;
-
 function normalizeCatalogItem(
   row: Record<string, unknown>,
 ): CatalogItemWithDetails {
@@ -109,9 +98,10 @@ export async function updateCatalogPricing(input: {
 }): Promise<{
   error: string | null;
 }> {
-  const rpc = supabase.rpc as unknown as UntypedRpc;
-
-  const result = await rpc(
+  // Usar el cast correcto del cliente Supabase tipado.
+  // admin_update_catalog_pricing es una función pública de Supabase que opera
+  // sobre catalog_items de empresa — no sobre platform_catalog_items.
+  const { error } = await supabase.rpc(
     "admin_update_catalog_pricing",
     {
       requested_company_id: input.companyId,
@@ -136,19 +126,8 @@ export async function updateCatalogPricing(input: {
     },
   );
 
-  if (
-    result.error?.message.includes(
-      "admin_update_catalog_pricing",
-    )
-  ) {
-    return {
-      error:
-        "Falta ejecutar la migración SQL del módulo de precios en Supabase.",
-    };
-  }
-
   return {
-    error: result.error?.message ?? null,
+    error: error?.message ?? null,
   };
 }
 
@@ -177,9 +156,7 @@ export async function adjustCatalogPrices(input: {
     };
   }
 
-  const rpc = supabase.rpc as unknown as UntypedRpc;
-
-  const result = await rpc(
+  const { error } = await supabase.rpc(
     "admin_adjust_catalog_prices",
     {
       requested_company_id: input.companyId,
@@ -191,19 +168,8 @@ export async function adjustCatalogPrices(input: {
     },
   );
 
-  if (
-    result.error?.message.includes(
-      "admin_adjust_catalog_prices",
-    )
-  ) {
-    return {
-      error:
-        "Falta ejecutar la migración SQL del módulo de precios en Supabase.",
-    };
-  }
-
   return {
-    error: result.error?.message ?? null,
+    error: error?.message ?? null,
   };
 }
 
@@ -213,6 +179,7 @@ export async function listPricingHistory(
   history: PricingHistoryItem[];
   error: string | null;
 }> {
+  // Ordenamos descendente directamente en Supabase para no re-ordenar en el cliente
   const { data, error } = await supabase
     .from("catalog_price_history")
     .select(
@@ -236,7 +203,7 @@ export async function listPricingHistory(
     )
     .eq("company_id", companyId)
     .order("effective_at", {
-      ascending: true,
+      ascending: false,
     })
     .limit(1000);
 
@@ -246,14 +213,6 @@ export async function listPricingHistory(
       error: error.message,
     };
   }
-
-  const previousByItem = new Map<
-    string,
-    {
-      unitCost: number;
-      salePrice: number;
-    }
-  >();
 
   const normalized = (data ?? []).map((row) => {
     const itemValue = Array.isArray(row.item)
@@ -271,25 +230,16 @@ export async function listPricingHistory(
       ? ((row as Record<string, unknown>).changed_by_profile as Array<{ full_name: string | null }>)[0]
       : (row as Record<string, unknown>).changed_by_profile as { full_name: string | null } | null;
 
-    const previous = previousByItem.get(
-      row.catalog_item_id,
-    );
-
-    previousByItem.set(row.catalog_item_id, {
-      unitCost: row.unit_cost,
-      salePrice: row.sale_price,
-    });
-
     return {
       id: row.id,
       company_id: row.company_id,
       catalog_item_id: row.catalog_item_id,
       unit_cost: row.unit_cost,
       sale_price: row.sale_price,
-      previous_unit_cost:
-        previous?.unitCost ?? null,
-      previous_sale_price:
-        previous?.salePrice ?? null,
+      // previous_unit_cost y previous_sale_price ya vienen de la BD
+      // (columnas añadidas en la migración 20260714010000)
+      previous_unit_cost: row.previous_unit_cost ?? null,
+      previous_sale_price: row.previous_sale_price ?? null,
       effective_at: row.effective_at,
       created_at: row.created_at,
       changed_by: row.changed_by,
@@ -315,12 +265,8 @@ export async function listPricingHistory(
     } satisfies PricingHistoryItem;
   });
 
-  normalized.sort(
-    (left, right) =>
-      new Date(right.effective_at).getTime() -
-      new Date(left.effective_at).getTime(),
-  );
-
+  // Ya viene ordenado por effective_at DESC desde Supabase —
+  // no se requiere sort adicional en el cliente.
   return {
     history: normalized,
     error: null,
