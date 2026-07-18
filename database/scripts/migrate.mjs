@@ -5,6 +5,7 @@ import {
   readSqlFiles,
   requireEnv,
   stripOuterTransaction,
+  stripPsqlMetaCommands,
   withAdvisoryLock,
 } from "./db-utils.mjs";
 
@@ -60,7 +61,10 @@ try {
         continue;
       }
 
-      const sql = stripOuterTransaction(file.contents, file.filename);
+      const sql = stripPsqlMetaCommands(
+        stripOuterTransaction(file.contents, file.filename),
+        file.filename,
+      );
       await client.query("BEGIN");
 
       try {

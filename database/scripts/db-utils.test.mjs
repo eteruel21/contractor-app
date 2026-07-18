@@ -6,6 +6,7 @@ import {
   quoteIdentifier,
   quoteLiteral,
   stripOuterTransaction,
+  stripPsqlMetaCommands,
 } from "./db-utils.mjs";
 
 test("calcula checksums SHA-256 estables", () => {
@@ -26,6 +27,23 @@ test("rechaza migraciones sin transacción exterior", () => {
   assert.throws(
     () => stripOuterTransaction("SELECT 1;", "001_test.sql"),
     /debe comenzar con BEGIN; y terminar con COMMIT;/u,
+  );
+});
+
+test("retira los delimitadores de seguridad generados por pg_dump", () => {
+  assert.equal(
+    stripPsqlMetaCommands(
+      "SELECT 1;\n\\restrict token\nSELECT 2;\n\\unrestrict token",
+      "003_dump.sql",
+    ),
+    "SELECT 1;\nSELECT 2;",
+  );
+});
+
+test("rechaza otros comandos exclusivos de psql", () => {
+  assert.throws(
+    () => stripPsqlMetaCommands("\\connect otra_base", "003_dump.sql"),
+    /comandos psql no compatibles/u,
   );
 });
 

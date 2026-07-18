@@ -61,6 +61,24 @@ export function stripOuterTransaction(contents, filename) {
   return withoutCommit;
 }
 
+export function stripPsqlMetaCommands(contents, filename) {
+  const lines = contents.split(/\r?\n/u);
+  const unsupportedCommands = lines.filter(
+    (line) => /^\s*\\/u.test(line) && !/^\s*\\(?:un)?restrict\b/u.test(line),
+  );
+
+  if (unsupportedCommands.length > 0) {
+    throw new Error(
+      `${filename} contiene comandos psql no compatibles: ` +
+        unsupportedCommands.map((line) => line.trim()).join(", "),
+    );
+  }
+
+  return lines
+    .filter((line) => !/^\s*\\(?:un)?restrict\b/u.test(line))
+    .join("\n");
+}
+
 export async function ensureHistoryTables(client) {
   await client.query("BEGIN");
 
@@ -96,6 +114,12 @@ export async function withAdvisoryLock(client, key, callback) {
 
   try {
     return await callback();
+  } catch (error) {
+    // Una consulta SQL que abrió su propia transacción puede dejar la sesión en
+    // estado abortado. ROLLBACK permite liberar el advisory lock sin ocultar el
+    // error original.
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
   } finally {
     await client.query("SELECT pg_advisory_unlock(hashtext($1))", [key]);
   }
