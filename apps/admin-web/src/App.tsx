@@ -436,6 +436,7 @@ export default function App() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
@@ -447,6 +448,7 @@ export default function App() {
               <input
                 type="password"
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
               />
