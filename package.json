@@ -5,9 +5,18 @@
     "apps/*"
   ],
   "scripts": {
+    "db:bootstrap": "node --env-file-if-exists=database/.env database/scripts/bootstrap.mjs",
+    "db:baseline": "node --env-file-if-exists=database/.env database/scripts/baseline.mjs",
+    "db:migrate": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs",
+    "db:status": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs --status",
+    "db:seed": "node --env-file-if-exists=database/.env database/scripts/seed.mjs",
+    "test:database-tools": "node --test database/scripts/*.test.mjs",
     "typecheck": "npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
     "build:admin": "npm run build -w apps/admin-web",
     "build:mobile": "npm run build:web -w apps/mobile",
     "validate": "npm run typecheck && npm run build:admin"
+  },
+  "devDependencies": {
+    "pg": "^8.22.0"
   }
 }

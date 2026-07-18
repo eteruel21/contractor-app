@@ -57,7 +57,24 @@ Panel administrativo, en `apps/admin-web/.env`:
 
 ## Base de datos
 
-Las migraciones PostgreSQL están en `database/migrations`.
+Las migraciones PostgreSQL están en `database/migrations` y se registran con
+checksum en `app_migrations.schema_migrations`.
+
+1. Copiar las variables de `database/.env.example` al entorno local.
+2. Ejecutar `npm run db:bootstrap` con una conexión administrativa.
+3. Ejecutar `npm run db:migrate` con la conexión del migrador.
+4. Ejecutar `npm run db:seed` para importar el catálogo oficial.
+
+Comandos disponibles:
+
+- `npm run db:bootstrap`: crea la base y los roles con privilegios mínimos.
+- `npm run db:baseline`: registra, después de verificarlo, un esquema existente.
+- `npm run db:migrate`: aplica únicamente migraciones pendientes.
+- `npm run db:status`: muestra migraciones aplicadas y pendientes.
+- `npm run db:seed`: aplica seeds pendientes y verifica sus checksums.
+
+No se deben modificar migraciones o seeds ya aplicados. Cualquier cambio de
+esquema o datos debe añadirse en un archivo nuevo.
 
 ## Verificaciones
 
