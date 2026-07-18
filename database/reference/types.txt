@@ -1,0 +1,11 @@
+CREATE TYPE "public"."budget_discount_type" AS ENUM (
+CREATE TYPE "public"."budget_item_type" AS ENUM (
+CREATE TYPE "public"."budget_status" AS ENUM (
+CREATE TYPE "public"."catalog_item_type" AS ENUM (
+CREATE TYPE "public"."client_type" AS ENUM (
+CREATE TYPE "public"."company_role" AS ENUM (
+CREATE TYPE "public"."document_type" AS ENUM (
+CREATE TYPE "public"."global_user_role" AS ENUM (
+CREATE TYPE "public"."project_member_role" AS ENUM (
+CREATE TYPE "public"."project_status" AS ENUM (
+CREATE TYPE "public"."unit_type" AS ENUM (

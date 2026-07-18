@@ -1,45 +1,14 @@
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
-import {
-  AlertTriangle,
-  BookOpen,
-  Briefcase,
-  Calculator,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  DollarSign,
-  Edit3,
-  History,
-  LayoutDashboard,
-  Loader2,
-  Lock,
-  LogOut,
-  Mail,
-  Plus,
-  RefreshCw,
-  Save,
-  Search,
-  Settings,
-  SlidersHorizontal,
-  UserCheck,
-  Users,
-  X,
-} from "lucide-react";
+import { Briefcase, Loader2, Lock, Mail, RefreshCw } from "lucide-react";
 
 import {
   adjustPrices,
   type AdminData,
   type CatalogItem,
   type Category,
-  type CategoryDraft,
   type Formula,
-  type FormulaDraft,
-  type FormulaParameter,
   type GlobalCatalogItem,
-  type GlobalCatalogItemDraft,
-  type ItemDraft,
   type ItemType,
   loadAdminData,
   type PlatformUser,
@@ -51,24 +20,36 @@ import {
   saveUser,
   saveYield,
   type Unit,
-  type UnitDraft,
-  type UnitType,
-  type UserDraft,
-  type UserRole,
-  type YieldDraft,
   type CatalogYield,
+  type UserDraft,
+  type CategoryDraft,
+  type ItemDraft,
+  type GlobalCatalogItemDraft,
+  type UnitDraft,
+  type YieldDraft,
+  type FormulaDraft,
 } from "./admin-data";
-import { supabase } from "./supabase";
-
-type Tab = "dashboard" | "users" | "catalog" | "calculations" | "pricing" | "system";
-type Editor =
-  | { kind: "user"; draft: UserDraft }
-  | { kind: "category"; draft: CategoryDraft }
-  | { kind: "item"; draft: ItemDraft }
-  | { kind: "globalPrice"; draft: GlobalCatalogItemDraft }
-  | { kind: "unit"; draft: UnitDraft }
-  | { kind: "yield"; draft: YieldDraft }
-  | { kind: "formula"; draft: FormulaDraft };
+import {
+  type AdminSession,
+  loginAdmin,
+  logoutAdmin,
+  restoreAdminSession,
+} from "./api";
+import { errorMessage } from "./utils/helpers";
+import {
+  FullScreenLoader,
+  AlertBanner,
+  SuccessBanner,
+  Field,
+} from "./components/CommonUI";
+import { Sidebar, type Tab } from "./components/Sidebar";
+import { DashboardTab } from "./components/DashboardTab";
+import { UsersTab } from "./components/UsersTab";
+import { CatalogTab } from "./components/CatalogTab";
+import { CalculationsTab } from "./components/CalculationsTab";
+import { PricingTab } from "./components/PricingTab";
+import { SystemTab } from "./components/SystemTab";
+import { EditorModal, type Editor } from "./components/EditorModal";
 
 const EMPTY_DATA: AdminData = {
   users: [],
@@ -84,56 +65,6 @@ const EMPTY_DATA: AdminData = {
   priceHistoryCount: 0,
   warnings: [],
 };
-
-const ITEM_TYPES: Array<{ value: ItemType; label: string }> = [
-  { value: "material", label: "Material" },
-  { value: "labor", label: "Mano de obra" },
-  { value: "equipment", label: "Equipo" },
-  { value: "service", label: "Servicio" },
-  { value: "subcontract", label: "Subcontrato" },
-];
-
-const UNIT_TYPES: Array<{ value: UnitType; label: string }> = [
-  { value: "length", label: "Longitud" },
-  { value: "area", label: "Área" },
-  { value: "volume", label: "Volumen" },
-  { value: "weight", label: "Peso" },
-  { value: "unit", label: "Unidad" },
-  { value: "time", label: "Tiempo" },
-  { value: "package", label: "Paquete" },
-  { value: "service", label: "Servicio" },
-];
-
-function errorMessage(error: unknown) {
-  if (error && typeof error === "object" && "message" in error) {
-    return String(error.message);
-  }
-  return "No fue posible completar la operación.";
-}
-
-function formatDate(value: string | null) {
-  if (!value) return "—";
-  return new Intl.DateTimeFormat("es-PA", { dateStyle: "medium" }).format(new Date(value));
-}
-
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("es-PA", {
-    style: "currency",
-    currency: "PAB",
-  }).format(value);
-}
-
-function roleLabel(role: UserRole) {
-  if (role === "super_admin") return "Superadministrador";
-  if (role === "client") return "Cliente";
-  return "Contratista";
-}
-
-function statusFor(user: Pick<PlatformUser, "active" | "approvedAt">) {
-  if (user.active) return { label: "Activo", className: "badge-active" };
-  if (user.approvedAt) return { label: "Suspendido", className: "badge-suspended" };
-  return { label: "Pendiente", className: "badge-pending" };
-}
 
 function userDraft(user: PlatformUser): UserDraft {
   return {
@@ -162,9 +93,7 @@ function itemDraft(item: CatalogItem): ItemDraft {
   return draft;
 }
 
-function globalCatalogItemDraft(
-  item: GlobalCatalogItem,
-): GlobalCatalogItemDraft {
+function globalCatalogItemDraft(item: GlobalCatalogItem): GlobalCatalogItemDraft {
   return {
     id: item.id,
     unitCost: item.unitCost,
@@ -197,10 +126,12 @@ function formulaDraft(formula: Formula): FormulaDraft {
 }
 
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AdminSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
-  const [accessLoading, setAccessLoading] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  const isAuthorized = Boolean(
+    session?.user.active && session.user.role === "super_admin"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -230,44 +161,34 @@ export default function App() {
   const [adjustingPrices, setAdjustingPrices] = useState(false);
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
-      setSession(nextSession);
-      setSessionLoading(false);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setSessionLoading(false);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
     let active = true;
-    async function validateAccess() {
-      if (!session?.user) {
-        setIsAuthorized(false);
-        return;
-      }
-      setAccessLoading(true);
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role, active")
-        .eq("id", session.user.id)
-        .maybeSingle();
-      if (!active) return;
-      if (error || !profile?.active || profile.role !== "super_admin") {
-        setAuthError(error ? error.message : "Esta cuenta no es superadministradora.");
-        setIsAuthorized(false);
-        await supabase.auth.signOut();
-      } else {
+
+    async function restoreSession() {
+      try {
+        const nextSession = await restoreAdminSession();
+
+        if (!active) return;
+
+        setSession(nextSession);
         setAuthError(null);
-        setIsAuthorized(true);
+      } catch (error) {
+        if (!active) return;
+
+        setSession(null);
+        setAuthError(errorMessage(error));
+      } finally {
+        if (active) {
+          setSessionLoading(false);
+        }
       }
-      if (active) setAccessLoading(false);
     }
-    void validateAccess();
-    return () => { active = false; };
-  }, [session]);
+
+    void restoreSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const loadData = useCallback(async () => {
     if (!isAuthorized) return;
@@ -277,9 +198,7 @@ export default function App() {
       const nextData = await loadAdminData();
       setData(nextData);
       setDataError(
-        nextData.warnings.length > 0
-          ? nextData.warnings.join(" ")
-          : null,
+        nextData.warnings.length > 0 ? nextData.warnings.join(" ") : null
       );
     } catch (error) {
       setDataError(errorMessage(error));
@@ -288,42 +207,54 @@ export default function App() {
     }
   }, [isAuthorized]);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const pendingUsers = useMemo(
     () => data.users.filter((user) => !user.active && !user.approvedAt),
-    [data.users],
+    [data.users]
   );
   const normalizedSearch = search.trim().toLowerCase();
   const visibleUsers = data.users.filter((user) =>
-    [user.fullName, user.phone, user.companyName, roleLabel(user.role)]
+    [user.fullName, user.phone, user.companyName, user.role]
       .join(" ")
       .toLowerCase()
-      .includes(normalizedSearch),
+      .includes(normalizedSearch)
   );
   const visibleItems = data.items.filter((item) =>
     [item.sku, item.name, item.categoryName, item.companyName]
       .join(" ")
       .toLowerCase()
-      .includes(normalizedSearch),
+      .includes(normalizedSearch)
   );
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
+
     setAuthLoading(true);
     setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-    if (error) setAuthError(error.message);
-    setAuthLoading(false);
+
+    try {
+      const nextSession = await loginAdmin(email, password);
+
+      setSession(nextSession);
+      setPassword("");
+    } catch (error) {
+      setSession(null);
+      setAuthError(errorMessage(error));
+    } finally {
+      setAuthLoading(false);
+    }
   }
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    setSession(null);
-    setIsAuthorized(false);
+    try {
+      await logoutAdmin();
+    } finally {
+      setSession(null);
+      setData(EMPTY_DATA);
+    }
   }
 
   function showSuccess(message: string) {
@@ -356,8 +287,7 @@ export default function App() {
       else if (editor.kind === "item") await saveItem(editor.draft);
       else if (editor.kind === "globalPrice") {
         await saveGlobalCatalogPricing(editor.draft);
-      }
-      else if (editor.kind === "unit") await saveUnit(editor.draft);
+      } else if (editor.kind === "unit") await saveUnit(editor.draft);
       else if (editor.kind === "yield") await saveYield(editor.draft);
       else await saveFormula(editor.draft);
       setEditor(null);
@@ -374,9 +304,8 @@ export default function App() {
     event.preventDefault();
     const percentage = Number(pricePercentage.replace(",", "."));
     const itemIds = data.globalItems
-      .filter((item) =>
-        item.active &&
-        (priceType === "all" || item.itemType === priceType),
+      .filter(
+        (item) => item.active && (priceType === "all" || item.itemType === priceType)
       )
       .map((item) => item.id);
     if (!Number.isFinite(percentage) || percentage <= -100 || itemIds.length === 0) {
@@ -405,7 +334,13 @@ export default function App() {
   function newCategory() {
     setEditor({
       kind: "category",
-      draft: { id: "", companyId: data.companies[0]?.id ?? "", name: "", description: "", active: true },
+      draft: {
+        id: "",
+        companyId: data.companies[0]?.id ?? "",
+        name: "",
+        description: "",
+        active: true,
+      },
     });
   }
 
@@ -481,7 +416,7 @@ export default function App() {
     });
   }
 
-  if (sessionLoading || (session && accessLoading)) {
+  if (sessionLoading) {
     return <FullScreenLoader label="Verificando acceso administrativo..." />;
   }
 
@@ -496,10 +431,26 @@ export default function App() {
           </div>
           {authError && <AlertBanner message={authError} />}
           <Field label="Correo electrónico">
-            <div className="icon-input"><Mail size={18} /><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></div>
+            <div className="icon-input">
+              <Mail size={18} />
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </div>
           </Field>
           <Field label="Contraseña">
-            <div className="icon-input"><Lock size={18} /><input type="password" required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
+            <div className="icon-input">
+              <Lock size={18} />
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </div>
           </Field>
           <button className="button button-primary button-block" disabled={authLoading}>
             {authLoading ? <Loader2 className="spin" size={18} /> : <Lock size={18} />}
@@ -521,26 +472,20 @@ export default function App() {
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-brand"><Briefcase size={24} /><span>Contractor Pro</span></div>
-        <nav className="nav-links">
-          <NavButton icon={<LayoutDashboard />} label="Resumen" tab="dashboard" active={activeTab} onClick={setActiveTab} />
-          <NavButton icon={<Users />} label="Usuarios" tab="users" active={activeTab} onClick={setActiveTab} badge={pendingUsers.length} />
-          <NavButton icon={<BookOpen />} label="Catálogo" tab="catalog" active={activeTab} onClick={setActiveTab} />
-          <NavButton icon={<Calculator />} label="Cálculos" tab="calculations" active={activeTab} onClick={setActiveTab} />
-          <NavButton icon={<DollarSign />} label="Precios" tab="pricing" active={activeTab} onClick={setActiveTab} />
-          <NavButton icon={<Settings />} label="Sistema" tab="system" active={activeTab} onClick={setActiveTab} />
-        </nav>
-        <div className="sidebar-footer">
-          <strong>Superadministrador</strong>
-          <span>{session.user.email}</span>
-          <button className="button button-ghost button-block" onClick={() => void handleSignOut()}><LogOut size={16} /> Cerrar sesión</button>
-        </div>
-      </aside>
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        pendingUsersCount={pendingUsers.length}
+        email={session.user.email}
+        onSignOut={handleSignOut}
+      />
 
       <main className="main-content">
         <header className="header">
-          <div className="title-container"><h1>{titles[activeTab][0]}</h1><p>{titles[activeTab][1]}</p></div>
+          <div className="title-container">
+            <h1>{titles[activeTab][0]}</h1>
+            <p>{titles[activeTab][1]}</p>
+          </div>
           <button className="button button-secondary" onClick={() => void loadData()} disabled={loadingData}>
             <RefreshCw className={loadingData ? "spin" : ""} size={17} /> Actualizar
           </button>
@@ -550,439 +495,91 @@ export default function App() {
         {success && <SuccessBanner message={success} />}
 
         {loadingData ? (
-          <div className="content-loader"><Loader2 className="spin" size={34} /><span>Sincronizando con Supabase...</span></div>
+          <div className="content-loader">
+            <Loader2 className="spin" size={34} />
+            <span>Sincronizando con PostgreSQL...</span>
+          </div>
         ) : (
           <>
             {activeTab === "dashboard" && (
-              <Dashboard data={data} pendingUsers={pendingUsers} onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })} onToggle={toggleUser} />
+              <DashboardTab
+                data={data}
+                pendingUsers={pendingUsers}
+                onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })}
+                onToggle={toggleUser}
+              />
             )}
             {activeTab === "users" && (
-              <UsersTab users={visibleUsers} search={search} setSearch={setSearch} currentUserId={session.user.id} saving={saving} onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })} onToggle={toggleUser} />
+              <UsersTab
+                users={visibleUsers}
+                search={search}
+                setSearch={setSearch}
+                currentUserId={session.user.id}
+                saving={saving}
+                onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })}
+                onToggle={toggleUser}
+              />
             )}
             {activeTab === "catalog" && (
-              <CatalogTab categories={data.categories} items={visibleItems} search={search} setSearch={setSearch} onNewCategory={newCategory} onNewItem={newItem} onEditCategory={(category) => setEditor({ kind: "category", draft: categoryDraft(category) })} onEditItem={(item) => setEditor({ kind: "item", draft: itemDraft(item) })} />
+              <CatalogTab
+                categories={data.categories}
+                items={visibleItems}
+                search={search}
+                setSearch={setSearch}
+                onNewCategory={newCategory}
+                onNewItem={newItem}
+                onEditCategory={(category) => setEditor({ kind: "category", draft: categoryDraft(category) })}
+                onEditItem={(item) => setEditor({ kind: "item", draft: itemDraft(item) })}
+              />
             )}
             {activeTab === "calculations" && (
-              <CalculationsTab formulas={data.formulas} units={data.units} yields={data.yields} onNewFormula={newFormula} onNewUnit={newUnit} onNewYield={newYield} onEditFormula={(formula) => setEditor({ kind: "formula", draft: formulaDraft(formula) })} onEditUnit={(unit) => setEditor({ kind: "unit", draft: unitDraft(unit) })} onEditYield={(value) => setEditor({ kind: "yield", draft: yieldDraft(value) })} />
+              <CalculationsTab
+                formulas={data.formulas}
+                units={data.units}
+                yields={data.yields}
+                onNewFormula={newFormula}
+                onNewUnit={newUnit}
+                onNewYield={newYield}
+                onEditFormula={(formula) => setEditor({ kind: "formula", draft: formulaDraft(formula) })}
+                onEditUnit={(unit) => setEditor({ kind: "unit", draft: unitDraft(unit) })}
+                onEditYield={(value) => setEditor({ kind: "yield", draft: yieldDraft(value) })}
+              />
             )}
             {activeTab === "pricing" && (
-              <PricingTab data={data} itemType={priceType} setItemType={setPriceType} target={priceTarget} setTarget={setPriceTarget} percentage={pricePercentage} setPercentage={setPricePercentage} notes={priceNotes} setNotes={setPriceNotes} adjusting={adjustingPrices} onSubmit={handlePriceAdjustment} onEdit={(item) => setEditor({ kind: "globalPrice", draft: globalCatalogItemDraft(item) })} onReload={loadData} />
+              <PricingTab
+                data={data}
+                itemType={priceType}
+                setItemType={setPriceType}
+                target={priceTarget}
+                setTarget={setPriceTarget}
+                percentage={pricePercentage}
+                setPercentage={setPricePercentage}
+                notes={priceNotes}
+                setNotes={setPriceNotes}
+                adjusting={adjustingPrices}
+                onSubmit={handlePriceAdjustment}
+                onEdit={(item) => setEditor({ kind: "globalPrice", draft: globalCatalogItemDraft(item) })}
+                onReload={loadData}
+              />
             )}
-            {activeTab === "system" && <SystemTab data={data} email={session.user.email ?? ""} onSignOut={handleSignOut} />}
+            {activeTab === "system" && (
+              <SystemTab data={data} email={session.user.email ?? ""} onSignOut={handleSignOut} />
+            )}
           </>
         )}
       </main>
 
       {editor && (
-        <EditorModal editor={editor} setEditor={setEditor} data={data} currentUserId={session.user.id} saving={saving} onSave={submitEditor} onClose={() => setEditor(null)} />
+        <EditorModal
+          editor={editor}
+          setEditor={setEditor}
+          data={data}
+          currentUserId={session.user.id}
+          saving={saving}
+          onSave={submitEditor}
+          onClose={() => setEditor(null)}
+        />
       )}
     </div>
   );
-}
-
-function FullScreenLoader({ label }: { label: string }) {
-  return <div className="fullscreen-loader"><Loader2 className="spin" size={32} /><span>{label}</span></div>;
-}
-
-function AlertBanner({ message, onClose }: { message: string; onClose?: () => void }) {
-  return <div className="alert-banner"><AlertTriangle size={18} /><span>{message}</span>{onClose && <button onClick={onClose}><X size={16} /></button>}</div>;
-}
-
-function SuccessBanner({ message }: { message: string }) {
-  return <div className="success-banner"><CheckCircle2 size={18} /><span>{message}</span></div>;
-}
-
-function NavButton({ icon, label, tab, active, onClick, badge }: { icon: ReactNode; label: string; tab: Tab; active: Tab; onClick: (tab: Tab) => void; badge?: number }) {
-  return <button className={`nav-item ${active === tab ? "active" : ""}`} onClick={() => onClick(tab)}>{icon}<span>{label}</span>{Boolean(badge) && <strong className="nav-badge">{badge}</strong>}</button>;
-}
-
-function StatCard({ label, value, detail }: { label: string; value: number; detail: string }) {
-  return <div className="stat-card"><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>;
-}
-
-function Dashboard({ data, pendingUsers, onEdit, onToggle }: { data: AdminData; pendingUsers: PlatformUser[]; onEdit: (user: PlatformUser) => void; onToggle: (user: PlatformUser) => Promise<void> }) {
-  return <>
-    <div className="stats-grid">
-      <StatCard label="Usuarios" value={data.users.length} detail={`${pendingUsers.length} pendientes`} />
-      <StatCard label="Empresas" value={data.companies.length} detail="Organizaciones registradas" />
-      <StatCard label="Proyectos" value={data.projectCount} detail="Proyectos totales" />
-      <StatCard label="Precios globales" value={data.globalItems.length} detail="Conceptos predeterminados" />
-    </div>
-    <section className="data-card">
-      <SectionHeader title="Solicitudes pendientes" subtitle="Aprueba el acceso o revisa los datos antes de aceptar." />
-      {pendingUsers.length ? (
-        <Table><thead><tr><th>Usuario</th><th>Rol</th><th>Registro</th><th>Acciones</th></tr></thead><tbody>{pendingUsers.map((user) => <tr key={user.id}><td><strong>{user.fullName || "Sin nombre"}</strong><small>{user.phone || "Sin teléfono"}</small></td><td>{roleLabel(user.role)}</td><td>{formatDate(user.createdAt)}</td><td><div className="actions"><button className="button button-secondary" onClick={() => onEdit(user)}><Edit3 size={15} /> Editar</button><button className="button button-primary" onClick={() => void onToggle(user)}><UserCheck size={15} /> Aprobar</button></div></td></tr>)}</tbody></Table>
-      ) : <EmptyState label="No hay registros pendientes." />}
-    </section>
-  </>;
-}
-
-function UsersTab({ users, search, setSearch, currentUserId, saving, onEdit, onToggle }: { users: PlatformUser[]; search: string; setSearch: (value: string) => void; currentUserId: string; saving: boolean; onEdit: (user: PlatformUser) => void; onToggle: (user: PlatformUser) => Promise<void> }) {
-  return <section className="data-card">
-    <div className="card-toolbar"><SectionHeader title="Todos los usuarios" subtitle={`${users.length} resultados`} /><input className="search-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar usuario..." /></div>
-    <Table><thead><tr><th>Usuario</th><th>Rol</th><th>Empresa</th><th>Estado</th><th>Registro</th><th>Acciones</th></tr></thead><tbody>{users.map((user) => { const status = statusFor(user); const self = user.id === currentUserId; return <tr key={user.id}><td><strong>{user.fullName || "Sin nombre"}</strong><small>{user.phone || "Sin teléfono"}</small></td><td>{roleLabel(user.role)}</td><td>{user.companyName}</td><td><span className={`badge ${status.className}`}>{status.label}</span></td><td>{formatDate(user.createdAt)}</td><td><div className="actions"><button className="icon-button" onClick={() => onEdit(user)} aria-label="Editar"><Edit3 size={17} /></button>{!self && <button className={`button ${user.active ? "button-danger" : "button-primary"}`} disabled={saving} onClick={() => void onToggle(user)}>{user.active ? "Suspender" : user.approvedAt ? "Reactivar" : "Aprobar"}</button>}</div></td></tr>; })}</tbody></Table>
-  </section>;
-}
-
-function CatalogTab({ categories, items, search, setSearch, onNewCategory, onNewItem, onEditCategory, onEditItem }: { categories: Category[]; items: CatalogItem[]; search: string; setSearch: (value: string) => void; onNewCategory: () => void; onNewItem: () => void; onEditCategory: (value: Category) => void; onEditItem: (value: CatalogItem) => void }) {
-  return <>
-    <section className="data-card">
-      <div className="card-toolbar"><SectionHeader title="Categorías" subtitle={`${categories.length} categorías`} /><button className="button button-secondary" onClick={onNewCategory}><Plus size={16} /> Categoría</button></div>
-      <div className="card-grid">{categories.map((category) => <button className="mini-card" key={category.id} onClick={() => onEditCategory(category)}><div><strong>{category.name}</strong><small>{category.companyName}</small></div><span className={`badge ${category.active ? "badge-active" : "badge-suspended"}`}>{category.active ? "Activa" : "Inactiva"}</span></button>)}</div>
-    </section>
-    <section className="data-card">
-      <div className="card-toolbar"><SectionHeader title="Elementos del catálogo" subtitle={`${items.length} resultados`} /><div className="toolbar-actions"><input className="search-input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar concepto..." /><button className="button button-primary" onClick={onNewItem}><Plus size={16} /> Elemento</button></div></div>
-      <Table><thead><tr><th>Código</th><th>Elemento</th><th>Empresa</th><th>Unidad</th><th>Costo</th><th>Venta</th><th></th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><code>{item.sku || "—"}</code></td><td><strong>{item.name}</strong><small>{item.categoryName}</small></td><td>{item.companyName}</td><td>{item.unitSymbol}</td><td>{formatMoney(item.unitCost)}</td><td>{formatMoney(item.salePrice)}</td><td><button className="icon-button" onClick={() => onEditItem(item)}><Edit3 size={17} /></button></td></tr>)}</tbody></Table>
-    </section>
-  </>;
-}
-
-function CalculationsTab({ formulas, units, yields, onNewFormula, onNewUnit, onNewYield, onEditFormula, onEditUnit, onEditYield }: { formulas: Formula[]; units: Unit[]; yields: CatalogYield[]; onNewFormula: () => void; onNewUnit: () => void; onNewYield: () => void; onEditFormula: (value: Formula) => void; onEditUnit: (value: Unit) => void; onEditYield: (value: CatalogYield) => void }) {
-  return <>
-    <section className="data-card"><div className="card-toolbar"><SectionHeader title="Fórmulas y parámetros" subtitle="Los parámetros activos llegan a las calculadoras." /><button className="button button-primary" onClick={onNewFormula}><Plus size={16} /> Cálculo</button></div><div className="formula-grid">{formulas.map((formula) => <button className="formula-card" key={formula.id} onClick={() => onEditFormula(formula)}><div><strong>{formula.name}</strong><small>{formula.companyName}</small></div><code>{formula.code}</code><span>{formula.parameters.length} parámetros</span></button>)}</div></section>
-    <div className="two-column-grid">
-      <section className="data-card"><div className="card-toolbar"><SectionHeader title="Unidades" subtitle={`${units.length} unidades`} /><button className="button button-secondary" onClick={onNewUnit}><Plus size={16} /> Unidad</button></div><Table><thead><tr><th>Unidad</th><th>Tipo</th><th>Factor</th><th></th></tr></thead><tbody>{units.map((unit) => <tr key={unit.id}><td><strong>{unit.name}</strong><small>{unit.symbol} · {unit.companyName}</small></td><td>{unit.unitType}</td><td>{unit.conversionFactor}</td><td><button className="icon-button" onClick={() => onEditUnit(unit)}><Edit3 size={16} /></button></td></tr>)}</tbody></Table></section>
-      <section className="data-card"><div className="card-toolbar"><SectionHeader title="Rendimientos" subtitle={`${yields.length} rendimientos`} /><button className="button button-secondary" onClick={onNewYield}><Plus size={16} /> Rendimiento</button></div><Table><thead><tr><th>Nombre</th><th>Producción</th><th>Horas</th><th></th></tr></thead><tbody>{yields.map((value) => <tr key={value.id}><td><strong>{value.name}</strong><small>{value.companyName}</small></td><td>{value.outputQuantity} {value.outputUnitSymbol}</td><td>{value.laborHours} h</td><td><button className="icon-button" onClick={() => onEditYield(value)}><Edit3 size={16} /></button></td></tr>)}</tbody></Table></section>
-    </div>
-  </>;
-}
-
-function PricingTab({ data, itemType, setItemType, target, setTarget, percentage, setPercentage, notes, setNotes, adjusting, onSubmit, onEdit, onReload }: { data: AdminData; itemType: ItemType | "all"; setItemType: (value: ItemType | "all") => void; target: "unit_cost" | "sale_price"; setTarget: (value: "unit_cost" | "sale_price") => void; percentage: string; setPercentage: (value: string) => void; notes: string; setNotes: (value: string) => void; adjusting: boolean; onSubmit: (event: FormEvent) => Promise<void>; onEdit: (item: GlobalCatalogItem) => void; onReload: () => Promise<void> }) {
-  const [pricingSearch, setPricingSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [inlineEdit, setInlineEdit] = useState<{ id: string; field: "unitCost" | "salePrice"; value: string } | null>(null);
-  const [inlineSaving, setInlineSaving] = useState(false);
-  const PAGE_SIZE = 50;
-
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const item of data.globalItems) {
-      if (item.categoryName) set.add(item.categoryName);
-    }
-    return Array.from(set).sort();
-  }, [data.globalItems]);
-
-  const allFiltered = useMemo(() => {
-    const term = pricingSearch.trim().toLowerCase();
-    return data.globalItems.filter((item) => {
-      if (itemType !== "all" && item.itemType !== itemType) return false;
-      if (categoryFilter !== "all" && item.categoryName !== categoryFilter) return false;
-      if (term && ![item.name, item.sku, item.categoryName, item.unitSymbol].join(" ").toLowerCase().includes(term)) return false;
-      return true;
-    });
-  }, [data.globalItems, itemType, categoryFilter, pricingSearch]);
-
-  const totalPages = Math.max(1, Math.ceil(allFiltered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageItems = allFiltered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  useEffect(() => { setPage(1); }, [pricingSearch, categoryFilter, itemType]);
-
-  const typeLabel = (type: string) => {
-    const map: Record<string, string> = { material: "Material", labor: "Mano de obra", service: "Servicio", equipment: "Equipo", subcontract: "Subcontrato" };
-    return map[type] ?? type;
-  };
-
-  const typeClass = (type: string) => `type-label type-label--${type}`;
-
-  async function handleInlineSave() {
-    if (!inlineEdit) return;
-    const item = data.globalItems.find((i) => i.id === inlineEdit.id);
-    if (!item) return;
-    const numericValue = Number(inlineEdit.value.replace(",", "."));
-    if (!Number.isFinite(numericValue) || numericValue < 0) return;
-    setInlineSaving(true);
-    try {
-      await saveGlobalCatalogPricing({
-        id: item.id,
-        unitCost: inlineEdit.field === "unitCost" ? numericValue : item.unitCost,
-        salePrice: inlineEdit.field === "salePrice" ? numericValue : item.salePrice,
-        wastePercentage: item.wastePercentage,
-      });
-      setInlineEdit(null);
-      void onReload();
-    } catch {
-      // silently keep the inline editor open on failure
-    } finally {
-      setInlineSaving(false);
-    }
-  }
-
-  const activeCount = allFiltered.filter((item) => item.active).length;
-  const startIndex = (safePage - 1) * PAGE_SIZE + 1;
-  const endIndex = Math.min(safePage * PAGE_SIZE, allFiltered.length);
-
-  return <>
-    {/* Ajuste masivo */}
-    <form className="data-card" onSubmit={onSubmit}>
-      <div className="card-toolbar">
-        <SectionHeader title="Ajuste masivo global" subtitle={`Aplicará a ${activeCount} elementos activos filtrados y será el nuevo valor predeterminado.`} />
-        <span className="history-pill"><History size={15} /> {data.priceHistoryCount} cambios</span>
-      </div>
-      <div className="form-grid four-columns">
-        <SelectField label="Conceptos" value={itemType} onChange={(value) => setItemType(value as ItemType | "all")} options={[
-          { value: "all", label: "Todos los tipos" },
-          { value: "service", label: "Servicios" },
-          { value: "material", label: "Materiales" },
-          { value: "labor", label: "Mano de obra" },
-          { value: "equipment", label: "Equipo" },
-          { value: "subcontract", label: "Subcontratos" },
-        ]} />
-        <SelectField label="Campo" value={target} onChange={(value) => setTarget(value as "unit_cost" | "sale_price")} options={[
-          { value: "unit_cost", label: "Costo unitario" },
-          { value: "sale_price", label: "Precio de venta" },
-        ]} />
-        <TextField label="Porcentaje" type="number" value={percentage} onChange={setPercentage} suffix="%" />
-        <TextField label="Nota" value={notes} onChange={setNotes} />
-      </div>
-      <button className="button button-primary" disabled={adjusting}>
-        {adjusting ? <Loader2 className="spin" size={17} /> : <SlidersHorizontal size={17} />} Aplicar ajuste
-      </button>
-    </form>
-
-    {/* Catálogo maestro con filtros */}
-    <section className="data-card">
-      <SectionHeader title="Catálogo maestro" subtitle="Precios oficiales de la Contraloría General de Panamá. Haz clic en un precio para editarlo directamente." />
-
-      <div className="pricing-filters">
-        <div className="search-field">
-          <Field label="Buscar">
-            <div className="suffix-input">
-              <input
-                type="text"
-                placeholder="Nombre, código SKU o categoría…"
-                value={pricingSearch}
-                onChange={(e) => setPricingSearch(e.target.value)}
-              />
-              <span><Search size={15} /></span>
-            </div>
-          </Field>
-        </div>
-        <div className="category-field">
-          <SelectField
-            label="Categoría"
-            value={categoryFilter}
-            onChange={setCategoryFilter}
-            options={[
-              { value: "all", label: `Todas (${categories.length})` },
-              ...categories.map((cat) => ({ value: cat, label: cat })),
-            ]}
-          />
-        </div>
-        <div className="type-field">
-          <SelectField
-            label="Tipo"
-            value={itemType}
-            onChange={(value) => setItemType(value as ItemType | "all")}
-            options={[
-              { value: "all", label: "Todos" },
-              { value: "service", label: "Servicio" },
-              { value: "material", label: "Material" },
-              { value: "labor", label: "Mano de obra" },
-              { value: "equipment", label: "Equipo" },
-              { value: "subcontract", label: "Subcontrato" },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="pricing-result-count">
-        <span>Mostrando {allFiltered.length > 0 ? `${startIndex}–${endIndex}` : "0"} de {allFiltered.length} partidas</span>
-        {allFiltered.length !== data.globalItems.length && (
-          <span>{data.globalItems.length} totales</span>
-        )}
-      </div>
-
-      <Table>
-        <thead>
-          <tr>
-            <th>Elemento</th>
-            <th>Tipo</th>
-            <th>Categoría</th>
-            <th>Unidad</th>
-            <th>Costo</th>
-            <th>Venta</th>
-            <th>Margen</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {pageItems.map((item) => {
-            const margin = item.salePrice > 0
-              ? ((item.salePrice - item.unitCost) / item.salePrice) * 100
-              : 0;
-            const isExpanded = expandedId === item.id;
-            return (
-              <tr key={item.id}>
-                <td>
-                  <strong>{item.name}</strong>
-                  <small>{item.sku || "Sin código"}</small>
-                  {item.description && (
-                    <>
-                      <button
-                        className="item-description-toggle"
-                        onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                      >
-                        {isExpanded ? "Ocultar detalle" : "Ver detalle"}
-                      </button>
-                      {isExpanded && (
-                        <div className="item-description-box">{item.description}</div>
-                      )}
-                    </>
-                  )}
-                </td>
-                <td><span className={typeClass(item.itemType)}>{typeLabel(item.itemType)}</span></td>
-                <td><span className="category-chip">{item.categoryName}</span></td>
-                <td>{item.unitSymbol}</td>
-                <td>
-                  {inlineEdit?.id === item.id && inlineEdit.field === "unitCost" ? (
-                    <span className="editable-cell">
-                      <input
-                        type="number"
-                        step="any"
-                        autoFocus
-                        value={inlineEdit.value}
-                        onChange={(e) => setInlineEdit({ ...inlineEdit, value: e.target.value })}
-                        onBlur={() => void handleInlineSave()}
-                        onKeyDown={(e) => { if (e.key === "Enter") void handleInlineSave(); if (e.key === "Escape") setInlineEdit(null); }}
-                        disabled={inlineSaving}
-                      />
-                    </span>
-                  ) : (
-                    <span
-                      className="editable-cell"
-                      onClick={() => setInlineEdit({ id: item.id, field: "unitCost", value: String(item.unitCost) })}
-                      title="Clic para editar"
-                    >
-                      {formatMoney(item.unitCost)}
-                    </span>
-                  )}
-                </td>
-                <td>
-                  {inlineEdit?.id === item.id && inlineEdit.field === "salePrice" ? (
-                    <span className="editable-cell">
-                      <input
-                        type="number"
-                        step="any"
-                        autoFocus
-                        value={inlineEdit.value}
-                        onChange={(e) => setInlineEdit({ ...inlineEdit, value: e.target.value })}
-                        onBlur={() => void handleInlineSave()}
-                        onKeyDown={(e) => { if (e.key === "Enter") void handleInlineSave(); if (e.key === "Escape") setInlineEdit(null); }}
-                        disabled={inlineSaving}
-                      />
-                    </span>
-                  ) : (
-                    <span
-                      className="editable-cell"
-                      onClick={() => setInlineEdit({ id: item.id, field: "salePrice", value: String(item.salePrice) })}
-                      title="Clic para editar"
-                    >
-                      {formatMoney(item.salePrice)}
-                    </span>
-                  )}
-                </td>
-                <td>{margin.toFixed(1)}%</td>
-                <td>
-                  <button className="icon-button" onClick={() => onEdit(item)} title="Editar todos los campos">
-                    <Edit3 size={17} />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </Table>
-
-      {/* Paginación */}
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
-            <ChevronLeft size={16} />
-          </button>
-          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            let pageNum: number;
-            if (totalPages <= 7) {
-              pageNum = i + 1;
-            } else if (safePage <= 4) {
-              pageNum = i + 1;
-            } else if (safePage >= totalPages - 3) {
-              pageNum = totalPages - 6 + i;
-            } else {
-              pageNum = safePage - 3 + i;
-            }
-            return (
-              <button
-                key={pageNum}
-                className={pageNum === safePage ? "active" : ""}
-                onClick={() => setPage(pageNum)}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <span className="page-info">{safePage} / {totalPages}</span>
-          <button disabled={safePage >= totalPages} onClick={() => setPage(safePage + 1)}>
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
-    </section>
-  </>;
-}
-
-function SystemTab({ data, email, onSignOut }: { data: AdminData; email: string; onSignOut: () => Promise<void> }) {
-  return <div className="two-column-grid"><section className="data-card system-card"><BookOpen size={26} /><h2>Datos centrales</h2><p>{data.companies.length} empresas, {data.globalItems.length} precios globales y {data.formulas.length} fórmulas.</p><span className="badge badge-active">Supabase conectado</span></section><section className="data-card system-card"><UserCheck size={26} /><h2>Sesión administrativa</h2><p>{email}</p><button className="button button-danger" onClick={() => void onSignOut()}><LogOut size={16} /> Cerrar sesión</button></section></div>;
-}
-
-function EditorModal({ editor, setEditor, data, currentUserId, saving, onSave, onClose }: { editor: Editor; setEditor: (editor: Editor) => void; data: AdminData; currentUserId: string; saving: boolean; onSave: () => Promise<void>; onClose: () => void }) {
-  const companyOptions = data.companies.map((company) => ({ value: company.id, label: company.name }));
-  const title = { user: "Editar usuario", category: "Editar categoría", item: "Editar elemento", globalPrice: "Editar precio global", unit: "Editar unidad", yield: "Editar rendimiento", formula: "Editar cálculo" }[editor.kind];
-  const isSelf = editor.kind === "user" && editor.draft.id === currentUserId;
-  const globalItem = editor.kind === "globalPrice"
-    ? data.globalItems.find((item) => item.id === editor.draft.id)
-    : null;
-  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="modal-card" role="dialog" aria-modal="true"><div className="modal-header"><div><h2>{title}</h2><p>Los cambios se guardarán directamente en Supabase.</p></div><button className="icon-button" onClick={onClose}><X size={19} /></button></div><div className="modal-body">
-    {editor.kind === "user" && <div className="form-grid"><TextField label="Nombre completo" value={editor.draft.fullName} onChange={(fullName) => setEditor({ ...editor, draft: { ...editor.draft, fullName } })} /><TextField label="Teléfono" value={editor.draft.phone} onChange={(phone) => setEditor({ ...editor, draft: { ...editor.draft, phone } })} /><SelectField label="Rol" value={editor.draft.role} disabled={isSelf} onChange={(role) => setEditor({ ...editor, draft: { ...editor.draft, role: role as UserRole } })} options={[{ value: "contractor", label: "Contratista" }, { value: "client", label: "Cliente" }, { value: "super_admin", label: "Superadministrador" }]} /><ToggleField label={editor.draft.active ? "Cuenta activa" : editor.draft.approvedAt ? "Cuenta suspendida" : "Pendiente de aprobación"} checked={editor.draft.active} disabled={isSelf} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} />{isSelf && <p className="form-note">Tu propio rol y acceso están protegidos.</p>}</div>}
-    {editor.kind === "category" && <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Categoría activa" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>}
-    {editor.kind === "item" && (() => { const categories = data.categories.filter((value) => value.companyId === editor.draft.companyId); const units = data.units.filter((value) => value.companyId === editor.draft.companyId); return <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId, categoryId: data.categories.find((value) => value.companyId === companyId)?.id ?? null, unitId: data.units.find((value) => value.companyId === companyId)?.id ?? "" } })} options={companyOptions} /><TextField label="Código / SKU" value={editor.draft.sku} onChange={(sku) => setEditor({ ...editor, draft: { ...editor.draft, sku } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><SelectField label="Tipo" value={editor.draft.itemType} onChange={(itemType) => setEditor({ ...editor, draft: { ...editor.draft, itemType: itemType as ItemType } })} options={ITEM_TYPES} /><SelectField label="Categoría" value={editor.draft.categoryId ?? ""} onChange={(categoryId) => setEditor({ ...editor, draft: { ...editor.draft, categoryId: categoryId || null } })} options={[{ value: "", label: "Sin categoría" }, ...categories.map((value) => ({ value: value.id, label: value.name }))]} /><SelectField label="Unidad" value={editor.draft.unitId} onChange={(unitId) => setEditor({ ...editor, draft: { ...editor.draft, unitId } })} options={units.map((value) => ({ value: value.id, label: `${value.name} (${value.symbol})` }))} /><TextField label="Costo unitario" type="number" value={String(editor.draft.unitCost)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, unitCost: Number(value) } })} /><TextField label="Precio de venta" type="number" value={String(editor.draft.salePrice)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, salePrice: Number(value) } })} /><TextField label="Desperdicio" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Elemento activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>; })()}
-    {editor.kind === "globalPrice" && <div><p className="form-note"><strong>{globalItem?.name ?? "Concepto global"}</strong> · {globalItem?.unitName ?? "Unidad"} ({globalItem?.unitSymbol ?? "und."})</p><div className="form-grid"><TextField label="Costo unitario predeterminado" type="number" value={String(editor.draft.unitCost)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, unitCost: Number(value) } })} /><TextField label="Precio de venta predeterminado" type="number" value={String(editor.draft.salePrice)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, salePrice: Number(value) } })} /><TextField label="Desperdicio predeterminado" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /></div><p className="form-note">El cambio llegará a todos los usuarios que no tengan un ajuste personal para este concepto.</p></div>}
-    {editor.kind === "unit" && <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Código" value={editor.draft.code} onChange={(code) => setEditor({ ...editor, draft: { ...editor.draft, code } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Símbolo" value={editor.draft.symbol} onChange={(symbol) => setEditor({ ...editor, draft: { ...editor.draft, symbol } })} /><SelectField label="Tipo" value={editor.draft.unitType} onChange={(unitType) => setEditor({ ...editor, draft: { ...editor.draft, unitType: unitType as UnitType } })} options={UNIT_TYPES} /><TextField label="Factor" type="number" value={String(editor.draft.conversionFactor)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, conversionFactor: Number(value) } })} /><ToggleField label="Unidad activa" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>}
-    {editor.kind === "yield" && (() => { const items = data.items.filter((value) => value.companyId === editor.draft.companyId); const units = data.units.filter((value) => value.companyId === editor.draft.companyId); return <div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId, catalogItemId: data.items.find((value) => value.companyId === companyId)?.id ?? "", outputUnitId: data.units.find((value) => value.companyId === companyId)?.id ?? "" } })} options={companyOptions} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><SelectField label="Concepto" value={editor.draft.catalogItemId} onChange={(catalogItemId) => setEditor({ ...editor, draft: { ...editor.draft, catalogItemId } })} options={items.map((value) => ({ value: value.id, label: value.name }))} /><SelectField label="Unidad de salida" value={editor.draft.outputUnitId} onChange={(outputUnitId) => setEditor({ ...editor, draft: { ...editor.draft, outputUnitId } })} options={units.map((value) => ({ value: value.id, label: value.name }))} /><TextField label="Producción" type="number" value={String(editor.draft.outputQuantity)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, outputQuantity: Number(value) } })} /><TextField label="Horas" type="number" value={String(editor.draft.laborHours)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, laborHours: Number(value) } })} /><TextField label="Cuadrilla" type="number" value={String(editor.draft.crewSize)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, crewSize: Number(value) } })} /><TextField label="Desperdicio" type="number" value={String(editor.draft.wastePercentage)} onChange={(value) => setEditor({ ...editor, draft: { ...editor.draft, wastePercentage: Number(value) } })} suffix="%" /><TextField label="Notas" value={editor.draft.notes} onChange={(notes) => setEditor({ ...editor, draft: { ...editor.draft, notes } })} /><ToggleField label="Rendimiento activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div>; })()}
-    {editor.kind === "formula" && <div className="formula-editor"><div className="form-grid"><SelectField label="Empresa" value={editor.draft.companyId} disabled={Boolean(editor.draft.id)} onChange={(companyId) => setEditor({ ...editor, draft: { ...editor.draft, companyId } })} options={companyOptions} /><TextField label="Código" value={editor.draft.code} onChange={(code) => setEditor({ ...editor, draft: { ...editor.draft, code } })} /><TextField label="Nombre" value={editor.draft.name} onChange={(name) => setEditor({ ...editor, draft: { ...editor.draft, name } })} /><TextField label="Descripción" value={editor.draft.description} onChange={(description) => setEditor({ ...editor, draft: { ...editor.draft, description } })} /><ToggleField label="Cálculo activo" checked={editor.draft.active} onChange={(active) => setEditor({ ...editor, draft: { ...editor.draft, active } })} /></div><div className="parameter-header"><SectionHeader title="Parámetros" subtitle="Valores consumidos por la calculadora." /><button className="button button-secondary" onClick={() => { const parameter: FormulaParameter = { parameterKey: "", label: "", numericValue: 0, unitLabel: "", description: "", active: true, sortOrder: editor.draft.parameters.length * 10 + 10 }; setEditor({ ...editor, draft: { ...editor.draft, parameters: [...editor.draft.parameters, parameter] } }); }}><Plus size={15} /> Parámetro</button></div><div className="parameter-list">{editor.draft.parameters.map((parameter, index) => <div className="parameter-row" key={parameter.id ?? index}><TextField label="Clave" value={parameter.parameterKey} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { parameterKey: value }))} /><TextField label="Etiqueta" value={parameter.label} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { label: value }))} /><TextField label="Valor" type="number" value={String(parameter.numericValue)} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { numericValue: Number(value) }))} /><TextField label="Unidad" value={parameter.unitLabel} onChange={(value) => setEditor(updateFormulaParameter(editor, index, { unitLabel: value }))} /><ToggleField label="Activo" checked={parameter.active} onChange={(active) => setEditor(updateFormulaParameter(editor, index, { active }))} /></div>)}</div></div>}
-  </div><div className="modal-footer"><button className="button button-ghost" onClick={onClose}>Cancelar</button><button className="button button-primary" disabled={saving} onClick={() => void onSave()}>{saving ? <Loader2 className="spin" size={17} /> : <Save size={17} />} Guardar cambios</button></div></div></div>;
-}
-
-function updateFormulaParameter(editor: Extract<Editor, { kind: "formula" }>, index: number, changes: Partial<FormulaParameter>): Editor {
-  return { ...editor, draft: { ...editor.draft, parameters: editor.draft.parameters.map((parameter, position) => position === index ? { ...parameter, ...changes } : parameter) } };
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="field"><span>{label}</span>{children}</label>;
-}
-
-function TextField({ label, value, onChange, type = "text", suffix }: { label: string; value: string; onChange: (value: string) => void; type?: "text" | "number"; suffix?: string }) {
-  return <Field label={label}><div className="suffix-input"><input type={type} step={type === "number" ? "any" : undefined} value={value} onChange={(event) => onChange(event.target.value)} />{suffix && <span>{suffix}</span>}</div></Field>;
-}
-
-function SelectField({ label, value, onChange, options, disabled = false }: { label: string; value: string; onChange: (value: string) => void; options: Array<{ value: string; label: string }>; disabled?: boolean }) {
-  return <Field label={label}><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></Field>;
-}
-
-function ToggleField({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
-  return <label className="toggle-field"><input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} /><span className="toggle-track"><span /></span><strong>{label}</strong></label>;
-}
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
-  return <div className="section-header"><h2>{title}</h2><p>{subtitle}</p></div>;
-}
-
-function Table({ children }: { children: ReactNode }) {
-  return <div className="table-wrapper"><table className="data-table">{children}</table></div>;
-}
-
-function EmptyState({ label }: { label: string }) {
-  return <div className="empty-state"><CheckCircle2 size={24} /><span>{label}</span></div>;
 }

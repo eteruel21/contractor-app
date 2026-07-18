@@ -1,8 +1,3 @@
-import type {
-  AuthError,
-  Session,
-  User,
-} from "@supabase/supabase-js";
 import {
   createContext,
   type PropsWithChildren,
@@ -10,65 +5,31 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
-  useState,
+  useState
 } from "react";
 
 import {
-  configureSupabaseAutoRefresh,
-  supabase,
-} from "@/services/supabase";
+  ApiError,
+  type AppProfile,
+  type AppRole,
+  clearStoredSession,
+  getCurrentUser,
+  loadStoredSession,
+  login,
+  logout,
+  register,
+  type StoredSession,
+  updateContractorProfile as updateContractorProfileRequest,
+  updateOwnProfile
+} from "@/services/api";
 
-export type AppRole = "super_admin" | "contractor" | "client";
-
-export type PublicAppRole = Exclude<AppRole, "super_admin">;
-
-export type AppProfile = {
-  id: string;
-  full_name: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  avatar_url: string | null;
-  role: AppRole;
-  active: boolean;
-  province: string | null;
-  district: string | null;
-  corregimiento: string | null;
-  terms_accepted: boolean;
-  notifications_opt_in: boolean;
-  registration_ip: string | null;
-  registration_device: string | null;
-  
-  // Contractor fields
-  business_name?: string | null;
-  id_document?: string | null;
-  tax_id?: string | null;
-  tax_dv?: string | null;
-  primary_category?: string | null;
-  specialties?: string[] | null;
-  experience_years?: number | null;
-  work_areas?: string[] | null;
-  professional_description?: string | null;
-  company_logo_url?: string | null;
-  portfolio_urls?: string[] | null;
-  certifications?: string[] | null;
-  availability?: string | null;
-  preferred_contact_method?: string | null;
-  emits_invoice?: boolean;
-  has_transport?: boolean;
-  work_mode?: string | null;
-  
-  // Verification & Docs
-  doc_id_url?: string | null;
-  doc_operation_notice_url?: string | null;
-  doc_technical_certs_urls?: string[] | null;
-  doc_references_url?: string | null;
-  doc_address_proof_url?: string | null;
-  
-  created_at: string;
-  updated_at: string;
+export type {
+  AppProfile,
+  AppRole
 };
+
+export type PublicAppRole =
+  Exclude<AppRole, "super_admin">;
 
 type SignUpInput = {
   fullName: string;
@@ -112,6 +73,10 @@ export type UpdateContractorProfileInput = {
   docAddressProofUrl: string | null;
 };
 
+type AuthError = {
+  message: string;
+};
+
 type AuthResult = {
   error: AuthError | null;
   requiresEmailConfirmation?: boolean;
@@ -127,375 +92,367 @@ type UpdateProfileResult = {
 };
 
 type AuthContextValue = {
-  session: Session | null;
-  user: User | null;
+  session: StoredSession | null;
+  user: AppProfile | null;
   profile: AppProfile | null;
   loading: boolean;
   profileError: string | null;
   isAdmin: boolean;
+
   refreshProfile: () => Promise<void>;
+
   updateProfile: (
-    input: UpdateProfileInput,
+    input: UpdateProfileInput
   ) => Promise<UpdateProfileResult>;
+
   signIn: (
     email: string,
-    password: string,
+    password: string
   ) => Promise<AuthResult>;
+
   signUp: (
-    input: SignUpInput,
+    input: SignUpInput
   ) => Promise<AuthResult>;
+
   signOut: () => Promise<AuthResult>;
+
   resetPassword: (
-    email: string,
+    email: string
   ) => Promise<AuthResult>;
+
   updateContractorProfile: (
-    input: UpdateContractorProfileInput,
-  ) => Promise<{ error: string | null }>;
+    input: UpdateContractorProfileInput
+  ) => Promise<{
+    error: string | null;
+  }>;
 };
 
 const AuthContext =
-  createContext<AuthContextValue | null>(null);
+  createContext<AuthContextValue | null>(
+    null
+  );
+
+function errorMessage(
+  error: unknown
+): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return "Ocurrió un error inesperado.";
+}
 
 export function AuthProvider({
-  children,
+  children
 }: PropsWithChildren) {
   const [session, setSession] =
-    useState<Session | null>(null);
+    useState<StoredSession | null>(null);
+
   const [profile, setProfile] =
     useState<AppProfile | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [profileError, setProfileError] =
     useState<string | null>(null);
 
-  const sessionRef = useRef<Session | null>(null);
-
-  const loadProfile = useCallback(
-    async (userId: string) => {
-      setProfileLoading(true);
+  const applySession = useCallback(
+    (
+      nextSession:
+        | StoredSession
+        | null
+    ) => {
+      setSession(nextSession);
+      setProfile(
+        nextSession?.user ?? null
+      );
       setProfileError(null);
-
-      // Columnas explícitas: evita cargar campos de documentos pesados
-      // (doc_technical_certs_urls[], portfolio_urls[], etc.) en cada evento
-      // de autenticación. El perfil profesional completo se carga a demanda
-      // solo cuando el usuario entra a esa pantalla.
-      const { data, error } = await supabase
-        .from("profiles")
-        .select(
-          `id, full_name, first_name, last_name, phone, avatar_url,
-           role, active, province, district, corregimiento,
-           terms_accepted, notifications_opt_in,
-           registration_ip, registration_device,
-           business_name, id_document, tax_id, tax_dv,
-           primary_category, specialties, experience_years,
-           work_areas, professional_description, company_logo_url,
-           portfolio_urls, certifications, availability,
-           preferred_contact_method, emits_invoice, has_transport,
-           work_mode, doc_id_url, doc_operation_notice_url,
-           doc_technical_certs_urls, doc_references_url,
-           doc_address_proof_url, created_at, updated_at`,
-        )
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error(
-          "Error cargando el perfil:",
-          error.message,
-        );
-        setProfile(null);
-        setProfileError(error.message);
-        setProfileLoading(false);
-        return;
-      }
-
-      setProfile(data);
-      setProfileLoading(false);
     },
-    [],
+    []
   );
 
   useEffect(() => {
-    const stopAutoRefresh = configureSupabaseAutoRefresh();
     let mounted = true;
 
-    async function applySession(
-      nextSession: Session | null,
-    ) {
-      if (!mounted) return;
+    async function restoreSession() {
+      try {
+        const stored =
+          await loadStoredSession();
 
-      setSession(nextSession);
-      sessionRef.current = nextSession;
+        if (!stored) return;
 
-      if (nextSession?.user) {
-        await loadProfile(nextSession.user.id);
-      } else {
-        setProfile(null);
-        setProfileError(null);
-        setProfileLoading(false);
-      }
+        const current =
+          await getCurrentUser();
 
-      if (mounted) {
-        setAuthLoading(false);
-      }
-    }
+        const nextSession: StoredSession = {
+          ...stored,
+          user: current.user,
+          requiresApproval:
+            current.requiresApproval
+        };
 
-    async function loadSession() {
-      const {
-        data: { session: currentSession },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (error) {
-        console.error(
-          "Error cargando la sesión:",
-          error.message,
-        );
-      }
-
-      sessionRef.current = currentSession;
-      await applySession(currentSession);
-    }
-
-    void loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        if (!mounted) return;
-
-        const currentUserId = sessionRef.current?.user?.id;
-        const nextUserId = nextSession?.user?.id;
-
-        // Si el usuario es el mismo (ej: refresco silencioso del token al enfocar la pestaña),
-        // actualizamos la sesión de fondo sin mostrar la pantalla de carga ni desmontar la app.
-        if (currentUserId && nextUserId && currentUserId === nextUserId) {
-          setSession(nextSession);
-          sessionRef.current = nextSession;
-          return;
+        if (mounted) {
+          applySession(nextSession);
         }
+      } catch (error) {
+        await clearStoredSession();
 
-        setAuthLoading(true);
-        void applySession(nextSession);
-      },
-    );
+        if (mounted) {
+          setProfileError(
+            errorMessage(error)
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void restoreSession();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
-      stopAutoRefresh();
     };
-  }, [loadProfile]);
+  }, [applySession]);
 
-  const refreshProfile = useCallback(async () => {
-    if (!session?.user) {
-      setProfile(null);
-      return;
-    }
-
-    await loadProfile(session.user.id);
-  }, [loadProfile, session?.user]);
-
-  const updateProfile = useCallback(
-    async ({
-      fullName,
-      phone = "",
-    }: UpdateProfileInput): Promise<UpdateProfileResult> => {
-      const userId = session?.user?.id;
-      if (!userId) {
-        return { error: "No hay una sesión activa." };
+  const refreshProfile =
+    useCallback(async () => {
+      if (!session) {
+        setProfile(null);
+        return;
       }
 
-      const normalizedName = fullName.trim();
-      const normalizedPhone = phone.trim();
+      try {
+        const current =
+          await getCurrentUser();
 
-      if (normalizedName.length < 2) {
-        return {
-          error: "El nombre debe tener al menos 2 caracteres.",
+        const nextSession: StoredSession = {
+          ...session,
+          user: current.user,
+          requiresApproval:
+            current.requiresApproval
         };
+
+        applySession(nextSession);
+      } catch (error) {
+        setProfileError(
+          errorMessage(error)
+        );
       }
-
-      const { error } = await supabase.rpc(
-        "update_own_profile",
-        {
-          p_full_name: normalizedName,
-          p_phone: normalizedPhone || null,
-        },
-      );
-
-      if (error) {
-        return { error: error.message };
-      }
-
-      await loadProfile(userId);
-      return { error: null };
-    },
-    // Usar session?.user?.id (primitivo string) en lugar de session?.user
-    // (objeto) para evitar que el callback se recree en cada render aunque
-    // el usuario sea el mismo.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loadProfile, session?.user?.id],
-  );
+    }, [applySession, session]);
 
   const signIn = useCallback(
     async (
       email: string,
-      password: string,
+      password: string
     ): Promise<AuthResult> => {
-      const { error } =
-        await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
+      try {
+        const nextSession = await login(
+          email.trim().toLowerCase(),
+          password
+        );
 
-      return { error };
+        applySession(nextSession);
+
+        return {
+          error: null
+        };
+      } catch (error) {
+        return {
+          error: {
+            message: errorMessage(error)
+          }
+        };
+      }
     },
-    [],
+    [applySession]
   );
 
   const signUp = useCallback(
-    async (input: SignUpInput): Promise<AuthResult> => {
-      const { data, error } =
-        await supabase.auth.signUp({
-          email: input.email.trim().toLowerCase(),
-          password: input.password,
-          options: {
-            data: {
-              full_name: input.fullName.trim(),
-              first_name: input.firstName.trim(),
-              last_name: input.lastName.trim(),
-              phone: input.phone?.trim() || "",
-              role: input.role,
-              province: input.province,
-              district: input.district,
-              corregimiento: input.corregimiento,
-              terms_accepted: input.termsAccepted,
-              notifications_opt_in: input.notificationsOptIn,
-              registration_ip: input.registrationIp,
-              registration_device: input.registrationDevice,
-            },
-          },
-        });
-
-      return {
-        error,
-        requiresEmailConfirmation:
-          !error && !data.session,
-      };
-    },
-    [],
-  );
-
-  const updateContractorProfile = useCallback(
     async (
-      input: UpdateContractorProfileInput,
-    ): Promise<{ error: string | null }> => {
-      const userId = session?.user?.id;
-      if (!userId) {
-        return { error: "No hay una sesión activa." };
+      input: SignUpInput
+    ): Promise<AuthResult> => {
+      try {
+        const nextSession =
+          await register({
+            fullName:
+              input.fullName.trim(),
+            firstName:
+              input.firstName.trim(),
+            lastName:
+              input.lastName.trim(),
+            phone:
+              input.phone?.trim() || "",
+            email:
+              input.email
+                .trim()
+                .toLowerCase(),
+            password: input.password,
+            role: input.role,
+            province: input.province,
+            district: input.district,
+            corregimiento:
+              input.corregimiento,
+            termsAccepted:
+              input.termsAccepted,
+            notificationsOptIn:
+              input.notificationsOptIn,
+            registrationDevice:
+              input.registrationDevice
+          });
+
+        applySession(nextSession);
+
+        return {
+          error: null,
+          requiresEmailConfirmation:
+            false
+        };
+      } catch (error) {
+        return {
+          error: {
+            message: errorMessage(error)
+          }
+        };
       }
-
-      const { error } = await supabase.rpc(
-        "update_contractor_profile",
-        {
-          p_business_name: input.businessName,
-          p_id_document: input.idDocument || "",
-          p_tax_id: input.taxId,
-          p_tax_dv: input.taxDv,
-          p_primary_category: input.primaryCategory,
-          p_specialties: input.specialties,
-          p_experience_years: input.experienceYears,
-          p_work_areas: input.workAreas,
-          p_professional_description: input.professionalDescription,
-          p_company_logo_url: input.companyLogoUrl,
-          p_portfolio_urls: input.portfolioUrls,
-          p_certifications: input.certifications,
-          p_availability: input.availability,
-          p_preferred_contact_method: input.preferredContactMethod,
-          p_emits_invoice: input.emitsInvoice,
-          p_has_transport: input.hasTransport,
-          p_work_mode: input.workMode,
-          p_doc_id_url: input.docIdUrl,
-          p_doc_operation_notice_url: input.docOperationNoticeUrl,
-          p_doc_technical_certs_urls: input.docTechnicalCertsUrls,
-          p_doc_references_url: input.docReferencesUrl,
-          p_doc_address_proof_url: input.docAddressProofUrl,
-        },
-      );
-
-      if (error) {
-        return { error: error.message };
-      }
-
-      await loadProfile(userId);
-      return { error: null };
     },
-    // Usar session?.user?.id (primitivo) para evitar recreaciones innecesarias
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loadProfile, session?.user?.id],
+    [applySession]
   );
 
   const signOut = useCallback(
     async (): Promise<AuthResult> => {
-      const { error } = await supabase.auth.signOut();
-      return { error };
+      try {
+        await logout();
+        applySession(null);
+
+        return {
+          error: null
+        };
+      } catch (error) {
+        applySession(null);
+
+        return {
+          error: {
+            message: errorMessage(error)
+          }
+        };
+      }
     },
-    [],
+    [applySession]
   );
+
+  const updateProfile = useCallback(
+    async ({
+      fullName,
+      phone = ""
+    }: UpdateProfileInput):
+    Promise<UpdateProfileResult> => {
+      try {
+        await updateOwnProfile({
+          fullName:
+            fullName.trim(),
+          phone:
+            phone.trim() || null
+        });
+
+        await refreshProfile();
+
+        return {
+          error: null
+        };
+      } catch (error) {
+        return {
+          error: errorMessage(error)
+        };
+      }
+    },
+    [refreshProfile]
+  );
+
+  const updateContractorProfile =
+    useCallback(
+      async (
+        input:
+          UpdateContractorProfileInput
+      ): Promise<{
+        error: string | null;
+      }> => {
+        try {
+          await updateContractorProfileRequest(
+            input
+          );
+
+          await refreshProfile();
+
+          return {
+            error: null
+          };
+        } catch (error) {
+          return {
+            error: errorMessage(error)
+          };
+        }
+      },
+      [refreshProfile]
+    );
 
   const resetPassword = useCallback(
-    async (email: string): Promise<AuthResult> => {
-      const { error } =
-        await supabase.auth.resetPasswordForEmail(
-          email.trim().toLowerCase(),
-        );
-
-      return { error };
+    async (
+      _email: string
+    ): Promise<AuthResult> => {
+      return {
+        error: {
+          message:
+            "La recuperación de contraseña se habilitará al conectar el servicio de correo."
+        }
+      };
     },
-    [],
+    []
   );
-
-  const loading =
-    authLoading || (Boolean(session) && profileLoading);
 
   const isAdmin = Boolean(
-    profile?.active && profile.role === "super_admin",
+    profile?.active &&
+    profile.role === "super_admin"
   );
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      session,
-      user: session?.user ?? null,
-      profile,
-      loading,
-      profileError,
-      isAdmin,
-      refreshProfile,
-      updateProfile,
-      updateContractorProfile,
-      signIn,
-      signUp,
-      signOut,
-      resetPassword,
-    }),
-    [
-      isAdmin,
-      loading,
-      profile,
-      profileError,
-      refreshProfile,
-      updateProfile,
-      updateContractorProfile,
-      resetPassword,
-      session,
-      signIn,
-      signOut,
-      signUp,
-    ],
-  );
+  const value =
+    useMemo<AuthContextValue>(
+      () => ({
+        session,
+        user: profile,
+        profile,
+        loading,
+        profileError,
+        isAdmin,
+        refreshProfile,
+        updateProfile,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updateContractorProfile
+      }),
+      [
+        session,
+        profile,
+        loading,
+        profileError,
+        isAdmin,
+        refreshProfile,
+        updateProfile,
+        signIn,
+        signUp,
+        signOut,
+        resetPassword,
+        updateContractorProfile
+      ]
+    );
 
   return (
     <AuthContext.Provider value={value}>
@@ -504,12 +461,14 @@ export function AuthProvider({
   );
 }
 
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
+export function useAuth():
+AuthContextValue {
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(
-      "useAuth debe utilizarse dentro de AuthProvider.",
+      "useAuth debe utilizarse dentro de AuthProvider."
     );
   }
 
