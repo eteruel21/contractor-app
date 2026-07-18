@@ -48,7 +48,26 @@ app.decorateRequest(
 );
 
 await app.register(cors, {
-  origin: corsOrigins,
+  origin: (origin, callback) => {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    if (corsOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    try {
+      const hostname = new URL(origin).hostname;
+      if (hostname === "pages.dev" || hostname.endsWith(".pages.dev")) {
+        callback(null, true);
+        return;
+      }
+    } catch {
+      // ignore invalid URLs
+    }
+    callback(null, false);
+  },
   credentials: false
 });
 
