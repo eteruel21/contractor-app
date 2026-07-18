@@ -1,0 +1,41 @@
+CREATE FUNCTION "private"."handle_company_calculation_defaults"() RETURNS "trigger"
+CREATE FUNCTION "private"."is_active_platform_user"() RETURNS boolean
+CREATE FUNCTION "private"."is_super_admin"() RETURNS boolean
+CREATE FUNCTION "private"."seed_company_calculation_defaults"("requested_company_id" "uuid") RETURNS "void"
+CREATE FUNCTION "private"."touch_updated_at"() RETURNS "trigger"
+CREATE FUNCTION "public"."admin_adjust_catalog_prices"("requested_company_id" "uuid", "requested_item_ids" "uuid"[], "requested_target" "text", "requested_percentage" numeric, "change_notes" "text" DEFAULT NULL::"text") RETURNS "void"
+CREATE FUNCTION "public"."admin_adjust_platform_catalog_prices"("requested_item_ids" "uuid"[], "requested_target" "text", "requested_percentage" numeric, "change_notes" "text" DEFAULT NULL::"text") RETURNS integer
+CREATE FUNCTION "public"."admin_save_catalog_item"("requested_item_id" "uuid", "requested_company_id" "uuid", "requested_sku" "text", "requested_name" "text", "requested_description" "text", "requested_item_type" "public"."catalog_item_type", "requested_category_id" "uuid", "requested_unit_id" "uuid", "requested_unit_cost" numeric, "requested_sale_price" numeric, "requested_waste_percentage" numeric, "requested_active" boolean) RETURNS "uuid"
+CREATE FUNCTION "public"."admin_save_formula"("requested_formula_id" "uuid", "requested_company_id" "uuid", "requested_code" "text", "requested_name" "text", "requested_description" "text", "requested_active" boolean, "requested_parameters" "jsonb") RETURNS "uuid"
+CREATE FUNCTION "public"."admin_update_catalog_pricing"("requested_company_id" "uuid", "requested_item_id" "uuid", "requested_unit_cost" numeric, "requested_sale_price" numeric, "requested_waste_percentage" numeric, "change_source" "text" DEFAULT 'panel_administrativo'::"text", "change_notes" "text" DEFAULT NULL::"text") RETURNS "void"
+CREATE FUNCTION "public"."admin_update_formula_parameter"("requested_company_id" "uuid", "requested_formula_id" "uuid", "requested_parameter_id" "uuid", "requested_label" "text", "requested_description" "text", "requested_numeric_value" numeric, "requested_unit_label" "text", "requested_min_value" numeric, "requested_max_value" numeric, "requested_step_value" numeric, "requested_sort_order" integer, "change_notes" "text" DEFAULT NULL::"text") RETURNS "public"."calculation_formula_parameters"
+CREATE FUNCTION "public"."admin_update_platform_catalog_pricing"("requested_item_id" "uuid", "requested_unit_cost" numeric, "requested_sale_price" numeric, "requested_waste_percentage" numeric, "change_source" "text" DEFAULT 'panel_super_admin'::"text", "change_notes" "text" DEFAULT NULL::"text") RETURNS "void"
+CREATE FUNCTION "public"."create_company"("company_name" "text", "company_phone" "text" DEFAULT NULL::"text", "company_email" "text" DEFAULT NULL::"text") RETURNS "uuid"
+CREATE FUNCTION "public"."create_new_user_trigger"() RETURNS "void"
+CREATE FUNCTION "public"."create_project_budget"("requested_company_id" "uuid", "requested_project_id" "uuid", "budget_title" "text" DEFAULT NULL::"text") RETURNS "uuid"
+CREATE FUNCTION "public"."handle_client_auto_link"() RETURNS "trigger"
+CREATE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
+CREATE FUNCTION "public"."is_admin"() RETURNS boolean
+CREATE FUNCTION "public"."is_company_admin"("requested_company_id" "uuid") RETURNS boolean
+CREATE FUNCTION "public"."is_company_member"("requested_company_id" "uuid") RETURNS boolean
+CREATE FUNCTION "public"."is_company_owner"("requested_company_id" "uuid") RETURNS boolean
+CREATE FUNCTION "public"."log_catalog_price_change"() RETURNS "trigger"
+CREATE FUNCTION "public"."log_formula_parameter_change"() RETURNS "trigger"
+CREATE FUNCTION "public"."next_document_number"("requested_company_id" "uuid", "requested_document_type" "public"."document_type") RETURNS "text"
+CREATE FUNCTION "public"."prevent_unauthorized_profile_approval_change"() RETURNS "trigger"
+CREATE FUNCTION "public"."prevent_unauthorized_profile_role_change"() RETURNS "trigger"
+CREATE FUNCTION "public"."recalculate_budget_totals"("requested_company_id" "uuid", "requested_budget_id" "uuid") RETURNS "void"
+CREATE FUNCTION "public"."record_catalog_price_history"() RETURNS "trigger"
+CREATE FUNCTION "public"."reset_personal_catalog_pricing"("requested_item_id" "uuid") RETURNS "void"
+CREATE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
+CREATE FUNCTION "public"."seed_default_catalog"("requested_company_id" "uuid") RETURNS "void"
+CREATE FUNCTION "public"."seed_default_units"("requested_company_id" "uuid") RETURNS "void"
+CREATE FUNCTION "public"."seed_units_after_company_insert"() RETURNS "trigger"
+CREATE FUNCTION "public"."set_budget_item_subtotal"() RETURNS "trigger"
+CREATE FUNCTION "public"."set_personal_catalog_pricing"("requested_item_id" "uuid", "requested_unit_cost" numeric, "requested_sale_price" numeric, "requested_waste_percentage" numeric) RETURNS "void"
+CREATE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
+CREATE FUNCTION "public"."touch_calculation_updated_at"() RETURNS "trigger"
+CREATE FUNCTION "public"."trigger_recalculate_budget_totals"() RETURNS "trigger"
+CREATE FUNCTION "public"."update_contractor_profile"("p_business_name" "text", "p_id_document" "text", "p_tax_id" "text", "p_tax_dv" "text", "p_primary_category" "text", "p_specialties" "text"[], "p_experience_years" integer, "p_work_areas" "text"[], "p_professional_description" "text", "p_company_logo_url" "text", "p_portfolio_urls" "text"[], "p_certifications" "text"[], "p_availability" "text", "p_preferred_contact_method" "text", "p_emits_invoice" boolean, "p_has_transport" boolean, "p_work_mode" "text", "p_doc_id_url" "text", "p_doc_operation_notice_url" "text", "p_doc_technical_certs_urls" "text"[], "p_doc_references_url" "text", "p_doc_address_proof_url" "text") RETURNS "public"."profiles"
+CREATE FUNCTION "public"."update_own_profile"("p_full_name" "text", "p_phone" "text" DEFAULT NULL::"text") RETURNS "public"."profiles"
+CREATE FUNCTION "public"."update_updated_at"() RETURNS "trigger"

@@ -6,14 +6,17 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useState
 } from "react";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/services/supabase";
+import {
+  createCompanyRecord,
+  listCompanyMemberships
+} from "@/services/company-service";
 import type {
   Company,
-  CompanyMembership,
+  CompanyMembership
 } from "@/types/company";
 
 const ACTIVE_COMPANY_KEY =
@@ -29,15 +32,20 @@ type CompanyContextValue = {
   memberships: CompanyMembership[];
   companies: Company[];
   activeCompany: Company | null;
-  activeMembership: CompanyMembership | null;
+  activeMembership:
+    | CompanyMembership
+    | null;
   loading: boolean;
   refreshing: boolean;
+
   refreshCompanies: () => Promise<void>;
+
   setActiveCompanyId: (
-    companyId: string,
+    companyId: string
   ) => Promise<void>;
+
   createCompany: (
-    input: CreateCompanyInput,
+    input: CreateCompanyInput
   ) => Promise<{
     companyId: string | null;
     error: string | null;
@@ -45,315 +53,286 @@ type CompanyContextValue = {
 };
 
 const CompanyContext =
-  createContext<CompanyContextValue | null>(null);
+  createContext<CompanyContextValue | null>(
+    null
+  );
 
 export function CompanyProvider({
-  children,
+  children
 }: PropsWithChildren) {
   const {
     user,
     profile,
-    loading: authLoading,
+    loading: authLoading
   } = useAuth();
-  const userId = profile?.active ? user?.id ?? null : null;
+
+  const userId =
+    profile?.active
+      ? user?.id ?? null
+      : null;
 
   const [memberships, setMemberships] =
     useState<CompanyMembership[]>([]);
-  const [activeCompanyId, setActiveCompanyIdState] =
-    useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+
+  const [
+    activeCompanyId,
+    setActiveCompanyIdState
+  ] = useState<string | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
   const [refreshing, setRefreshing] =
     useState(false);
 
   const companies = useMemo(
     () =>
       memberships
-        .map((membership) => membership.company)
+        .map(
+          (membership) =>
+            membership.company
+        )
         .filter(Boolean),
-    [memberships],
+    [memberships]
   );
 
-  const activeCompany = useMemo(() => {
-    if (!activeCompanyId) return null;
-
-    return (
+  const activeCompany = useMemo(
+    () =>
       companies.find(
-        (company) => company.id === activeCompanyId,
-      ) ?? null
-    );
-  }, [activeCompanyId, companies]);
+        (company) =>
+          company.id === activeCompanyId
+      ) ?? null,
+    [
+      activeCompanyId,
+      companies
+    ]
+  );
 
-  const activeMembership = useMemo(() => {
-    if (!activeCompanyId) return null;
-
-    return (
+  const activeMembership = useMemo(
+    () =>
       memberships.find(
         (membership) =>
-          membership.company_id === activeCompanyId,
-      ) ?? null
-    );
-  }, [activeCompanyId, memberships]);
+          membership.company_id ===
+          activeCompanyId
+      ) ?? null,
+    [
+      activeCompanyId,
+      memberships
+    ]
+  );
 
-  const refreshCompanies = useCallback(async () => {
-    if (!userId) {
-      setMemberships([]);
-      setActiveCompanyIdState(null);
-      setLoading(false);
-      return;
-    }
+  const refreshCompanies =
+    useCallback(async () => {
+      if (!userId) {
+        setMemberships([]);
+        setActiveCompanyIdState(null);
+        setLoading(false);
+        setRefreshing(false);
 
-    setRefreshing(true);
-
-    // Flag para evitar actualizar el estado si el componente ya se desmontó
-    // (por ejemplo, si el usuario cierra sesión durante la carga).
-    let mounted = true;
-
-    try {
-      const { data, error } = await supabase
-        .from("company_members")
-        .select(
-          `
-          id,
-          company_id,
-          user_id,
-          role,
-          active,
-          company:companies (
-            id,
-            name,
-            legal_name,
-            tax_id,
-            phone,
-            email,
-            address,
-            logo_url,
-            currency_code,
-            tax_rate,
-            timezone,
-            quotation_prefix,
-            invoice_prefix,
-            receipt_prefix,
-            project_prefix,
-            payment_prefix,
-            created_by,
-            active,
-            created_at,
-            updated_at
-          )
-        `,
-        )
-        .eq("user_id", userId)
-        .eq("active", true)
-        .order("created_at", {
-          ascending: true,
-        });
-
-      if (!mounted) return;
-
-      if (error) {
-        throw error;
-      }
-
-      const parsedMemberships =
-        (data ?? [])
-          .map((row) => {
-            const companyValue = Array.isArray(
-              row.company,
-            )
-              ? row.company[0]
-              : row.company;
-
-            if (!companyValue) return null;
-
-            return {
-              id: row.id,
-              company_id: row.company_id,
-              user_id: row.user_id,
-              role: row.role,
-              active: row.active,
-              company: companyValue as Company,
-            } satisfies CompanyMembership;
-          })
-          .filter(
-            (
-              membership,
-            ): membership is CompanyMembership =>
-              Boolean(membership),
-          );
-
-      if (!mounted) return;
-
-      setMemberships(parsedMemberships);
-
-      const storedCompanyId =
-        await AsyncStorage.getItem(
-          ACTIVE_COMPANY_KEY,
+        await AsyncStorage.removeItem(
+          ACTIVE_COMPANY_KEY
         );
 
-      if (!mounted) return;
-
-      const storedCompanyExists =
-        parsedMemberships.some(
-          (membership) =>
-            membership.company_id === storedCompanyId,
-        );
-
-      if (
-        storedCompanyId &&
-        storedCompanyExists
-      ) {
-        setActiveCompanyIdState(storedCompanyId);
         return;
       }
 
-      const firstCompanyId =
-        parsedMemberships[0]?.company_id ?? null;
+      setRefreshing(true);
 
-      setActiveCompanyIdState(firstCompanyId);
+      try {
+        const result =
+          await listCompanyMemberships();
 
-      if (firstCompanyId) {
-        await AsyncStorage.setItem(
-          ACTIVE_COMPANY_KEY,
-          firstCompanyId,
+        if (result.error) {
+          throw new Error(result.error);
+        }
+
+        setMemberships(
+          result.memberships
         );
-      } else {
-        await AsyncStorage.removeItem(
-          ACTIVE_COMPANY_KEY,
+
+        const storedCompanyId =
+          await AsyncStorage.getItem(
+            ACTIVE_COMPANY_KEY
+          );
+
+        const storedCompanyExists =
+          result.memberships.some(
+            (membership) =>
+              membership.company_id ===
+              storedCompanyId
+          );
+
+        if (
+          storedCompanyId &&
+          storedCompanyExists
+        ) {
+          setActiveCompanyIdState(
+            storedCompanyId
+          );
+
+          return;
+        }
+
+        const firstCompanyId =
+          result.memberships[0]
+            ?.company_id ?? null;
+
+        setActiveCompanyIdState(
+          firstCompanyId
         );
-      }
-    } catch (error) {
-      console.error(
-        "Error cargando empresas:",
-        error,
-      );
-    } finally {
-      if (mounted) {
+
+        if (firstCompanyId) {
+          await AsyncStorage.setItem(
+            ACTIVE_COMPANY_KEY,
+            firstCompanyId
+          );
+        } else {
+          await AsyncStorage.removeItem(
+            ACTIVE_COMPANY_KEY
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Error cargando empresas:",
+          error
+        );
+
+        setMemberships([]);
+        setActiveCompanyIdState(null);
+      } finally {
         setLoading(false);
         setRefreshing(false);
       }
-      mounted = false;
-    }
-  }, [userId]);
+    }, [userId]);
 
   useEffect(() => {
     if (authLoading) return;
 
     setLoading(true);
     void refreshCompanies();
-  }, [authLoading, refreshCompanies]);
+  }, [
+    authLoading,
+    refreshCompanies
+  ]);
 
-  const setActiveCompanyId = useCallback(
-    async (companyId: string) => {
-      const exists = memberships.some(
-        (membership) =>
-          membership.company_id === companyId,
-      );
+  const setActiveCompanyId =
+    useCallback(
+      async (companyId: string) => {
+        const exists =
+          memberships.some(
+            (membership) =>
+              membership.company_id ===
+              companyId
+          );
 
-      if (!exists) {
-        throw new Error(
-          "No tienes acceso a esta empresa.",
+        if (!exists) {
+          throw new Error(
+            "No tienes acceso a esta empresa."
+          );
+        }
+
+        setActiveCompanyIdState(
+          companyId
         );
-      }
 
-      setActiveCompanyIdState(companyId);
-
-      await AsyncStorage.setItem(
-        ACTIVE_COMPANY_KEY,
-        companyId,
-      );
-    },
-    [memberships],
-  );
-
-  const createCompany = useCallback(
-    async ({
-      name,
-      phone = "",
-      email = "",
-    }: CreateCompanyInput) => {
-      const cleanName = name.trim();
-
-      if (cleanName.length < 2) {
-        return {
-          companyId: null,
-          error: "El nombre de la empresa es obligatorio.",
-        };
-      }
-
-      const { data, error } =
-        await supabase.rpc("create_company", {
-          company_name: cleanName,
-          company_phone: phone.trim() || undefined,
-          company_email:
-            email.trim().toLowerCase() || undefined,
-        });
-
-      if (error) {
-        return {
-          companyId: null,
-          error: error.message,
-        };
-      }
-
-      const newCompanyId =
-        typeof data === "string" ? data : null;
-
-      await refreshCompanies();
-
-      if (newCompanyId) {
-        setActiveCompanyIdState(newCompanyId);
         await AsyncStorage.setItem(
           ACTIVE_COMPANY_KEY,
-          newCompanyId,
+          companyId
         );
-      }
+      },
+      [memberships]
+    );
 
-      return {
-        companyId: newCompanyId,
-        error: null,
-      };
-    },
-    [refreshCompanies],
-  );
+  const createCompany =
+    useCallback(
+      async ({
+        name,
+        phone = "",
+        email = ""
+      }: CreateCompanyInput) => {
+        const cleanName = name.trim();
 
-  const value = useMemo<CompanyContextValue>(
-    () => ({
-      memberships,
-      companies,
-      activeCompany,
-      activeMembership,
-      loading,
-      refreshing,
-      refreshCompanies,
-      setActiveCompanyId,
-      createCompany,
-    }),
-    [
-      memberships,
-      companies,
-      activeCompany,
-      activeMembership,
-      loading,
-      refreshing,
-      refreshCompanies,
-      setActiveCompanyId,
-      createCompany,
-    ],
-  );
+        if (cleanName.length < 2) {
+          return {
+            companyId: null,
+            error:
+              "El nombre de la empresa es obligatorio."
+          };
+        }
+
+        const result =
+          await createCompanyRecord({
+            name: cleanName,
+            phone,
+            email
+          });
+
+        if (
+          result.error ||
+          !result.companyId
+        ) {
+          return result;
+        }
+
+        await refreshCompanies();
+
+        setActiveCompanyIdState(
+          result.companyId
+        );
+
+        await AsyncStorage.setItem(
+          ACTIVE_COMPANY_KEY,
+          result.companyId
+        );
+
+        return result;
+      },
+      [refreshCompanies]
+    );
+
+  const value =
+    useMemo<CompanyContextValue>(
+      () => ({
+        memberships,
+        companies,
+        activeCompany,
+        activeMembership,
+        loading,
+        refreshing,
+        refreshCompanies,
+        setActiveCompanyId,
+        createCompany
+      }),
+      [
+        memberships,
+        companies,
+        activeCompany,
+        activeMembership,
+        loading,
+        refreshing,
+        refreshCompanies,
+        setActiveCompanyId,
+        createCompany
+      ]
+    );
 
   return (
-    <CompanyContext.Provider value={value}>
+    <CompanyContext.Provider
+      value={value}
+    >
       {children}
     </CompanyContext.Provider>
   );
 }
 
-export function useCompany() {
-  const context = useContext(CompanyContext);
+export function useCompany():
+CompanyContextValue {
+  const context =
+    useContext(CompanyContext);
 
   if (!context) {
     throw new Error(
-      "useCompany debe utilizarse dentro de CompanyProvider.",
+      "useCompany debe utilizarse dentro de CompanyProvider."
     );
   }
 

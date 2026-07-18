@@ -1,12 +1,14 @@
-import { supabase } from "@/services/supabase";
+import {
+  authenticatedRequest
+} from "@/services/api";
 import type {
   Client,
-  ClientAddress,
+  ClientAddress
 } from "@/types/client";
 import type {
   Project,
   ProjectStatus,
-  ProjectWithDetails,
+  ProjectWithDetails
 } from "@/types/project";
 
 type CreateProjectInput = {
@@ -18,314 +20,343 @@ type CreateProjectInput = {
   budgetEstimate?: number;
 };
 
-// Tipo para el listado de proyectos con datos mínimos del cliente
-export type ProjectSummary = Project & {
-  client: {
-    id: string;
-    client_type: "person" | "business";
-    first_name: string | null;
-    last_name: string | null;
-    business_name: string | null;
-  } | null;
-};
+export type ProjectSummary =
+  Project & {
+    client: {
+      id: string;
+      client_type:
+        | "person"
+        | "business";
+      first_name: string | null;
+      last_name: string | null;
+      business_name: string | null;
+    } | null;
+  };
 
-// Tipo para proyectos visibles por el usuario cliente vinculado
-export type ClientProjectSummary = Project & {
-  company: {
-    name: string;
-  } | null;
-};
+export type ClientProjectSummary =
+  Project & {
+    company: {
+      name: string;
+    } | null;
+  };
+
+type ProjectRow =
+  Omit<
+    Project,
+    | "budget_estimate"
+    | "contract_value"
+    | "progress_percentage"
+  > & {
+    budget_estimate:
+      | number
+      | string;
+    contract_value:
+      | number
+      | string;
+    progress_percentage:
+      | number
+      | string;
+  };
+
+function normalizeProject(
+  project: ProjectRow
+): Project {
+  return {
+    ...project,
+    budget_estimate:
+      Number(
+        project.budget_estimate ?? 0
+      ),
+    contract_value:
+      Number(
+        project.contract_value ?? 0
+      ),
+    progress_percentage:
+      Number(
+        project.progress_percentage ?? 0
+      )
+  };
+}
+
+function errorMessage(
+  error: unknown
+): string {
+  return error instanceof Error
+    ? error.message
+    : "No fue posible completar la solicitud.";
+}
 
 export async function listProjectsByClient(
   companyId: string,
-  clientId: string,
+  clientId: string
 ): Promise<{
   projects: Project[];
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("company_id", companyId)
-    .eq("client_id", clientId)
-    .order("created_at", {
-      ascending: false,
-    });
+  try {
+    const response =
+      await authenticatedRequest<{
+        projects: ProjectRow[];
+      }>(
+        `/projects?companyId=${encodeURIComponent(companyId)}&clientId=${encodeURIComponent(clientId)}`
+      );
 
-  if (error) {
+    return {
+      projects:
+        response.projects.map(
+          normalizeProject
+        ),
+      error: null
+    };
+  } catch (error) {
     return {
       projects: [],
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  return {
-    projects: (data ?? []) as Project[],
-    error: null,
-  };
 }
 
 export async function createProject(
-  input: CreateProjectInput,
+  input: CreateProjectInput
 ): Promise<{
   project: Project | null;
   error: string | null;
 }> {
-  const cleanName = input.name.trim();
+  try {
+    const response =
+      await authenticatedRequest<{
+        project: ProjectRow;
+      }>(
+        "/projects",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            companyId:
+              input.companyId,
+            clientId:
+              input.clientId,
+            addressId:
+              input.addressId ?? null,
+            name:
+              input.name.trim(),
+            description:
+              input.description?.trim() ||
+              "",
+            budgetEstimate:
+              Math.max(
+                input.budgetEstimate ?? 0,
+                0
+              )
+          })
+        }
+      );
 
-  if (cleanName.length < 2) {
+    return {
+      project:
+        normalizeProject(
+          response.project
+        ),
+      error: null
+    };
+  } catch (error) {
     return {
       project: null,
-      error: "Introduce el nombre del proyecto.",
+      error: errorMessage(error)
     };
   }
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return {
-      project: null,
-      error: "No hay usuario autenticado.",
-    };
-  }
-
-  const {
-    data: projectCode,
-    error: sequenceError,
-  } = await supabase.rpc("next_document_number", {
-    requested_company_id: input.companyId,
-    requested_document_type: "project",
-  });
-
-  if (sequenceError) {
-    return {
-      project: null,
-      error: sequenceError.message,
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("projects")
-    .insert({
-      company_id: input.companyId,
-      client_id: input.clientId,
-      address_id: input.addressId || null,
-      project_code:
-        typeof projectCode === "string"
-          ? projectCode
-          : null,
-      name: cleanName,
-      description:
-        input.description?.trim() || null,
-      status: "lead",
-      budget_estimate:
-        input.budgetEstimate ?? 0,
-      created_by: user.id,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    return {
-      project: null,
-      error: error.message,
-    };
-  }
-
-  return {
-    project: data as Project,
-    error: null,
-  };
 }
 
-/**
- * Obtiene el detalle completo de un proyecto en una sola query con JOINs,
- * en lugar de las 2-3 queries secuenciales que había antes
- * (proyecto → cliente → dirección).
- */
 export async function getProjectById(
   companyId: string,
-  projectId: string,
+  projectId: string
 ): Promise<{
   project: ProjectWithDetails | null;
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("projects")
-    .select(`
-      *,
-      client:clients (*),
-      address:client_addresses (*)
-    `)
-    .eq("company_id", companyId)
-    .eq("id", projectId)
-    .single();
+  try {
+    const response =
+      await authenticatedRequest<{
+        project:
+          ProjectRow & {
+            client: Client | null;
+            address:
+              ClientAddress | null;
+          };
+      }>(
+        `/projects/${projectId}?companyId=${encodeURIComponent(companyId)}`
+      );
 
-  if (error) {
+    return {
+      project: {
+        ...normalizeProject(
+          response.project
+        ),
+        client:
+          response.project.client,
+        address:
+          response.project.address
+      },
+      error: null
+    };
+  } catch (error) {
     return {
       project: null,
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  const clientValue = Array.isArray(data.client)
-    ? data.client[0]
-    : data.client;
-
-  const addressValue = Array.isArray(data.address)
-    ? data.address[0]
-    : data.address;
-
-  return {
-    project: {
-      ...(data as unknown as Project),
-      client: (clientValue ?? null) as Client | null,
-      address: (addressValue ?? null) as ClientAddress | null,
-    } as ProjectWithDetails,
-    error: null,
-  };
 }
 
-export async function updateProjectStatus(input: {
-  companyId: string;
-  projectId: string;
-  status: ProjectStatus;
-}): Promise<{
+export async function updateProjectStatus(
+  input: {
+    companyId: string;
+    projectId: string;
+    status: ProjectStatus;
+  }
+): Promise<{
   error: string | null;
 }> {
-  const { error } = await supabase
-    .from("projects")
-    .update({
-      status: input.status,
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.projectId);
+  try {
+    await authenticatedRequest(
+      `/projects/${input.projectId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          companyId:
+            input.companyId,
+          status:
+            input.status
+        })
+      }
+    );
 
-  return {
-    error: error?.message ?? null,
-  };
+    return {
+      error: null
+    };
+  } catch (error) {
+    return {
+      error: errorMessage(error)
+    };
+  }
 }
 
-export async function updateProjectProgress(input: {
-  companyId: string;
-  projectId: string;
-  progressPercentage: number;
-}): Promise<{
+export async function updateProjectProgress(
+  input: {
+    companyId: string;
+    projectId: string;
+    progressPercentage: number;
+  }
+): Promise<{
   error: string | null;
 }> {
-  const cleanProgress = Math.min(
-    Math.max(input.progressPercentage, 0),
-    100,
-  );
+  try {
+    await authenticatedRequest(
+      `/projects/${input.projectId}/progress`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          companyId:
+            input.companyId,
+          progressPercentage:
+            Math.min(
+              Math.max(
+                input.progressPercentage,
+                0
+              ),
+              100
+            )
+        })
+      }
+    );
 
-  const { error } = await supabase
-    .from("projects")
-    .update({
-      progress_percentage: cleanProgress,
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.projectId);
-
-  return {
-    error: error?.message ?? null,
-  };
+    return {
+      error: null
+    };
+  } catch (error) {
+    return {
+      error: errorMessage(error)
+    };
+  }
 }
 
 export async function listProjectsByCompany(
-  companyId: string,
+  companyId: string
 ): Promise<{
   projects: ProjectSummary[];
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("projects")
-    .select(`
-      *,
-      client:clients (
-        id,
-        client_type,
-        first_name,
-        last_name,
-        business_name
-      )
-    `)
-    .eq("company_id", companyId)
-    .order("created_at", {
-      ascending: false,
-    });
+  try {
+    const response =
+      await authenticatedRequest<{
+        projects:
+          Array<
+            ProjectRow & {
+              client:
+                ProjectSummary["client"];
+            }
+          >;
+      }>(
+        `/projects?companyId=${encodeURIComponent(companyId)}`
+      );
 
-  if (error) {
+    return {
+      projects:
+        response.projects.map(
+          (project) => ({
+            ...normalizeProject(
+              project
+            ),
+            client:
+              project.client ?? null
+          })
+        ),
+      error: null
+    };
+  } catch (error) {
     return {
       projects: [],
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  const parsedProjects = (data ?? []).map((project) => {
-    const clientData = Array.isArray(project.client)
-      ? project.client[0]
-      : project.client;
-
-    return {
-      ...project,
-      client: clientData ?? null,
-    };
-  });
-
-  return {
-    projects: parsedProjects as ProjectSummary[],
-    error: null,
-  };
 }
 
-/**
- * Lista los proyectos visibles para un usuario cliente usando una sola query
- * con JOIN directo desde clients.user_id, en lugar de las dos queries
- * secuenciales anteriores (clients → projects).
- */
 export async function listProjectsForClient(
-  userId: string,
+  _userId: string
 ): Promise<{
   projects: ClientProjectSummary[];
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("projects")
-    .select(`
-      *,
-      company:companies (name),
-      client:clients!inner (user_id)
-    `)
-    .eq("client.user_id", userId)
-    .order("created_at", {
-      ascending: false,
-    });
+  try {
+    const response =
+      await authenticatedRequest<{
+        projects:
+          Array<
+            ProjectRow & {
+              company:
+                | {
+                    name: string;
+                  }
+                | null;
+            }
+          >;
+      }>("/projects/client");
 
-  if (error) {
+    return {
+      projects:
+        response.projects.map(
+          (project) => ({
+            ...normalizeProject(
+              project
+            ),
+            company:
+              project.company ?? null
+          })
+        ),
+      error: null
+    };
+  } catch (error) {
     return {
       projects: [],
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  const parsedProjects = (data ?? []).map((project) => {
-    const companyValue = Array.isArray(project.company)
-      ? project.company[0]
-      : project.company;
-
-    return {
-      ...project,
-      company: companyValue ?? null,
-      // Omitir la relación client que solo se usó como filtro
-      client: undefined,
-    };
-  });
-
-  return {
-    projects: parsedProjects as ClientProjectSummary[],
-    error: null,
-  };
 }

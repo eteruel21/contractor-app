@@ -1,112 +1,62 @@
-import { supabase } from "@/services/supabase";
+import {
+  authenticatedRequest
+} from "@/services/api";
+import {
+  createPollingSubscription
+} from "@/services/polling-service";
 
-function normalizeFormulaCode(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+function errorMessage(
+  error: unknown
+): string {
+  return error instanceof Error
+    ? error.message
+    : "No fue posible completar la solicitud.";
 }
 
 export async function getFormulaParameterMap(
   input: {
     companyId: string;
     formulaCode: string;
-  },
+  }
 ): Promise<{
   parameters: Record<string, number>;
   error: string | null;
 }> {
-  const { data: formula, error } = await supabase
-    .from("calculation_formulas")
-    .select("id")
-    .eq("company_id", input.companyId)
-    .eq(
-      "code",
-      normalizeFormulaCode(input.formulaCode),
-    )
-    .eq("active", true)
-    .maybeSingle();
+  try {
+    const query =
+      new URLSearchParams({
+        companyId: input.companyId,
+        formulaCode:
+          input.formulaCode
+      }).toString();
 
-  if (error) {
+    const response =
+      await authenticatedRequest<{
+        parameters:
+          Record<string, number>;
+      }>(
+        `/formulas/runtime?${query}`
+      );
+
+    return {
+      parameters:
+        response.parameters,
+      error: null
+    };
+  } catch (error) {
     return {
       parameters: {},
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  if (!formula) {
-    return {
-      parameters: {},
-      error:
-        "La configuración de cálculo no existe o está inactiva.",
-    };
-  }
-
-  const {
-    data: rows,
-    error: parametersError,
-  } = await supabase
-    .from("calculation_formula_parameters")
-    .select("parameter_key, numeric_value")
-    .eq("company_id", input.companyId)
-    .eq("formula_id", formula.id)
-    .eq("active", true);
-
-  if (parametersError) {
-    return {
-      parameters: {},
-      error: parametersError.message,
-    };
-  }
-
-  const parameters: Record<string, number> = {};
-
-  for (const row of rows ?? []) {
-    const numericValue = Number(row.numeric_value);
-
-    if (Number.isFinite(numericValue)) {
-      parameters[row.parameter_key] =
-        numericValue;
-    }
-  }
-
-  return {
-    parameters,
-    error: null,
-  };
 }
 
 export function subscribeToAdminFormulas(
-  companyId: string,
-  onChange: () => void,
+  _companyId: string,
+  onChange: () => void
 ): () => void {
-  const channel = supabase
-    .channel(`formula-runtime:${companyId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "calculation_formulas",
-        filter: `company_id=eq.${companyId}`,
-      },
-      onChange,
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table:
-          "calculation_formula_parameters",
-        filter: `company_id=eq.${companyId}`,
-      },
-      onChange,
-    )
-    .subscribe();
-
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return createPollingSubscription(
+    onChange,
+    15000
+  );
 }

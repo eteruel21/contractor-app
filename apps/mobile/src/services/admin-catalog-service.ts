@@ -1,343 +1,342 @@
-import { supabase } from "@/services/supabase";
+import {
+  authenticatedRequest
+} from "@/services/api";
+import {
+  createPollingSubscription
+} from "@/services/polling-service";
 import type {
   CatalogCategory,
   CatalogItem,
   CatalogItemType,
   CatalogItemWithDetails,
-  Unit,
+  Unit
 } from "@/types/catalog";
 
-function normalizeCatalogItem(
-  row: Record<string, unknown>,
-): CatalogItemWithDetails {
-  const unitValue = Array.isArray(row.unit)
-    ? row.unit[0]
-    : row.unit;
-
-  const categoryValue = Array.isArray(row.category)
-    ? row.category[0]
-    : row.category;
-
-  return {
-    ...(row as unknown as CatalogItem),
-    unit: (unitValue ?? null) as Unit | null,
+type CatalogItemRow =
+  Omit<
+    CatalogItem,
+    | "unit_cost"
+    | "sale_price"
+    | "waste_percentage"
+  > & {
+    unit_cost: number | string;
+    sale_price: number | string;
+    waste_percentage:
+      | number
+      | string;
+    unit: Unit | null;
     category:
-      (categoryValue ?? null) as CatalogCategory | null,
+      CatalogCategory | null;
+  };
+
+function normalizeCatalogItem(
+  row: CatalogItemRow
+): CatalogItemWithDetails {
+  return {
+    ...row,
+    unit_cost:
+      Number(row.unit_cost ?? 0),
+    sale_price:
+      Number(row.sale_price ?? 0),
+    waste_percentage:
+      Number(
+        row.waste_percentage ?? 0
+      ),
+    unit: row.unit ?? null,
+    category: row.category ?? null
   };
 }
 
+function errorMessage(
+  error: unknown
+): string {
+  return error instanceof Error
+    ? error.message
+    : "No fue posible completar la solicitud.";
+}
+
 export async function listAdminCatalogItems(
-  companyId: string,
+  companyId: string
 ): Promise<{
   items: CatalogItemWithDetails[];
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("catalog_items")
-    .select(
-      `
-      *,
-      unit:units (*),
-      category:catalog_categories (*)
-    `,
-    )
-    .eq("company_id", companyId)
-    .order("active", { ascending: false })
-    .order("name", { ascending: true });
+  try {
+    const response =
+      await authenticatedRequest<{
+        items: CatalogItemRow[];
+      }>(
+        `/admin/catalog/items?companyId=${encodeURIComponent(companyId)}`
+      );
 
-  if (error) {
+    return {
+      items:
+        response.items.map(
+          normalizeCatalogItem
+        ),
+      error: null
+    };
+  } catch (error) {
     return {
       items: [],
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  return {
-    items: (data ?? []).map((row) =>
-      normalizeCatalogItem(
-        row as unknown as Record<string, unknown>,
-      ),
-    ),
-    error: null,
-  };
 }
 
-export async function getAdminCatalogItem(input: {
-  companyId: string;
-  itemId: string;
-}): Promise<{
+export async function getAdminCatalogItem(
+  input: {
+    companyId: string;
+    itemId: string;
+  }
+): Promise<{
   item: CatalogItemWithDetails | null;
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("catalog_items")
-    .select(
-      `
-      *,
-      unit:units (*),
-      category:catalog_categories (*)
-    `,
-    )
-    .eq("company_id", input.companyId)
-    .eq("id", input.itemId)
-    .maybeSingle();
+  try {
+    const response =
+      await authenticatedRequest<{
+        item: CatalogItemRow | null;
+      }>(
+        `/admin/catalog/items/${input.itemId}?companyId=${encodeURIComponent(input.companyId)}`
+      );
 
-  if (error) {
+    return {
+      item: response.item
+        ? normalizeCatalogItem(
+            response.item
+          )
+        : null,
+      error: null
+    };
+  } catch (error) {
     return {
       item: null,
-      error: error.message,
+      error: errorMessage(error)
     };
   }
-
-  return {
-    item: data
-      ? normalizeCatalogItem(
-          data as unknown as Record<string, unknown>,
-        )
-      : null,
-    error: null,
-  };
 }
 
-export async function updateAdminCatalogItem(input: {
-  companyId: string;
-  itemId: string;
-  itemType: CatalogItemType;
-  categoryId?: string | null;
-  sku?: string;
-  name: string;
-  description?: string;
-  unitId: string;
-  unitCost: number;
-  salePrice: number;
-  wastePercentage: number;
-}): Promise<{
+export async function updateAdminCatalogItem(
+  input: {
+    companyId: string;
+    itemId: string;
+    itemType: CatalogItemType;
+    categoryId?: string | null;
+    sku?: string;
+    name: string;
+    description?: string;
+    unitId: string;
+    unitCost: number;
+    salePrice: number;
+    wastePercentage: number;
+  }
+): Promise<{
   item: CatalogItem | null;
   error: string | null;
 }> {
-  const name = input.name.trim();
+  try {
+    const response =
+      await authenticatedRequest<{
+        item: CatalogItem;
+      }>(
+        `/admin/catalog/items/${input.itemId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            companyId:
+              input.companyId,
+            itemType:
+              input.itemType,
+            categoryId:
+              input.categoryId ?? null,
+            sku:
+              input.sku?.trim() || "",
+            name:
+              input.name.trim(),
+            description:
+              input.description?.trim() ||
+              "",
+            unitId:
+              input.unitId,
+            unitCost:
+              Math.max(
+                input.unitCost,
+                0
+              ),
+            salePrice:
+              Math.max(
+                input.salePrice,
+                0
+              ),
+            wastePercentage:
+              Math.min(
+                Math.max(
+                  input.wastePercentage,
+                  0
+                ),
+                100
+              )
+          })
+        }
+      );
 
-  if (name.length < 2) {
+    return {
+      item: response.item,
+      error: null
+    };
+  } catch (error) {
     return {
       item: null,
-      error: "Introduce un nombre válido.",
+      error: errorMessage(error)
     };
   }
-
-  if (!input.unitId) {
-    return {
-      item: null,
-      error: "Selecciona una unidad.",
-    };
-  }
-
-  const unitCost = Math.max(input.unitCost, 0);
-  const salePrice = Math.max(input.salePrice, 0);
-  const wastePercentage = Math.min(
-    Math.max(input.wastePercentage, 0),
-    100,
-  );
-
-  const { data, error } = await supabase
-    .from("catalog_items")
-    .update({
-      item_type: input.itemType,
-      category_id: input.categoryId ?? null,
-      sku: input.sku?.trim() || null,
-      name,
-      description: input.description?.trim() || null,
-      unit_id: input.unitId,
-      unit_cost: unitCost,
-      sale_price: salePrice,
-      waste_percentage: wastePercentage,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.itemId)
-    .select("*")
-    .single();
-
-  if (error) {
-    return {
-      item: null,
-      error: error.message,
-    };
-  }
-
-  return {
-    item: data,
-    error: null,
-  };
 }
 
-export async function setAdminCatalogItemActive(input: {
-  companyId: string;
-  itemId: string;
-  active: boolean;
-}): Promise<{
+export async function setAdminCatalogItemActive(
+  input: {
+    companyId: string;
+    itemId: string;
+    active: boolean;
+  }
+): Promise<{
   error: string | null;
 }> {
-  const { error } = await supabase
-    .from("catalog_items")
-    .update({
-      active: input.active,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.itemId);
+  try {
+    await authenticatedRequest(
+      `/admin/catalog/items/${input.itemId}/active`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          companyId:
+            input.companyId,
+          active:
+            input.active
+        })
+      }
+    );
 
-  return {
-    error: error?.message ?? null,
-  };
+    return {
+      error: null
+    };
+  } catch (error) {
+    return {
+      error: errorMessage(error)
+    };
+  }
 }
 
 export async function listAdminCatalogCategories(
-  companyId: string,
+  companyId: string
 ): Promise<{
   categories: CatalogCategory[];
   error: string | null;
 }> {
-  const { data, error } = await supabase
-    .from("catalog_categories")
-    .select("*")
-    .eq("company_id", companyId)
-    .order("active", { ascending: false })
-    .order("name", { ascending: true });
+  try {
+    const response =
+      await authenticatedRequest<{
+        categories:
+          CatalogCategory[];
+      }>(
+        `/admin/catalog/categories?companyId=${encodeURIComponent(companyId)}`
+      );
 
-  return {
-    categories: error ? [] : data,
-    error: error?.message ?? null,
-  };
+    return {
+      categories:
+        response.categories,
+      error: null
+    };
+  } catch (error) {
+    return {
+      categories: [],
+      error: errorMessage(error)
+    };
+  }
 }
 
-export async function updateAdminCatalogCategory(input: {
-  companyId: string;
-  categoryId: string;
-  name: string;
-  description?: string;
-}): Promise<{
+export async function updateAdminCatalogCategory(
+  input: {
+    companyId: string;
+    categoryId: string;
+    name: string;
+    description?: string;
+  }
+): Promise<{
   category: CatalogCategory | null;
   error: string | null;
 }> {
-  const name = input.name.trim();
+  try {
+    const response =
+      await authenticatedRequest<{
+        category: CatalogCategory;
+      }>(
+        `/admin/catalog/categories/${input.categoryId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            companyId:
+              input.companyId,
+            name:
+              input.name.trim(),
+            description:
+              input.description?.trim() ||
+              ""
+          })
+        }
+      );
 
-  if (name.length < 2) {
+    return {
+      category:
+        response.category,
+      error: null
+    };
+  } catch (error) {
     return {
       category: null,
-      error: "Introduce un nombre de categoría válido.",
+      error: errorMessage(error)
     };
   }
-
-  const { data, error } = await supabase
-    .from("catalog_categories")
-    .update({
-      name,
-      description: input.description?.trim() || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.categoryId)
-    .select("*")
-    .single();
-
-  if (error) {
-    return {
-      category: null,
-      error: error.message,
-    };
-  }
-
-  return {
-    category: data,
-    error: null,
-  };
 }
 
-export async function setAdminCatalogCategoryActive(input: {
-  companyId: string;
-  categoryId: string;
-  active: boolean;
-}): Promise<{
+export async function setAdminCatalogCategoryActive(
+  input: {
+    companyId: string;
+    categoryId: string;
+    active: boolean;
+  }
+): Promise<{
   error: string | null;
 }> {
-  if (!input.active) {
-    const { count, error: countError } = await supabase
-      .from("catalog_items")
-      .select("id", {
-        count: "exact",
-        head: true,
-      })
-      .eq("company_id", input.companyId)
-      .eq("category_id", input.categoryId)
-      .eq("active", true);
+  try {
+    await authenticatedRequest(
+      `/admin/catalog/categories/${input.categoryId}/active`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          companyId:
+            input.companyId,
+          active:
+            input.active
+        })
+      }
+    );
 
-    if (countError) {
-      return {
-        error: countError.message,
-      };
-    }
-
-    if ((count ?? 0) > 0) {
-      return {
-        error:
-          "Esta categoría contiene elementos activos. Muévelos o desactívalos antes.",
-      };
-    }
+    return {
+      error: null
+    };
+  } catch (error) {
+    return {
+      error: errorMessage(error)
+    };
   }
-
-  const { error } = await supabase
-    .from("catalog_categories")
-    .update({
-      active: input.active,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("company_id", input.companyId)
-    .eq("id", input.categoryId);
-
-  return {
-    error: error?.message ?? null,
-  };
 }
 
 export function subscribeToAdminCatalog(
-  companyId: string,
-  onChange: () => void,
+  _companyId: string,
+  onChange: () => void
 ): () => void {
-  const channel = supabase
-    .channel(`admin-catalog:${companyId}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "catalog_items",
-        filter: `company_id=eq.${companyId}`,
-      },
-      onChange,
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "catalog_categories",
-        filter: `company_id=eq.${companyId}`,
-      },
-      onChange,
-    )
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "units",
-        filter: `company_id=eq.${companyId}`,
-      },
-      onChange,
-    )
-    .subscribe();
-
-  return () => {
-    void supabase.removeChannel(channel);
-  };
+  return createPollingSubscription(
+    onChange,
+    15000
+  );
 }
