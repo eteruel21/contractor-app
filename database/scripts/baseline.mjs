@@ -11,6 +11,7 @@ const { Client } = pg;
 
 const expectedDatabase = requireEnv("BASELINE_CONFIRM_DATABASE");
 const client = new Client({ connectionString: requireEnv("MIGRATOR_DATABASE_URL") });
+const repairChecksums = process.argv.includes("--repair-checksums");
 
 const requiredRelations = [
   "app_auth.users",
@@ -74,6 +75,16 @@ const apiExecutableFunctions = [
   "admin_update_platform_catalog_pricing",
   "admin_adjust_platform_catalog_prices",
 ];
+
+function sameFilenames(historyRows, files) {
+  const historyNames = historyRows.map((row) => row.filename).sort();
+  const fileNames = files.map((file) => file.filename).sort();
+
+  return (
+    historyNames.length === fileNames.length &&
+    historyNames.every((filename, index) => filename === fileNames[index])
+  );
+}
 
 async function verifyExistingSchema() {
   const failures = [];
@@ -246,16 +257,34 @@ try {
   await ensureHistoryTables(client);
 
   await withAdvisoryLock(client, "contractor-app:migrations", async () => {
-    const historyResult = await client.query(
-      "SELECT count(*)::integer AS count FROM app_migrations.schema_migrations",
+    const migrationHistoryResult = await client.query(
+      "SELECT filename FROM app_migrations.schema_migrations ORDER BY filename",
     );
+    const seedHistoryResult = await client.query(
+      "SELECT filename FROM app_migrations.seed_history ORDER BY filename",
+    );
+    const files = await readSqlFiles("migrations");
+    const seedFiles = await readSqlFiles("seeds");
 
-    if (historyResult.rows[0]?.count !== 0) {
+    if (
+      !repairChecksums &&
+      (migrationHistoryResult.rowCount !== 0 || seedHistoryResult.rowCount !== 0)
+    ) {
       throw new Error("La base ya tiene historial de migraciones; no necesita baseline.");
     }
 
+    if (
+      repairChecksums &&
+      (!sameFilenames(migrationHistoryResult.rows, files) ||
+        !sameFilenames(seedHistoryResult.rows, seedFiles))
+    ) {
+      throw new Error(
+        "El historial no contiene exactamente las migraciones y seeds actuales; " +
+          "no se reparó ningún checksum.",
+      );
+    }
+
     const failures = await verifyExistingSchema();
-    const seedFiles = await readSqlFiles("seeds");
     const supportedSeed = "001_import_contraloria_catalog.sql";
 
     if (
@@ -286,33 +315,57 @@ try {
       );
     }
 
-    const files = await readSqlFiles("migrations");
     await client.query("BEGIN");
 
     try {
       await client.query("SET LOCAL ROLE contractor_owner");
 
       for (const file of files) {
-        await client.query(
-          `INSERT INTO app_migrations.schema_migrations (filename, checksum)
-           VALUES ($1, $2)`,
-          [file.filename, file.checksum],
-        );
+        if (repairChecksums) {
+          await client.query(
+            `UPDATE app_migrations.schema_migrations
+             SET checksum = $2
+             WHERE filename = $1`,
+            [file.filename, file.checksum],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO app_migrations.schema_migrations (filename, checksum)
+             VALUES ($1, $2)`,
+            [file.filename, file.checksum],
+          );
+        }
       }
 
       for (const seed of seedFiles) {
-        await client.query(
-          `INSERT INTO app_migrations.seed_history (filename, checksum)
-           VALUES ($1, $2)`,
-          [seed.filename, seed.checksum],
-        );
+        if (repairChecksums) {
+          await client.query(
+            `UPDATE app_migrations.seed_history
+             SET checksum = $2
+             WHERE filename = $1`,
+            [seed.filename, seed.checksum],
+          );
+        } else {
+          await client.query(
+            `INSERT INTO app_migrations.seed_history (filename, checksum)
+             VALUES ($1, $2)`,
+            [seed.filename, seed.checksum],
+          );
+        }
       }
 
       await client.query("COMMIT");
-      console.log(
-        `Baseline registrado para ${files.length} migraciones y ` +
-          `${seedFiles.length} seed en ${actualDatabase}.`,
-      );
+      if (repairChecksums) {
+        console.log(
+          `Checksums normalizados para ${files.length} migraciones y ` +
+            `${seedFiles.length} seed en ${actualDatabase}.`,
+        );
+      } else {
+        console.log(
+          `Baseline registrado para ${files.length} migraciones y ` +
+            `${seedFiles.length} seed en ${actualDatabase}.`,
+        );
+      }
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;

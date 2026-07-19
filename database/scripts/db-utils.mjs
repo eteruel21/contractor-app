@@ -31,7 +31,10 @@ export function quoteLiteral(value) {
 }
 
 export function checksum(contents) {
-  return createHash("sha256").update(contents, "utf8").digest("hex");
+  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
+  return createHash("sha256")
+    .update(normalizedContents, "utf8")
+    .digest("hex");
 }
 
 export async function readSqlFiles(directoryName) {

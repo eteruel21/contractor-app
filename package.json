@@ -7,6 +7,7 @@
   "scripts": {
     "db:bootstrap": "node --env-file-if-exists=database/.env database/scripts/bootstrap.mjs",
     "db:baseline": "node --env-file-if-exists=database/.env database/scripts/baseline.mjs",
+    "db:repair-checksums": "node --env-file-if-exists=database/.env database/scripts/baseline.mjs --repair-checksums",
     "db:migrate": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs",
     "db:status": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs --status",
     "db:seed": "node --env-file-if-exists=database/.env database/scripts/seed.mjs",

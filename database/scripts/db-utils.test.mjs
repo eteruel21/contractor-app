@@ -16,6 +16,13 @@ test("calcula checksums SHA-256 estables", () => {
   );
 });
 
+test("normaliza saltos de línea antes de calcular checksums", () => {
+  const expected = checksum("BEGIN;\nSELECT 1;\nCOMMIT;\n");
+
+  assert.equal(checksum("BEGIN;\r\nSELECT 1;\r\nCOMMIT;\r\n"), expected);
+  assert.equal(checksum("BEGIN;\rSELECT 1;\rCOMMIT;\r"), expected);
+});
+
 test("retira únicamente la transacción exterior", () => {
   assert.equal(
     stripOuterTransaction("BEGIN;\nSELECT 1;\nCOMMIT;\n", "001_test.sql"),
