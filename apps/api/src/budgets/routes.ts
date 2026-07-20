@@ -6,7 +6,9 @@ import type {
 import { z } from "zod";
 
 import {
-  authenticateRequest
+  authenticateRequest,
+  requireActiveUser,
+  requireCompanyRole
 } from "../auth/authenticate.js";
 import {
   withUserTransaction
@@ -136,7 +138,7 @@ export async function registerBudgetRoutes(
   app.get(
     "/budgets/client",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -205,7 +207,7 @@ export async function registerBudgetRoutes(
   app.get(
     "/budgets",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
     },
     async (request, reply) => {
       const userId =
@@ -272,7 +274,7 @@ export async function registerBudgetRoutes(
   app.post(
     "/budgets/from-project",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
     },
     async (request, reply) => {
       const userId =
@@ -358,7 +360,7 @@ export async function registerBudgetRoutes(
   app.get(
     "/budgets/:budgetId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
     },
     async (request, reply) => {
       const userId =
@@ -529,7 +531,7 @@ export async function registerBudgetRoutes(
   app.post(
     "/budgets/:budgetId/items",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
     },
     async (request, reply) => {
       const userId =
@@ -643,7 +645,7 @@ export async function registerBudgetRoutes(
   app.delete(
     "/budgets/:budgetId/items/:itemId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
     },
     async (request, reply) => {
       const userId =

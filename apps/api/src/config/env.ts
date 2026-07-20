@@ -7,6 +7,8 @@ const environmentSchema = z.object({
     .enum(["development", "test", "production"])
     .default("development"),
 
+  CAPTCHA_SECRET: z.string().optional(),
+
   API_HOST: z.string().min(1).default("127.0.0.1"),
 
   API_PORT: z.coerce

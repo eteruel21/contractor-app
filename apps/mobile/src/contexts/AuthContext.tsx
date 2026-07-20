@@ -44,7 +44,6 @@ type SignUpInput = {
   corregimiento: string;
   termsAccepted: boolean;
   notificationsOptIn: boolean;
-  registrationIp: string;
   registrationDevice: string;
 };
 
@@ -312,7 +311,7 @@ export function AuthProvider({
         return {
           error: null,
           requiresEmailConfirmation:
-            false
+            !!nextSession.requiresEmailConfirmation
         };
       } catch (error) {
         return {

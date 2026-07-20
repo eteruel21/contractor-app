@@ -6,7 +6,9 @@ import type {
 import { z } from "zod";
 
 import {
-  authenticateRequest
+  authenticateRequest,
+  requireActiveUser,
+  requireCompanyRole
 } from "../auth/authenticate.js";
 import {
   withUserTransaction
@@ -107,7 +109,7 @@ export async function registerInvoiceRoutes(
   app.get(
     "/invoices",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -158,7 +160,7 @@ export async function registerInvoiceRoutes(
   app.get(
     "/invoices/by-budget",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -214,7 +216,7 @@ export async function registerInvoiceRoutes(
   app.get(
     "/invoices/:invoiceId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -284,7 +286,7 @@ export async function registerInvoiceRoutes(
   app.post(
     "/invoices",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -375,7 +377,7 @@ export async function registerInvoiceRoutes(
   app.patch(
     "/invoices/:invoiceId/status",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =

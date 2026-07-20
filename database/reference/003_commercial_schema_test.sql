@@ -461,14 +461,14 @@ declare
   previous_item public.catalog_items%rowtype;
 begin
   if not (select private.is_super_admin()) then
-    raise exception 'Solo un superadministrador puede guardar el catÃ¡logo.' using errcode = '42501';
+    raise exception 'Solo un superadministrador puede guardar el catálogo.' using errcode = '42501';
   end if;
   if nullif(btrim(requested_name), '') is null or requested_unit_id is null then
     raise exception 'El nombre y la unidad son obligatorios.' using errcode = '22023';
   end if;
   if requested_unit_cost < 0 or requested_sale_price < 0
     or requested_waste_percentage not between 0 and 100 then
-    raise exception 'Los precios o el desperdicio no son vÃ¡lidos.' using errcode = '22023';
+    raise exception 'Los precios o el desperdicio no son válidos.' using errcode = '22023';
   end if;
 
   if requested_item_id is null then
@@ -487,7 +487,7 @@ begin
   select * into previous_item from public.catalog_items
   where id = requested_item_id and company_id = requested_company_id for update;
   if not found then
-    raise exception 'El elemento del catÃ¡logo no existe.' using errcode = 'P0002';
+    raise exception 'El elemento del catálogo no existe.' using errcode = 'P0002';
   end if;
 
   update public.catalog_items set
@@ -508,7 +508,7 @@ begin
     ) values (
       requested_company_id, requested_item_id, previous_item.unit_cost,
       previous_item.sale_price, requested_unit_cost, requested_sale_price,
-      'panel_super_admin', 'EdiciÃ³n atÃ³mica desde el panel central',
+      'panel_super_admin', 'Edición atómica desde el panel central',
       (select app.current_user_id()), now()
     );
   end if;
@@ -528,10 +528,10 @@ CREATE FUNCTION "public"."admin_save_formula"("requested_formula_id" "uuid", "re
 declare saved_id uuid;
 begin
   if not (select private.is_super_admin()) then
-    raise exception 'Solo un superadministrador puede guardar fÃ³rmulas.' using errcode = '42501';
+    raise exception 'Solo un superadministrador puede guardar fórmulas.' using errcode = '42501';
   end if;
   if nullif(btrim(requested_code), '') is null or nullif(btrim(requested_name), '') is null then
-    raise exception 'El cÃ³digo y el nombre son obligatorios.' using errcode = '22023';
+    raise exception 'El código y el nombre son obligatorios.' using errcode = '22023';
   end if;
 
   if requested_formula_id is null then
@@ -545,7 +545,7 @@ begin
       active = requested_active, updated_at = now()
     where id = requested_formula_id and company_id = requested_company_id
     returning id into saved_id;
-    if saved_id is null then raise exception 'La fÃ³rmula no existe.' using errcode = 'P0002'; end if;
+    if saved_id is null then raise exception 'La fórmula no existe.' using errcode = 'P0002'; end if;
   end if;
 
   delete from public.calculation_formula_parameters where formula_id = saved_id;

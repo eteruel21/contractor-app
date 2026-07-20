@@ -6,7 +6,9 @@ import type {
 import { z } from "zod";
 
 import {
-  authenticateRequest
+  authenticateRequest,
+  requireActiveUser,
+  requireCompanyRole
 } from "../auth/authenticate.js";
 import {
   withUserTransaction
@@ -264,7 +266,7 @@ export async function registerClientRoutes(
   app.get(
     "/clients/contractor-companies",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -312,7 +314,7 @@ export async function registerClientRoutes(
   app.get(
     "/clients",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales", "supervisor", "member"])]
     },
     async (request, reply) => {
       const userId =
@@ -359,7 +361,7 @@ export async function registerClientRoutes(
   app.post(
     "/clients",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -514,7 +516,7 @@ export async function registerClientRoutes(
   app.get(
     "/clients/:clientId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales", "supervisor", "member"])]
     },
     async (request, reply) => {
       const userId =
@@ -579,7 +581,7 @@ export async function registerClientRoutes(
   app.patch(
     "/clients/:clientId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -692,7 +694,7 @@ export async function registerClientRoutes(
   app.patch(
     "/clients/:clientId/deactivate",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -749,7 +751,7 @@ export async function registerClientRoutes(
   app.post(
     "/clients/:clientId/addresses",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -853,7 +855,7 @@ export async function registerClientRoutes(
   app.patch(
     "/clients/:clientId/addresses/:addressId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -956,7 +958,7 @@ export async function registerClientRoutes(
   app.post(
     "/clients/:clientId/addresses/:addressId/primary",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
     },
     async (request, reply) => {
       const userId =
@@ -1013,7 +1015,7 @@ export async function registerClientRoutes(
   app.delete(
     "/clients/:clientId/addresses/:addressId",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
