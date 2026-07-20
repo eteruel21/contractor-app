@@ -71,17 +71,19 @@ export type StoredSession = {
   refreshToken: string;
   expiresAt: number;
   sessionId: string;
-  user: AppProfile;
+  user: AppProfile | null;
   requiresApproval: boolean;
+  requiresEmailConfirmation?: boolean;
 };
 
 type AuthResponse = {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  sessionId: string;
-  user: AppProfile;
-  requiresApproval: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  sessionId?: string;
+  user?: AppProfile | null;
+  requiresApproval?: boolean;
+  requiresEmailConfirmation?: boolean;
 };
 
 type ApiErrorBody = {
@@ -149,15 +151,13 @@ function toStoredSession(
   response: AuthResponse
 ): StoredSession {
   return {
-    accessToken: response.accessToken,
-    refreshToken: response.refreshToken,
-    expiresAt:
-      Date.now() +
-      response.expiresIn * 1000,
-    sessionId: response.sessionId,
-    user: response.user,
-    requiresApproval:
-      response.requiresApproval
+    accessToken: response.accessToken || "",
+    refreshToken: response.refreshToken || "",
+    expiresAt: response.expiresIn ? Date.now() + response.expiresIn * 1000 : 0,
+    sessionId: response.sessionId || "",
+    user: response.user || null,
+    requiresApproval: !!response.requiresApproval,
+    requiresEmailConfirmation: response.requiresEmailConfirmation
   };
 }
 
@@ -244,7 +244,9 @@ export async function register(
     );
 
   const session = toStoredSession(response);
-  await storeSession(session);
+  if (!session.requiresEmailConfirmation) {
+    await storeSession(session);
+  }
 
   return session;
 }

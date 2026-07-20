@@ -1,0 +1,394 @@
+P0 — Organización
+ T-001 — Congelar nuevas funcionalidades
+ 
+No desarrollar agenda, fotos, pagos ni calculadoras nuevas durante la estabilización.
+ T-002 — Crear hitos en GitHub
+
+Estabilización PostgreSQL.
+Seguridad.
+Staging.
+Facturación.
+Producción v1.
+ T-003 — Crear una incidencia por cada tarea
+ 
+Incluir descripción, criterios de aceptación y PR relacionado.
+ T-004 — Proteger la rama main
+
+Exigir PR.
+Exigir CI exitoso.
+Impedir push directo.
+Impedir fusionar con conversaciones pendientes.
+P0 — Base de datos
+ T-005 — Crear script de bootstrap de PostgreSQL
+
+Crear base de datos.
+Crear roles owner, migrator y API.
+Aplicar permisos mínimos.
+ T-006 — Endurecer el rol contractor_api
+
+NOSUPERUSER.
+NOBYPASSRLS.
+No propietario de tablas.
+Sin permisos para crear objetos.
+ T-007 — Crear tabla schema_migrations
+
+Guardar nombre, fecha y checksum de cada migración.
+ T-008 — Implementar ejecutor de migraciones
+
+Crear comando npm run db:migrate.
+Ejecutar migraciones en orden.
+Detenerse ante errores.
+No repetir migraciones aplicadas.
+ T-009 — Crear comando para seeds
+
+Crear npm run db:seed.
+Separar catálogo oficial de datos demostrativos.
+Evitar duplicados.
+ T-010 — Revisar numeración de migraciones
+
+Resolver la ausencia de 008.
+Documentar el orden definitivo.
+ T-011 — Corregir codificación de archivos SQL
+
+Eliminar textos como catÃ¡logo.
+Normalizar archivos a UTF-8.
+ T-012 — Limpiar archivos temporales de base de datos
+
+Eliminar logs y resultados de restauraciones del código versionado.
+Actualizar .gitignore.
+ T-013 — Instalar trigger de creación de perfiles
+
+Crear trigger sobre app_auth.users.
+Ejecutar handle_new_user() después de insertar.
+ T-014 — Probar registro desde una base vacía
+
+Crear usuario.
+Confirmar creación automática del perfil.
+Verificar estado pendiente.
+ T-015 — Crear prueba de instalación limpia
+
+{
+Bootstrap.
+Migraciones.
+Seeds.
+Inicio de API.
+Registro de usuario.
+Creación de empresa.
+P0 — Autenticación
+ T-016 — Definir estados oficiales del usuario
+
+Correo pendiente.
+Pendiente de aprobación.
+Activo.
+Suspendido.
+Desactivado.
+ T-017 — Dejar de confirmar correos automáticamente
+
+No establecer email_confirmed_at durante el registro.
+ T-018 — Implementar verificación real de correo
+
+Generar token de un solo uso.
+Añadir expiración.
+Crear endpoint de confirmación.
+ T-019 — Eliminar OTP fijo
+
+Retirar el código 123456.
+No mostrar mensajes falsos de envío de SMS.
+ T-020 — Implementar CAPTCHA real
+
+Validar el token en la API.
+Aplicar límites por IP.
+ T-021 — Eliminar consulta innecesaria a ipify
+
+Usar la IP detectada por la API.
+No enviar la IP desde el cliente.
+ T-022 — Implementar recuperación de contraseña
+
+Solicitud.
+Token con expiración.
+Cambio de contraseña.
+Revocación de sesiones.
+ T-023 — Implementar reenvío de verificación
+
+Limitar frecuencia.
+Invalidar tokens anteriores.
+ T-024 — Implementar administración de sesiones
+}
+
+Listar sesiones.
+Cerrar sesión seleccionada.
+Cerrar todas las sesiones.
+P0 — Autorización y RLS
+ T-025 — Crear guard requireActiveUser
+Comprobar perfil.
+Comprobar confirmación de correo.
+Comprobar aprobación.
+Comprobar suspensión.
+ T-026 — Aplicar el guard a rutas comerciales
+Empresas.
+Clientes.
+Catálogo.
+Proyectos.
+Presupuestos.
+Facturas.
+Operaciones.
+ T-027 — Corregir create_company
+Rechazar usuarios pendientes.
+Comprobar usuario activo desde PostgreSQL.
+ T-028 — Auditar funciones SECURITY DEFINER
+Determinar cuáles realmente lo necesitan.
+Cambiar las demás a SECURITY INVOKER.
+ T-029 — Proteger funciones privilegiadas
+Fijar search_path.
+Revocar ejecución de PUBLIC.
+Validar usuario, empresa y rol.
+ T-030 — Añadir política restrictiva a facturas
+Exigir usuario aprobado.
+Exigir membresía activa.
+ T-031 — Diseñar matriz de permisos
+Owner.
+Admin.
+Estimator.
+Sales.
+Supervisor.
+Member.
+ T-032 — Aplicar permisos en la API
+Crear helpers como requireCompanyRole.
+Proteger operaciones sensibles.
+ T-033 — Aplicar permisos en PostgreSQL
+Reproducir las mismas reglas mediante RLS y funciones.
+ T-034 — Probar aislamiento entre compañías
+Usuario A no puede consultar ni modificar datos de B.
+ T-035 — Probar usuarios pendientes y suspendidos
+No deben crear empresas ni operar con datos comerciales.
+ T-036 — Probar permisos por rol
+Cada rol debe poder ejecutar sólo sus acciones autorizadas.
+P0 — Seguridad de sesiones
+ T-037 — Migrar tokens móviles a SecureStore
+Refresh token en almacenamiento seguro.
+Access token en memoria.
+ T-038 — Retirar refresh token de localStorage
+Evitar persistirlo mediante JavaScript del navegador.
+ T-039 — Implementar cookie segura para administración
+HttpOnly.
+Secure.
+SameSite.
+Expiración y rotación.
+ T-040 — Revisar revocación de sesiones
+Cerrar sesión debe invalidar el refresh token en PostgreSQL.
+ T-041 — Proteger información de logs
+No registrar contraseñas, tokens ni documentos personales.
+ T-042 — Limitar endpoints sensibles
+Login.
+Registro.
+Refresh.
+Recuperación.
+Verificación.
+Generación de PDF.
+ T-043 — Reducir información de /health/database
+No exponer usuario, base o detalles internos en producción.
+ T-044 — Añadir cabeceras de seguridad web
+CSP.
+HSTS.
+X-Content-Type-Options.
+Referrer Policy.
+Permissions Policy.
+P0 — Dependencias y calidad
+ T-045 — Unificar versión de React
+Eliminar React 19.2.3/19.2.7 duplicados.
+ T-046 — Unificar react-native-screens
+Mantener una versión compatible con Expo.
+ T-047 — Actualizar lucide-react
+Utilizar una versión compatible con React 19.
+ T-048 — Conseguir Expo Doctor 20/20
+No cerrar la tarea hasta que pase completamente.
+ T-049 — Revisar vulnerabilidades moderadas
+Evaluar cada dependencia.
+No ejecutar npm audit fix automáticamente.
+ T-050 — Dividir rutas de API excesivamente grandes
+Extraer servicios.
+Extraer repositorios SQL.
+Extraer esquemas de validación.
+ T-051 — Separar lógica de las calculadoras
+Sacar cálculos de los componentes visuales.
+P0 — Pruebas y CI
+ T-052 — Configurar framework de pruebas
+Pruebas unitarias.
+Pruebas de integración.
+ T-053 — Probar autenticación
+Registro.
+Login.
+Refresh.
+Logout.
+Revocación.
+ T-054 — Probar autorización y RLS
+Usuario pendiente.
+Usuario suspendido.
+Acceso entre compañías.
+Permisos por rol.
+ T-055 — Probar migraciones desde cero
+Ejecutarlas automáticamente en CI.
+ T-056 — Probar las diez calculadoras
+Casos normales.
+Valores cero.
+Límites.
+Entradas inválidas.
+ T-057 — Probar totales de presupuestos
+Subtotales.
+Impuestos.
+Descuentos.
+Redondeos.
+ T-058 — Probar numeración de documentos
+Concurrencia.
+Duplicados.
+Reinicios de transacción.
+ T-059 — Ampliar GitHub Actions
+API typecheck y build.
+Admin typecheck y build.
+Mobile typecheck y web build.
+Expo Doctor.
+Pruebas.
+Migraciones.
+ T-060 — Corregir scripts raíz
+npm run typecheck debe incluir API.
+npm run validate debe validar todo el monorepo.
+P0 — Staging y despliegue
+ T-061 — Elegir alojamiento para PostgreSQL
+Debe ser permanente.
+Debe aceptar backups y conexiones seguras.
+ T-062 — Elegir alojamiento para Fastify
+API siempre disponible.
+HTTPS.
+Variables secretas.
+Logs.
+ T-063 — Desplegar PostgreSQL de staging
+ T-064 — Desplegar API de staging
+ T-065 — Configurar variables de la API
+DATABASE_URL.
+Secretos JWT.
+Issuer y audience.
+CORS.
+Correo.
+CAPTCHA.
+ T-066 — Configurar variables de los frontends
+EXPO_PUBLIC_API_URL.
+VITE_API_URL.
+ T-067 — Eliminar configuración antigua de Supabase
+Código.
+Variables.
+Documentación.
+Cloudflare.
+ T-068 — Configurar CORS de staging
+Permitir únicamente los dominios correspondientes.
+ T-069 — Probar desde un teléfono real
+Registro.
+Login.
+Clientes.
+Presupuestos.
+PDF.
+ T-070 — Configurar backups automáticos
+ T-071 — Probar restauración de backup
+ T-072 — Configurar monitoreo y alertas
+Disponibilidad.
+Errores.
+Uso de base de datos.
+Fallos de autenticación.
+P1 — Facturación
+ T-073 — Diseñar snapshot de factura
+Empresa.
+Cliente.
+Partidas.
+Impuestos.
+Totales.
+Moneda.
+Condiciones.
+ T-074 — Crear migración de snapshots
+ T-075 — Generar snapshot al emitir factura
+ T-076 — Generar PDF desde el snapshot
+Nunca desde el presupuesto modificable.
+ T-077 — Definir estados de factura
+Borrador.
+Emitida.
+Parcialmente pagada.
+Pagada.
+Vencida.
+Cancelada.
+ T-078 — Validar transiciones de estado
+ T-079 — Crear tabla de pagos
+ T-080 — Implementar pagos parciales
+ T-081 — Calcular saldo pendiente
+ T-082 — Generar recibos
+ T-083 — Crear historial de factura
+ T-084 — Implementar cancelaciones y notas de crédito
+ T-085 — Corregir navegación de facturas
+Eliminar “Próximamente” cuando el módulo esté listo.
+P1 — Presupuestos y calculadoras
+ T-086 — Crear detalle de presupuesto para clientes
+ T-087 — Implementar aprobación del cliente
+ T-088 — Implementar rechazo con motivo
+ T-089 — Bloquear versión aprobada
+ T-090 — Registrar historial de cambios
+ T-091 — Unificar motor de fórmulas
+ T-092 — Migrar calculadora de concreto al motor común
+ T-093 — Migrar las otras nueve calculadoras
+ T-094 — Implementar guardado de cálculos
+ T-095 — Asociar cálculo con proyecto y cliente
+ T-096 — Convertir resultados en partidas de presupuesto
+ T-097 — Añadir pruebas de regresión para fórmulas
+P2 — Proyectos y agenda
+ T-098 — Diseñar tablas de agenda y actividades
+ T-099 — Crear API de actividades
+ T-100 — Migrar agenda de AsyncStorage a PostgreSQL
+ T-101 — Mantener almacenamiento local únicamente como caché
+ T-102 — Asociar actividades con proyectos
+ T-103 — Implementar tareas de proyecto
+ T-104 — Implementar responsables y fechas límite
+ T-105 — Implementar notificaciones
+ T-106 — Implementar historial de progreso
+ T-107 — Implementar fotos de proyecto
+ T-108 — Implementar almacenamiento privado
+ T-109 — Utilizar URLs firmadas temporales
+P2 — Equipos y clientes
+ T-110 — Crear invitaciones de equipo
+ T-111 — Crear administración de miembros
+ T-112 — Permitir cambio controlado de roles
+ T-113 — Implementar varios contactos por cliente
+ T-114 — Añadir auditoría de acciones administrativas
+ T-115 — Añadir paginación al catálogo
+ T-116 — Añadir búsqueda de catálogo en el servidor
+P2 — Lanzamiento nativo
+ T-117 — Definir nombre y slug definitivos
+ T-118 — Configurar ios.bundleIdentifier
+ T-119 — Configurar android.package
+ T-120 — Crear eas.json
+ T-121 — Configurar perfiles development, preview y production
+ T-122 — Preparar iconos y splash definitivos
+ T-123 — Generar build de prueba Android
+ T-124 — Generar build de prueba iOS
+ T-125 — Probar instalaciones y actualizaciones
+P2 — Documentación y legal
+ T-126 — Actualizar README
+ T-127 — Actualizar documento de arquitectura
+ T-128 — Documentar instalación local
+ T-129 — Documentar migraciones y seeds
+ T-130 — Documentar despliegue
+ T-131 — Reemplazar deplyer.tex
+Crear scripts seguros.
+No hacer push automático a main.
+ T-132 — Crear términos de uso
+ T-133 — Crear política de privacidad
+ T-134 — Implementar eliminación de cuenta
+ T-135 — Implementar exportación de datos
+ T-136 — Definir política de retención de documentos
+Producción
+ T-137 — Ejecutar prueba piloto con empresas controladas
+ T-138 — Corregir problemas encontrados en el piloto
+ T-139 — Ejecutar auditoría final de seguridad
+ T-140 — Verificar restauración de backups
+ T-141 — Ejecutar pruebas end-to-end completas
+ T-142 — Preparar procedimiento de rollback
+ T-143 — Configurar entorno de producción
+ T-144 — Migrar esquema a producción
+ T-145 — Desplegar API y frontends
+ T-146 — Realizar comprobación posterior al despliegue
+ T-147 — Activar monitoreo y alertas

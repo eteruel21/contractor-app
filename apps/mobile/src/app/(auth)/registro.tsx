@@ -87,10 +87,6 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // OTP Verification Modal
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [showProvinceModal, setShowProvinceModal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -155,33 +151,10 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Si todo está correcto, abrimos el modal de verificación de teléfono (OTP)
-    setShowOtpModal(true);
-  }
-
-  async function handleConfirmOtp() {
-    if (otpCode !== "123456") {
-      showAlert("Código incorrecto", "Para fines de demostración e integración, utiliza el código 123456.");
-      return;
-    }
-
     try {
-      setVerifyingOtp(true);
       setSubmitting(true);
-      setShowOtpModal(false);
-
-      // Obtener IP pública y detalles del dispositivo
-      let userIp = "127.0.0.1";
-      try {
-        const res = await fetch("https://api.ipify.org?format=json");
-        const data = await res.json();
-        userIp = data.ip || "127.0.0.1";
-      } catch (e) {
-        // Fallback
-      }
 
       const deviceDetail = `${Platform.OS === "web" ? "Navegador Web" : Platform.OS === "ios" ? "Dispositivo iOS" : "Dispositivo Android"} (${Platform.Version})`;
-
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
       const { error, requiresEmailConfirmation } = await signUp({
@@ -197,14 +170,16 @@ export default function RegisterScreen() {
         corregimiento,
         termsAccepted,
         notificationsOptIn,
-        registrationIp: userIp,
         registrationDevice: deviceDetail,
       });
 
       if (error) {
+        setSubmitting(false);
         showAlert("No fue posible crear la cuenta", translateRegisterError(error.message));
         return;
       }
+
+      setSubmitting(false);
 
       if (requiresEmailConfirmation) {
         showAlert(
@@ -218,14 +193,15 @@ export default function RegisterScreen() {
           ]
         );
       } else {
-        // El usuario inicia sesión de inmediato si no hay confirmación obligatoria por correo
-        showAlert("¡Registro Exitoso!", "Tu cuenta ha sido creada. A continuación completa tu perfil profesional.");
+        if (accountRole === "contractor") {
+          router.replace("/perfil-profesional");
+        } else {
+          router.replace("/(tabs)/agenda");
+        }
       }
     } catch (err: any) {
-      showAlert("Error de Registro", err.message || "Ocurrió un error inesperado.");
-    } finally {
-      setVerifyingOtp(false);
       setSubmitting(false);
+      showAlert("Error de Registro", err.message || "Ocurrió un error inesperado.");
     }
   }
 
@@ -548,47 +524,7 @@ export default function RegisterScreen() {
         </View>
       )}
 
-      {/* OTP Verification Modal */}
-      {showOtpModal && (
-        <View style={styles.otpModalOverlay}>
-          <View style={styles.otpModalContent}>
-            <View style={styles.otpIconCircle}>
-              <Ionicons name="phone-portrait-outline" size={32} color={colors.primary} />
-            </View>
-            
-            <Text style={styles.otpTitle}>Verificación OTP</Text>
-            <Text style={styles.otpSubtitle}>
-              Hemos enviado un código SMS temporal a tu número {phone}. Utiliza el código de prueba: <Text style={{fontWeight:"900"}}>123456</Text>
-            </Text>
 
-            <TextInput
-              value={otpCode}
-              onChangeText={setOtpCode}
-              placeholder="Código de 6 dígitos"
-              placeholderTextColor="#94A3B8"
-              keyboardType="number-pad"
-              maxLength={6}
-              style={styles.otpInput}
-            />
-
-            <View style={styles.otpActions}>
-              <Pressable
-                onPress={() => setShowOtpModal(false)}
-                style={styles.otpCancelButton}
-              >
-                <Text style={styles.otpCancelButtonText}>Cancelar</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleConfirmOtp}
-                style={styles.otpConfirmButton}
-              >
-                <Text style={styles.otpConfirmButtonText}>Confirmar</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 }

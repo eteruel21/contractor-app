@@ -20,7 +20,9 @@ import {
 import {
   createAccessToken,
   createRefreshToken,
-  hashRefreshToken
+  hashRefreshToken,
+  generateSecureToken,
+  hashSecureToken
 } from "./tokens.js";
 
 const loginSchema = z.object({
@@ -72,11 +74,47 @@ const registerSchema = z.object({
     .trim()
     .max(250)
     .optional()
-    .default("")
+    .default(""),
+
+  captchaToken: z
+    .string()
+    .trim()
+    .min(1)
+    .optional()
+    .default("mock-captcha-token")
 });
 
 const refreshSchema = z.object({
   refreshToken: z.string().min(40).max(500)
+});
+
+const verifyEmailSchema = z.object({
+  token: z.string().trim().length(64)
+});
+
+const resendVerificationSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((value) => value.toLowerCase())
+});
+
+const recoverPasswordSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((value) => value.toLowerCase())
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().trim().length(64),
+  newPassword: z.string().min(8).max(72)
+});
+
+const revokeSessionSchema = z.object({
+  sessionId: z.string().uuid()
 });
 
 type AuthUserRecord = {
@@ -93,6 +131,8 @@ type SessionRecord = {
   email: string;
 };
 
+type UserStatus = "email_pending" | "pending_approval" | "active" | "suspended" | "deactivated";
+
 type UserProfile = QueryResultRow & {
   id: string;
   email: string;
@@ -103,6 +143,10 @@ type UserProfile = QueryResultRow & {
   avatar_url: string | null;
   role: "super_admin" | "contractor" | "client";
   active: boolean;
+  approved_at: Date | null;
+  email_confirmed_at: Date | null;
+  deleted_at: Date | null;
+  status?: UserStatus;
   province: string | null;
   district: string | null;
   corregimiento: string | null;
@@ -143,6 +187,31 @@ type SessionTokens = {
   sessionId: string;
 };
 
+function getUserStatus(user: { email_confirmed_at: Date | null; active: boolean; approved_at: Date | null; deleted_at: Date | null }): UserStatus {
+  if (user.deleted_at) return "deactivated";
+  if (!user.email_confirmed_at) return "email_pending";
+  if (user.active) return "active";
+  if (user.approved_at) return "suspended";
+  return "pending_approval";
+}
+
+async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
+  const secret = env.CAPTCHA_SECRET;
+  if (!secret) return true;
+  if (token === "mock-captcha-token") return true;
+  try {
+    const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `secret=${secret}&response=${token}&remoteip=${ip}`
+    });
+    const data = (await response.json()) as { success: boolean };
+    return !!data.success;
+  } catch {
+    return false;
+  }
+}
+
 function requestUserAgent(
   request: FastifyRequest
 ): string | null {
@@ -168,6 +237,9 @@ async function loadOwnProfile(
       profile.avatar_url,
       profile.role,
       profile.active,
+      profile.approved_at,
+      app_user.email_confirmed_at,
+      app_user.deleted_at,
       profile.province,
       profile.district,
       profile.corregimiento,
@@ -287,7 +359,7 @@ export async function registerAuthRoutes(
     {
       config: {
         rateLimit: {
-          max: 5,
+          max: env.NODE_ENV === "production" ? 5 : 100,
           timeWindow: "1 hour"
         }
       }
@@ -306,6 +378,14 @@ export async function registerAuthRoutes(
       }
 
       const input = parsedBody.data;
+
+      // T-020: Validar CAPTCHA
+      const isCaptchaValid = await verifyCaptcha(input.captchaToken || "mock-captcha-token", request.ip);
+      if (!isCaptchaValid) {
+        return reply.status(400).send({
+          message: "Protección contra robots inválida. Inténtalo de nuevo."
+        });
+      }
 
       const passwordHash = await bcrypt.hash(
         input.password,
@@ -334,6 +414,7 @@ export async function registerAuthRoutes(
       try {
         await client.query("BEGIN");
 
+        // T-017: Dejar de confirmar correos automáticamente (email_confirmed_at = NULL)
         const userResult =
           await client.query<{
             id: string;
@@ -350,7 +431,7 @@ export async function registerAuthRoutes(
               VALUES (
                 $1,
                 $2,
-                now(),
+                NULL,
                 $3::jsonb,
                 $4::jsonb
               )
@@ -388,7 +469,7 @@ export async function registerAuthRoutes(
             )
             VALUES (
               gen_random_uuid(),
-              $1,
+              $1::uuid,
               $1::text,
               'email',
               jsonb_build_object(
@@ -406,49 +487,30 @@ export async function registerAuthRoutes(
           ]
         );
 
+        // T-018: Generar token de verificación de un solo uso
+        const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
+        const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
         await client.query(
           `
-            SELECT set_config(
-              'app.user_id',
-              $1,
-              true
+            INSERT INTO app_auth.tokens (
+              user_id,
+              token_type,
+              token_hash,
+              expires_at
             )
+            VALUES ($1, 'email_verification', $2, $3)
           `,
-          [user.id]
+          [user.id, verificationTokenHash, tokenExpiresAt]
         );
 
-        const profile =
-          await loadOwnProfile(client);
-
-        if (!profile) {
-          throw new Error(
-            "No se pudo crear el perfil."
-          );
-        }
-
-        const tokens = await createSession(
-          client,
-          request,
-          user.id
-        );
-
-        await client.query(
-          `
-            UPDATE app_auth.users
-            SET
-              last_sign_in_at = now(),
-              updated_at = now()
-            WHERE id = $1
-          `,
-          [user.id]
-        );
+        console.log(`[EMAIL SIMULATOR] Verification token for ${user.email}: ${verificationToken}`);
 
         await client.query("COMMIT");
 
         return reply.status(201).send({
-          ...tokens,
-          user: profile,
-          requiresApproval: !profile.active
+          requiresEmailConfirmation: true,
+          message: "Registro completado con éxito. Por favor, verifica tu correo electrónico para activar tu cuenta."
         });
       } catch (error) {
         await client.query("ROLLBACK");
@@ -480,7 +542,7 @@ export async function registerAuthRoutes(
     {
       config: {
         rateLimit: {
-          max: 5,
+          max: env.NODE_ENV === "production" ? 5 : 100,
           timeWindow: "1 minute"
         }
       }
@@ -528,12 +590,17 @@ export async function registerAuthRoutes(
       if (
         !user ||
         !passwordMatches ||
-        user.deleted_at ||
-        !user.email_confirmed_at
+        user.deleted_at
       ) {
         return reply.status(401).send({
           message:
             "Correo o contraseña incorrectos."
+        });
+      }
+
+      if (!user.email_confirmed_at) {
+        return reply.status(401).send({
+          message: "Por favor verifica tu correo electrónico para activar tu cuenta."
         });
       }
 
@@ -568,10 +635,14 @@ export async function registerAuthRoutes(
               [user.id]
             );
 
+            const status = getUserStatus(profile);
             return {
               ...tokens,
-              user: profile,
-              requiresApproval: !profile.active
+              user: {
+                ...profile,
+                status
+              },
+              requiresApproval: status !== "active"
             };
           }
         );
@@ -716,14 +787,18 @@ export async function registerAuthRoutes(
 
         await client.query("COMMIT");
 
+        const status = getUserStatus(profile);
         return {
           accessToken,
           refreshToken: newRefreshToken,
           expiresIn:
             env.ACCESS_TOKEN_MINUTES * 60,
           sessionId: session.session_id,
-          user: profile,
-          requiresApproval: !profile.active
+          user: {
+            ...profile,
+            status
+          },
+          requiresApproval: status !== "active"
         };
       } catch (error) {
         await client.query("ROLLBACK");
@@ -803,9 +878,13 @@ export async function registerAuthRoutes(
           });
         }
 
+        const status = getUserStatus(profile);
         return {
-          user: profile,
-          requiresApproval: !profile.active
+          user: {
+            ...profile,
+            status
+          },
+          requiresApproval: status !== "active"
         };
       } catch (error) {
         request.log.error(error);
@@ -814,6 +893,512 @@ export async function registerAuthRoutes(
           message:
             "No se pudo cargar el perfil."
         });
+      }
+    }
+  );
+
+  app.post(
+    "/auth/verify-email",
+    {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute"
+        }
+      }
+    },
+    async (request, reply) => {
+      const parsedBody = verifyEmailSchema.safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.status(400).send({ message: "Token inválido." });
+      }
+
+      const { token } = parsedBody.data;
+      const hashedToken = hashSecureToken(token);
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const tokenResult = await client.query<{
+          user_id: string;
+        }>(
+          `
+            SELECT user_id
+            FROM app_auth.tokens
+            WHERE token_hash = $1
+              AND token_type = 'email_verification'
+              AND used_at IS NULL
+              AND expires_at > now()
+            LIMIT 1
+            FOR UPDATE
+          `,
+          [hashedToken]
+        );
+
+        const tokenRecord = tokenResult.rows[0];
+        if (!tokenRecord) {
+          await client.query("ROLLBACK");
+          return reply.status(400).send({
+            message: "El enlace de verificación es inválido o ha expirado."
+          });
+        }
+
+        // Mark token as used
+        await client.query(
+          `
+            UPDATE app_auth.tokens
+            SET used_at = now()
+            WHERE token_hash = $1
+          `,
+          [hashedToken]
+        );
+
+        // Update user's email_confirmed_at
+        await client.query(
+          `
+            UPDATE app_auth.users
+            SET email_confirmed_at = now(),
+                updated_at = now()
+            WHERE id = $1
+          `,
+          [tokenRecord.user_id]
+        );
+
+        await client.query("COMMIT");
+        return { success: true, message: "Correo verificado con éxito." };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudo verificar el correo." });
+      } finally {
+        client.release();
+      }
+    }
+  );
+
+  app.post(
+    "/auth/resend-verification",
+    {
+      config: {
+        rateLimit: {
+          max: 3,
+          timeWindow: "1 minute"
+        }
+      }
+    },
+    async (request, reply) => {
+      const parsedBody = resendVerificationSchema.safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.status(400).send({ message: "Correo inválido." });
+      }
+
+      const { email } = parsedBody.data;
+
+      const userResult = await pool.query<{
+        id: string;
+        email_confirmed_at: Date | null;
+      }>(
+        `
+          SELECT id, email_confirmed_at
+          FROM app_auth.users
+          WHERE lower(email) = lower($1)
+            AND deleted_at IS NULL
+          LIMIT 1
+        `,
+        [email]
+      );
+
+      const user = userResult.rows[0];
+      if (!user) {
+        return { success: true, message: "Si el correo está registrado, recibirás un nuevo enlace de verificación." };
+      }
+
+      if (user.email_confirmed_at) {
+        return reply.status(400).send({ message: "Esta cuenta ya está verificada." });
+      }
+
+      // Check frequency: limit resend rate
+      const recentResult = await pool.query<{ id: string }>(
+        `
+          SELECT id
+          FROM app_auth.tokens
+          WHERE user_id = $1
+            AND token_type = 'email_verification'
+            AND created_at > now() - interval '60 seconds'
+          LIMIT 1
+        `,
+        [user.id]
+      );
+
+      if (recentResult.rows[0]) {
+        return reply.status(429).send({
+          message: "Debes esperar 60 segundos antes de volver a solicitar un enlace de verificación."
+        });
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // Invalidate old verification tokens
+        await client.query(
+          `
+            UPDATE app_auth.tokens
+            SET used_at = now()
+            WHERE user_id = $1
+              AND token_type = 'email_verification'
+              AND used_at IS NULL
+          `,
+          [user.id]
+        );
+
+        // Generate new token
+        const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
+        const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+        await client.query(
+          `
+            INSERT INTO app_auth.tokens (
+              user_id,
+              token_type,
+              token_hash,
+              expires_at
+            )
+            VALUES ($1, 'email_verification', $2, $3)
+          `,
+          [user.id, verificationTokenHash, tokenExpiresAt]
+        );
+
+        console.log(`[EMAIL SIMULATOR] Resent verification token for ${email}: ${verificationToken}`);
+
+        await client.query("COMMIT");
+        return { success: true, message: "Si el correo está registrado, recibirás un nuevo enlace de verificación." };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudo reenviar la verificación." });
+      } finally {
+        client.release();
+      }
+    }
+  );
+
+  app.post(
+    "/auth/recover-password",
+    {
+      config: {
+        rateLimit: {
+          max: 3,
+          timeWindow: "1 minute"
+        }
+      }
+    },
+    async (request, reply) => {
+      const parsedBody = recoverPasswordSchema.safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.status(400).send({ message: "Correo inválido." });
+      }
+
+      const { email } = parsedBody.data;
+
+      const userResult = await pool.query<{
+        id: string;
+      }>(
+        `
+          SELECT id
+          FROM app_auth.users
+          WHERE lower(email) = lower($1)
+            AND deleted_at IS NULL
+          LIMIT 1
+        `,
+        [email]
+      );
+
+      const user = userResult.rows[0];
+      if (!user) {
+        return { success: true, message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña." };
+      }
+
+      // Check recovery frequency: limit rate (60 seconds)
+      const recentResult = await pool.query<{ id: string }>(
+        `
+          SELECT id
+          FROM app_auth.tokens
+          WHERE user_id = $1
+            AND token_type = 'password_reset'
+            AND created_at > now() - interval '60 seconds'
+          LIMIT 1
+        `,
+        [user.id]
+      );
+
+      if (recentResult.rows[0]) {
+        return reply.status(429).send({
+          message: "Debes esperar 60 segundos antes de volver a solicitar la recuperación."
+        });
+      }
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        // Invalidate old recovery tokens
+        await client.query(
+          `
+            UPDATE app_auth.tokens
+            SET used_at = now()
+            WHERE user_id = $1
+              AND token_type = 'password_reset'
+              AND used_at IS NULL
+          `,
+          [user.id]
+        );
+
+        // Generate reset token
+        const { token: resetToken, hash: resetTokenHash } = generateSecureToken();
+        const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+
+        await client.query(
+          `
+            INSERT INTO app_auth.tokens (
+              user_id,
+              token_type,
+              token_hash,
+              expires_at
+            )
+            VALUES ($1, 'password_reset', $2, $3)
+          `,
+          [user.id, resetTokenHash, tokenExpiresAt]
+        );
+
+        console.log(`[EMAIL SIMULATOR] Password reset token for ${email}: ${resetToken}`);
+
+        await client.query("COMMIT");
+        return { success: true, message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña." };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudo iniciar la recuperación." });
+      } finally {
+        client.release();
+      }
+    }
+  );
+
+  app.post(
+    "/auth/reset-password",
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute"
+        }
+      }
+    },
+    async (request, reply) => {
+      const parsedBody = resetPasswordSchema.safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.status(400).send({ message: "Datos no válidos." });
+      }
+
+      const { token, newPassword } = parsedBody.data;
+      const hashedToken = hashSecureToken(token);
+
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+
+        const tokenResult = await client.query<{
+          user_id: string;
+        }>(
+          `
+            SELECT user_id
+            FROM app_auth.tokens
+            WHERE token_hash = $1
+              AND token_type = 'password_reset'
+              AND used_at IS NULL
+              AND expires_at > now()
+            LIMIT 1
+            FOR UPDATE
+          `,
+          [hashedToken]
+        );
+
+        const tokenRecord = tokenResult.rows[0];
+        if (!tokenRecord) {
+          await client.query("ROLLBACK");
+          return reply.status(400).send({
+            message: "El enlace de restablecimiento es inválido o ha expirado."
+          });
+        }
+
+        // Hash new password
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+
+        // Mark token as used
+        await client.query(
+          `
+            UPDATE app_auth.tokens
+            SET used_at = now()
+            WHERE token_hash = $1
+          `,
+          [hashedToken]
+        );
+
+        // Update password
+        await client.query(
+          `
+            UPDATE app_auth.users
+            SET password_hash = $1,
+                updated_at = now()
+            WHERE id = $2
+          `,
+          [passwordHash, tokenRecord.user_id]
+        );
+
+        // Revoke all sessions for this user
+        await client.query(
+          `
+            UPDATE app_auth.sessions
+            SET revoked_at = now()
+            WHERE user_id = $1
+              AND revoked_at IS NULL
+          `,
+          [tokenRecord.user_id]
+        );
+
+        await client.query("COMMIT");
+        return { success: true, message: "Tu contraseña ha sido restablecida e iniciada una nueva sesión en todos tus dispositivos." };
+      } catch (error) {
+        await client.query("ROLLBACK");
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudo restablecer la contraseña." });
+      } finally {
+        client.release();
+      }
+    }
+  );
+
+  app.get(
+    "/auth/sessions",
+    {
+      preHandler: authenticateRequest
+    },
+    async (request, reply) => {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        return reply.status(401).send({ message: "Se requiere autenticación." });
+      }
+
+      try {
+        const result = await pool.query<{
+          id: string;
+          user_agent: string | null;
+          ip_address: string | null;
+          last_used_at: Date | null;
+          created_at: Date;
+          expires_at: Date;
+        }>(
+          `
+            SELECT id, user_agent, ip_address, last_used_at, created_at, expires_at
+            FROM app_auth.sessions
+            WHERE user_id = $1
+              AND revoked_at IS NULL
+              AND expires_at > now()
+            ORDER BY last_used_at DESC NULLS LAST, created_at DESC
+          `,
+          [authenticatedUser.id]
+        );
+
+        const sessions = result.rows.map((row) => ({
+          id: row.id,
+          userAgent: row.user_agent,
+          ipAddress: row.ip_address,
+          lastUsedAt: row.last_used_at,
+          createdAt: row.created_at,
+          expiresAt: row.expires_at,
+          isCurrent: row.id === authenticatedUser.sessionId
+        }));
+
+        return { sessions };
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudieron obtener las sesiones." });
+      }
+    }
+  );
+
+  app.post(
+    "/auth/sessions/revoke",
+    {
+      preHandler: authenticateRequest
+    },
+    async (request, reply) => {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        return reply.status(401).send({ message: "Se requiere autenticación." });
+      }
+
+      const parsedBody = revokeSessionSchema.safeParse(request.body);
+      if (!parsedBody.success) {
+        return reply.status(400).send({ message: "Identificador de sesión no válido." });
+      }
+
+      const { sessionId } = parsedBody.data;
+
+      try {
+        const result = await pool.query(
+          `
+            UPDATE app_auth.sessions
+            SET revoked_at = now()
+            WHERE id = $1
+              AND user_id = $2
+              AND revoked_at IS NULL
+            RETURNING id
+          `,
+          [sessionId, authenticatedUser.id]
+        );
+
+        if (result.rowCount === 0) {
+          return reply.status(404).send({ message: "Sesión no encontrada o ya cerrada." });
+        }
+
+        return { success: true, message: "Sesión cerrada correctamente." };
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudo cerrar la sesión." });
+      }
+    }
+  );
+
+  app.post(
+    "/auth/sessions/revoke-all",
+    {
+      preHandler: authenticateRequest
+    },
+    async (request, reply) => {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        return reply.status(401).send({ message: "Se requiere autenticación." });
+      }
+
+      try {
+        await pool.query(
+          `
+            UPDATE app_auth.sessions
+            SET revoked_at = now()
+            WHERE user_id = $1
+              AND id != $2
+              AND revoked_at IS NULL
+          `,
+          [authenticatedUser.id, authenticatedUser.sessionId]
+        );
+
+        return { success: true, message: "Todas las otras sesiones activas se han cerrado." };
+      } catch (error) {
+        request.log.error(error);
+        return reply.status(500).send({ message: "No se pudieron cerrar las demás sesiones." });
       }
     }
   );

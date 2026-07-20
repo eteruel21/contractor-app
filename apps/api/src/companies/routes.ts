@@ -6,7 +6,9 @@ import type {
 import { z } from "zod";
 
 import {
-  authenticateRequest
+  authenticateRequest,
+  requireActiveUser,
+  requireCompanyRole
 } from "../auth/authenticate.js";
 import {
   withUserTransaction
@@ -85,7 +87,7 @@ export async function registerCompanyRoutes(
   app.get(
     "/companies",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -166,7 +168,7 @@ export async function registerCompanyRoutes(
   app.post(
     "/companies",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -234,7 +236,7 @@ export async function registerCompanyRoutes(
   app.patch(
     "/companies/:companyId/billing",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =

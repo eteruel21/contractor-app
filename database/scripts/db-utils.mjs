@@ -31,7 +31,10 @@ export function quoteLiteral(value) {
 }
 
 export function checksum(contents) {
-  return createHash("sha256").update(contents, "utf8").digest("hex");
+  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
+  return createHash("sha256")
+    .update(normalizedContents, "utf8")
+    .digest("hex");
 }
 
 export async function readSqlFiles(directoryName) {
@@ -59,6 +62,24 @@ export function stripOuterTransaction(contents, filename) {
   }
 
   return withoutCommit;
+}
+
+export function stripPsqlMetaCommands(contents, filename) {
+  const lines = contents.split(/\r?\n/u);
+  const unsupportedCommands = lines.filter(
+    (line) => /^\s*\\/u.test(line) && !/^\s*\\(?:un)?restrict\b/u.test(line),
+  );
+
+  if (unsupportedCommands.length > 0) {
+    throw new Error(
+      `${filename} contiene comandos psql no compatibles: ` +
+        unsupportedCommands.map((line) => line.trim()).join(", "),
+    );
+  }
+
+  return lines
+    .filter((line) => !/^\s*\\(?:un)?restrict\b/u.test(line))
+    .join("\n");
 }
 
 export async function ensureHistoryTables(client) {
@@ -96,6 +117,12 @@ export async function withAdvisoryLock(client, key, callback) {
 
   try {
     return await callback();
+  } catch (error) {
+    // Una consulta SQL que abrió su propia transacción puede dejar la sesión en
+    // estado abortado. ROLLBACK permite liberar el advisory lock sin ocultar el
+    // error original.
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
   } finally {
     await client.query("SELECT pg_advisory_unlock(hashtext($1))", [key]);
   }

@@ -6,7 +6,9 @@ import type {
 import { z } from "zod";
 
 import {
-  authenticateRequest
+  authenticateRequest,
+  requireActiveUser,
+  requireCompanyRole
 } from "../auth/authenticate.js";
 import {
   withUserTransaction
@@ -108,7 +110,7 @@ export async function registerCatalogRoutes(
   app.get(
     "/catalog/items",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -139,7 +141,7 @@ export async function registerCatalogRoutes(
   app.patch(
     "/catalog/items/:itemId/pricing",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -194,7 +196,7 @@ export async function registerCatalogRoutes(
   app.delete(
     "/catalog/items/:itemId/pricing",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -235,7 +237,7 @@ export async function registerCatalogRoutes(
   app.patch(
     "/catalog/items/:itemId/deactivate",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -288,7 +290,7 @@ export async function registerCatalogRoutes(
   app.get(
     "/catalog/units",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -335,7 +337,7 @@ export async function registerCatalogRoutes(
   app.get(
     "/catalog/categories",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -383,7 +385,7 @@ export async function registerCatalogRoutes(
   app.post(
     "/catalog/items",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -465,7 +467,7 @@ export async function registerCatalogRoutes(
   app.post(
     "/catalog/categories",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -525,7 +527,7 @@ export async function registerCatalogRoutes(
   app.patch(
     "/catalog/categories/:categoryId/deactivate",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -582,7 +584,7 @@ export async function registerCatalogRoutes(
   app.get(
     "/catalog/yields",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser]
     },
     async (request, reply) => {
       const userId =
@@ -663,7 +665,7 @@ export async function registerCatalogRoutes(
   app.post(
     "/catalog/yields",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
@@ -743,7 +745,7 @@ export async function registerCatalogRoutes(
   app.patch(
     "/catalog/yields/:yieldId/deactivate",
     {
-      preHandler: authenticateRequest
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
     },
     async (request, reply) => {
       const userId =
