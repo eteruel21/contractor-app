@@ -24,7 +24,7 @@ import {
   calculateSpecialSystems,
   type SpecialSystemsResult,
   type SpecialSystemType,
-} from "../../utils/calculations";
+} from "../../services/calculators/sistemas-especiales";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

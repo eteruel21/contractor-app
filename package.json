@@ -18,6 +18,20 @@
     "validate": "npm run typecheck && npm run build:admin"
   },
   "devDependencies": {
-    "pg": "^8.22.0"
+    "pg": "^8.22.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-screens": "4.25.2",
+    "react-native-gesture-handler": "2.32.0",
+    "react-native-reanimated": "4.5.0",
+    "react-native-worklets": "0.10.0"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-screens": "4.25.2",
+    "react-native-gesture-handler": "2.32.0",
+    "react-native-reanimated": "4.5.0",
+    "react-native-worklets": "0.10.0"
   }
 }

@@ -23,7 +23,7 @@ import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculateElectrical,
   type ElectricalResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/electricidad";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

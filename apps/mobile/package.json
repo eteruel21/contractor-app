@@ -16,6 +16,7 @@
     "expo-notifications": "~57.0.6",
     "expo-print": "~57.0.1",
     "expo-router": "~57.0.7",
+    "expo-secure-store": "^57.0.1",
     "expo-sharing": "~57.0.6",
     "expo-splash-screen": "~57.0.4",
     "expo-status-bar": "~57.0.1",
@@ -35,7 +36,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "typescript": "^5.7.0"
   },
   "scripts": {
     "start": "expo start",

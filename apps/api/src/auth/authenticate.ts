@@ -119,7 +119,9 @@ export async function requireActiveUser(
     await client.query("COMMIT");
 
     const record = result.rows[0];
-    console.log(`[requireActiveUser DEBUG] userId=${user.id} record=`, record);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[requireActiveUser DEBUG] userId=${user.id} record=`, record);
+    }
     if (!record) {
       reply.status(403).send({
         message: "No se encontró el perfil del usuario."

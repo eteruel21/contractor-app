@@ -23,7 +23,7 @@ import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculateFlooring,
   type FlooringResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/pisos";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

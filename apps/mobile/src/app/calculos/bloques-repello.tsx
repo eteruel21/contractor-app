@@ -29,7 +29,7 @@ import {
   calculateMasonry,
   type MasonryResult,
   type PlasterSides,
-} from "../../utils/calculations";
+} from "../../services/calculators/bloques-repello";
 import {
   formatDecimal,
   formatMoney,

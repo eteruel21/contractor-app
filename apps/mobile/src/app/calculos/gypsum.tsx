@@ -15,7 +15,7 @@ import { listCatalogItems } from "../../services/catalog-service";
 import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculateGypsum, type GypsumBoardSides, type GypsumResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/gypsum";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

@@ -1,4 +1,39 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+
+let inMemoryAccessToken: string | null = null;
+
+async function setSecureItem(key: string, value: string): Promise<void> {
+  try {
+    const isAvailable = await SecureStore.isAvailableAsync();
+    if (isAvailable) {
+      await SecureStore.setItemAsync(key, value);
+      return;
+    }
+  } catch {}
+  await AsyncStorage.setItem(`fallback_${key}`, value);
+}
+
+async function getSecureItem(key: string): Promise<string | null> {
+  try {
+    const isAvailable = await SecureStore.isAvailableAsync();
+    if (isAvailable) {
+      return await SecureStore.getItemAsync(key);
+    }
+  } catch {}
+  return await AsyncStorage.getItem(`fallback_${key}`);
+}
+
+async function deleteSecureItem(key: string): Promise<void> {
+  try {
+    const isAvailable = await SecureStore.isAvailableAsync();
+    if (isAvailable) {
+      await SecureStore.deleteItemAsync(key);
+      return;
+    }
+  } catch {}
+  await AsyncStorage.removeItem(`fallback_${key}`);
+}
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(
@@ -164,9 +199,22 @@ function toStoredSession(
 export async function storeSession(
   session: StoredSession
 ): Promise<void> {
+  inMemoryAccessToken = session.accessToken;
+  if (session.refreshToken) {
+    await setSecureItem("contractor_refresh_token", session.refreshToken);
+  } else {
+    await deleteSecureItem("contractor_refresh_token");
+  }
+
+  const sessionToStore = {
+    ...session,
+    accessToken: "",
+    refreshToken: ""
+  };
+
   await AsyncStorage.setItem(
     SESSION_STORAGE_KEY,
-    JSON.stringify(session)
+    JSON.stringify(sessionToStore)
   );
 }
 
@@ -179,7 +227,14 @@ Promise<StoredSession | null> {
   if (!stored) return null;
 
   try {
-    return JSON.parse(stored) as StoredSession;
+    const session = JSON.parse(stored) as StoredSession;
+    const refreshToken = await getSecureItem("contractor_refresh_token");
+
+    return {
+      ...session,
+      accessToken: inMemoryAccessToken || "",
+      refreshToken: refreshToken || ""
+    };
   } catch {
     await clearStoredSession();
     return null;
@@ -188,6 +243,8 @@ Promise<StoredSession | null> {
 
 export async function clearStoredSession():
 Promise<void> {
+  inMemoryAccessToken = null;
+  await deleteSecureItem("contractor_refresh_token");
   await AsyncStorage.removeItem(
     SESSION_STORAGE_KEY
   );

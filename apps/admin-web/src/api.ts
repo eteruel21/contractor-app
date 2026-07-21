@@ -23,7 +23,6 @@ export type AdminUser = {
 
 export type AdminSession = {
   accessToken: string;
-  refreshToken: string;
   expiresAt: number;
   sessionId: string;
   user: AdminUser;
@@ -31,7 +30,7 @@ export type AdminSession = {
 
 type AuthResponse = {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   expiresIn: number;
   sessionId: string;
   user: AdminUser;
@@ -87,6 +86,7 @@ async function publicRequest<T>(
     `${API_URL}${path}`,
     {
       ...init,
+      credentials: "include",
       headers: {
         Accept: "application/json",
         "Content-Type":
@@ -139,8 +139,6 @@ function toSession(
   return {
     accessToken:
       response.accessToken,
-    refreshToken:
-      response.refreshToken,
     expiresAt:
       Date.now() +
       response.expiresIn * 1000,
@@ -174,8 +172,7 @@ Promise<AdminSession> {
         {
           method: "POST",
           body: JSON.stringify({
-            refreshToken:
-              current.refreshToken
+            clientType: "web"
           })
         }
       );
@@ -232,6 +229,7 @@ export async function authenticatedRequest<T>(
     `${API_URL}${path}`,
     {
       ...init,
+      credentials: "include",
       headers: {
         Accept: "application/json",
         "Content-Type":
@@ -290,7 +288,8 @@ export async function loginAdmin(
         body: JSON.stringify({
           email:
             email.trim().toLowerCase(),
-          password
+          password,
+          clientType: "web"
         })
       }
     );

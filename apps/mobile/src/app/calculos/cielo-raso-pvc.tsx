@@ -15,7 +15,7 @@ import { listCatalogItems } from "../../services/catalog-service";
 import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculatePvcCeiling, type PvcCeilingResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/cielo-raso-pvc";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

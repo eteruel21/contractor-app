@@ -12,7 +12,7 @@ import { useCompany } from "../../contexts/CompanyContext";
 import { addBudgetItem } from "../../services/budget-service";
 import { listCatalogItems } from "../../services/catalog-service";
 import type { CatalogItemWithDetails } from "../../types/catalog";
-import { calculatePaint, type PaintResult } from "../../utils/calculations";
+import { calculatePaint, type PaintResult } from "../../services/calculators/pintura";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

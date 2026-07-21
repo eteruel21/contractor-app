@@ -23,7 +23,7 @@ import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculateAirConditioning,
   type AirConditioningResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/aire-acondicionado";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 

@@ -23,7 +23,7 @@ import type { CatalogItemWithDetails } from "../../types/catalog";
 import {
   calculateMdfFurniture,
   type MdfFurnitureResult,
-} from "../../utils/calculations";
+} from "../../services/calculators/muebles-mdf";
 import { formatDecimal, formatMoney } from "../../utils/format";
 import { loadLocalData, saveLocalData } from "../../utils/local-storage";
 
