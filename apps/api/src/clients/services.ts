@@ -9,6 +9,10 @@ import {
   updateClientAddressRepo,
   setPrimaryClientAddressRepo,
   deleteClientAddressRepo,
+  findClientContactsRepo,
+  createClientContactRepo,
+  updateClientContactRepo,
+  deleteClientContactRepo,
   type ClientFieldsInput,
   type CreateClientInput,
   type AddressInput
@@ -53,3 +57,50 @@ export async function setPrimaryClientAddressService(userId: string, companyId: 
 export async function deleteClientAddressService(userId: string, companyId: string, clientId: string, addressId: string) {
   return deleteClientAddressRepo(userId, companyId, clientId, addressId);
 }
+
+// --- Contactos de Cliente (T-113) ---
+
+export async function getClientContactsService(userId: string, companyId: string, clientId: string) {
+  return findClientContactsRepo(userId, companyId, clientId);
+}
+
+export async function createClientContactService(
+  userId: string,
+  clientId: string,
+  input: {
+    companyId: string;
+    name: string;
+    position?: string;
+    email?: string;
+    phone?: string;
+    isPrimary?: boolean;
+  }
+) {
+  return createClientContactRepo(userId, clientId, input);
+}
+
+export async function updateClientContactService(
+  userId: string,
+  clientId: string,
+  contactId: string,
+  input: {
+    companyId: string;
+    name?: string | undefined;
+    position?: string | undefined;
+    email?: string | undefined;
+    phone?: string | undefined;
+    isPrimary?: boolean | undefined;
+  }
+) {
+  return updateClientContactRepo(userId, clientId, contactId, input);
+}
+
+export async function deleteClientContactService(
+  userId: string,
+  companyId: string,
+  clientId: string,
+  contactId: string
+) {
+  return deleteClientContactRepo(userId, companyId, clientId, contactId);
+}
+

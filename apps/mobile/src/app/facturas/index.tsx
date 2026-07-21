@@ -59,12 +59,19 @@ export default function InvoicesListScreen() {
   );
 
   const filteredInvoices = invoices.filter((invoice) => {
-    const clientName = invoice.client
-      ? getClientDisplayName(invoice.client)
-      : "";
+    const snapshotClient = invoice.snapshot_data?.client;
+    const clientName = snapshotClient
+      ? snapshotClient.businessName?.trim() ||
+        [snapshotClient.firstName, snapshotClient.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim()
+      : invoice.client
+        ? getClientDisplayName(invoice.client)
+        : "";
     const term = search.toLowerCase().trim();
     return (
-      invoice.invoice_number.toLowerCase().includes(term) ||
+      (invoice.invoice_number ?? "borrador").toLowerCase().includes(term) ||
       clientName.toLowerCase().includes(term)
     );
   });
@@ -75,6 +82,12 @@ export default function InvoicesListScreen() {
         return { text: "#16A34A", bg: "#DCFCE7" };
       case "cancelled":
         return { text: "#DC2626", bg: "#FEE2E2" };
+      case "overdue":
+        return { text: "#B91C1C", bg: "#FEE2E2" };
+      case "draft":
+        return { text: "#475569", bg: "#E2E8F0" };
+      case "issued":
+        return { text: "#1D4ED8", bg: "#DBEAFE" };
       default:
         return { text: "#D97706", bg: "#FEF3C7" };
     }
@@ -131,17 +144,25 @@ export default function InvoicesListScreen() {
             <Ionicons name="receipt-outline" size={48} color="#94A3B8" />
             <Text style={styles.emptyTitle}>No hay facturas</Text>
             <Text style={styles.emptySubtitle}>
-              Las facturas se generan aprobando un presupuesto y haciendo clic en “Generar factura”.
+              Las facturas se generan aprobando un presupuesto y haciendo clic en "Generar factura".
             </Text>
           </View>
         }
         renderItem={({ item }) => {
-          const clientName = item.client
-            ? getClientDisplayName(item.client)
-            : "Cliente no registrado";
+          const snapshotClient = item.snapshot_data?.client;
+          const clientName = snapshotClient
+            ? snapshotClient.businessName?.trim() ||
+              [snapshotClient.firstName, snapshotClient.lastName]
+                .filter(Boolean)
+                .join(" ")
+                .trim() ||
+              "Cliente no registrado"
+            : item.client
+              ? getClientDisplayName(item.client)
+              : "Cliente no registrado";
           const statusColors = getStatusColor(item.status);
-          const total = item.budget?.total ?? 0;
-          const currencyCode = item.budget?.currency_code ?? activeCompany?.currency_code;
+          const total = item.snapshot_data?.totals.total ?? item.budget?.total ?? 0;
+          const currencyCode = item.snapshot_data?.currency ?? item.budget?.currency_code ?? activeCompany?.currency_code;
 
           return (
             <Pressable
@@ -159,10 +180,12 @@ export default function InvoicesListScreen() {
               <View style={styles.cardHeader}>
                 <View>
                   <Text style={styles.invoiceNumber}>
-                    {item.invoice_number}
+                    {item.invoice_number ?? "Borrador"}
                   </Text>
                   <Text style={styles.invoiceDate}>
-                    {formatShortDate(item.issue_date, activeCompany?.timezone)}
+                    {item.issue_date
+                      ? formatShortDate(item.issue_date, activeCompany?.timezone)
+                      : "Sin emitir"}
                   </Text>
                 </View>
 

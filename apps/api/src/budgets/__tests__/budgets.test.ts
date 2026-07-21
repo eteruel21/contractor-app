@@ -1,5 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { adminPool } from "../../db/test-db.js";
+import {
+  approveBudgetRepo,
+  rejectBudgetRepo,
+  addBudgetItemRepo,
+  deleteBudgetItemRepo,
+  getBudgetHistoryRepo
+} from "../repository.js";
+import {
+  saveCalculationRepo,
+  findCompanyCalculationsRepo,
+  deleteCalculationRepo
+} from "../../calculations/repository.js";
 
 describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impuestos, Descuentos, Redondeos)", () => {
   const suffix = Math.floor(Math.random() * 1000000);
@@ -48,7 +60,6 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
     `, [companyId, clientId, userId]);
     projectId = projRes.rows[0].id;
 
-    // Set app.user_id on adminPool connection
     await adminPool.query("SELECT set_config('app.user_id', $1, false)", [userId]);
 
     const budgetRes = await adminPool.query(`
@@ -65,7 +76,6 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
   it("1. Subtotales de Ítems y Redondeo de 2 Decimales", async () => {
     await adminPool.query("SELECT set_config('app.user_id', $1, false)", [userId]);
 
-    // Add Item 1: 10 unidades @ $15.55 (Taxable, 0% discount) -> $155.50
     await adminPool.query(`
       INSERT INTO public.budget_items (
         company_id, budget_id, item_type, description, quantity, unit_cost, unit_price, discount_percentage, taxable
@@ -73,7 +83,6 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
       VALUES ($1, $2, 'material', 'Material A', 10, 10, 15.55, 0, true)
     `, [companyId, budgetId]);
 
-    // Add Item 2: 3 unidades @ $33.33 -> should round item subtotal
     await adminPool.query(`
       INSERT INTO public.budget_items (
         company_id, budget_id, item_type, description, quantity, unit_cost, unit_price, discount_percentage, taxable
@@ -84,31 +93,25 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
     const budgetRes = await adminPool.query("SELECT subtotal, tax_amount, total FROM public.budgets WHERE id = $1", [budgetId]);
     const budget = budgetRes.rows[0];
 
-    // Total subtotal: 155.50 + 99.99 = 255.49
     expect(Number(budget.subtotal)).toBeCloseTo(255.49, 2);
   });
 
   it("2. Aplicación de Impuesto ITBMS (7%) sobre Subtotal Gravable", async () => {
     await adminPool.query("SELECT set_config('app.user_id', $1, false)", [userId]);
 
-    // Update tax rate to 7%
     await adminPool.query("UPDATE public.budgets SET tax_rate = 7 WHERE id = $1", [budgetId]);
-    // Recalculate totals
     await adminPool.query("SELECT public.recalculate_budget_totals($1, $2)", [companyId, budgetId]);
 
     const budgetRes = await adminPool.query("SELECT subtotal, tax_rate, tax_amount, total FROM public.budgets WHERE id = $1", [budgetId]);
     const budget = budgetRes.rows[0];
 
-    // Tax amount = 155.50 * 0.07 = 10.885 -> rounded to 10.89
     expect(Number(budget.tax_amount)).toBe(10.89);
-    // Total = 255.49 + 10.89 = 266.38
     expect(Number(budget.total)).toBeCloseTo(266.38, 2);
   });
 
   it("3. Aplicación de Descuento Porcentual", async () => {
     await adminPool.query("SELECT set_config('app.user_id', $1, false)", [userId]);
 
-    // Apply 10% overall discount ('percent')
     await adminPool.query("UPDATE public.budgets SET discount_type = 'percent', discount_value = 10 WHERE id = $1", [budgetId]);
     await adminPool.query("SELECT public.recalculate_budget_totals($1, $2)", [companyId, budgetId]);
 
@@ -122,7 +125,6 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
   it("4. Manejo de Redondeos en Descuentos Fijos", async () => {
     await adminPool.query("SELECT set_config('app.user_id', $1, false)", [userId]);
 
-    // Apply $50 fixed discount ('fixed')
     await adminPool.query("UPDATE public.budgets SET discount_type = 'fixed', discount_value = 50 WHERE id = $1", [budgetId]);
     await adminPool.query("SELECT public.recalculate_budget_totals($1, $2)", [companyId, budgetId]);
 
@@ -132,5 +134,66 @@ describe("T-057: Suite de Pruebas de Totales de Presupuestos (Subtotales, Impues
     expect(Number(budget.discount_amount)).toBe(50.00);
     expect(Number(budget.total)).toBeGreaterThan(0);
     expect(Number.isInteger(Math.round(Number(budget.total) * 100))).toBe(true);
+  });
+
+  it("5. T-087 & T-090: Aprobación del cliente y registro de historial", async () => {
+    const approved = await approveBudgetRepo(userId, budgetId, companyId);
+    expect(approved.status).toBe("approved");
+    expect(approved.approved_at).toBeDefined();
+
+    const history = await getBudgetHistoryRepo(userId, budgetId, companyId);
+    expect(history.length).toBeGreaterThan(0);
+    expect(history.some((h) => h.action === "approved")).toBe(true);
+  });
+
+  it("6. T-089: Bloquear modificación de presupuesto aprobado", async () => {
+    await expect(
+      addBudgetItemRepo(userId, budgetId, {
+        companyId,
+        description: "Intento de modificación en aprobado",
+        unitName: "unidad",
+        quantity: 1,
+        unitPrice: 50,
+        unitCost: 20,
+        discountPercentage: 0,
+        taxable: true,
+        itemType: "manual",
+        notes: ""
+      })
+    ).rejects.toThrow("aprobado y bloqueado");
+  });
+
+  it("7. T-088: Rechazo de presupuesto con motivo", async () => {
+    const budgetRes = await adminPool.query(`
+      SELECT public.create_project_budget($1, $2, 'Presupuesto Rechazo') AS id
+    `, [companyId, projectId]);
+    const rejBudgetId = budgetRes.rows[0].id;
+
+    const rejected = await rejectBudgetRepo(userId, rejBudgetId, "Presupuesto excede el presupuesto del cliente", companyId);
+    expect(rejected.status).toBe("rejected");
+    expect(rejected.rejection_reason).toBe("Presupuesto excede el presupuesto del cliente");
+  });
+
+  it("8. T-094 & T-095: Guardado y consulta de cálculos asociados a proyecto y cliente", async () => {
+    const savedCalc = await saveCalculationRepo(userId, {
+      companyId,
+      projectId,
+      clientId,
+      formulaCode: "concrete",
+      title: "Vaciado Losa de Techo",
+      inputData: { length: 10, width: 8, thickness: 0.15 },
+      priceData: { cementBag: 10 },
+      resultsData: { totalCost: 1500 },
+      totalCost: 1500
+    });
+
+    expect(savedCalc.id).toBeDefined();
+    expect(savedCalc.formula_code).toBe("concrete");
+
+    const list = await findCompanyCalculationsRepo(userId, companyId, projectId);
+    expect(list.length).toBeGreaterThan(0);
+    expect(list[0].title).toBe("Vaciado Losa de Techo");
+
+    await deleteCalculationRepo(userId, savedCalc.id, companyId);
   });
 });

@@ -470,3 +470,76 @@ export async function listBudgetsForClient(
     };
   }
 }
+
+export async function getClientBudgetDetail(
+  budgetId: string
+): Promise<{
+  budget: (Budget & { sections: BudgetSection[]; items: BudgetItem[]; company?: any; project?: any }) | null;
+  error: string | null;
+}> {
+  try {
+    const response = await authenticatedRequest<{
+      budget: BudgetRow & { sections: BudgetSection[]; items: BudgetItemRow[]; company?: any; project?: any };
+    }>(`/budgets/client/${budgetId}`);
+
+    const b = response.budget;
+    return {
+      budget: {
+        ...normalizeBudget(b),
+        sections: b.sections || [],
+        items: (b.items || []).map(normalizeItem),
+        company: b.company,
+        project: b.project
+      },
+      error: null
+    };
+  } catch (error) {
+    return { budget: null, error: errorMessage(error) };
+  }
+}
+
+export async function approveBudget(
+  budgetId: string,
+  companyId?: string
+): Promise<{ budget: Budget | null; error: string | null }> {
+  try {
+    const response = await authenticatedRequest<{ budget: BudgetRow }>(`/budgets/${budgetId}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ companyId })
+    });
+    return { budget: normalizeBudget(response.budget), error: null };
+  } catch (error) {
+    return { budget: null, error: errorMessage(error) };
+  }
+}
+
+export async function rejectBudget(
+  budgetId: string,
+  rejectionReason: string,
+  companyId?: string
+): Promise<{ budget: Budget | null; error: string | null }> {
+  try {
+    const response = await authenticatedRequest<{ budget: BudgetRow }>(`/budgets/${budgetId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ companyId, rejectionReason })
+    });
+    return { budget: normalizeBudget(response.budget), error: null };
+  } catch (error) {
+    return { budget: null, error: errorMessage(error) };
+  }
+}
+
+export async function getBudgetHistory(
+  budgetId: string,
+  companyId?: string
+): Promise<{ history: any[]; error: string | null }> {
+  try {
+    const url = companyId
+      ? `/budgets/${budgetId}/history?companyId=${encodeURIComponent(companyId)}`
+      : `/budgets/${budgetId}/history`;
+    const response = await authenticatedRequest<{ history: any[] }>(url);
+    return { history: response.history || [], error: null };
+  } catch (error) {
+    return { history: [], error: errorMessage(error) };
+  }
+}

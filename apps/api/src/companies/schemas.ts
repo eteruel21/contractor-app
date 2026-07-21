@@ -22,3 +22,48 @@ export const billingSchema = z.object({
   invoicePrefix: z.string().trim().min(1).max(20),
   taxRate: z.number().min(0).max(100)
 });
+
+export const companyMemberParamsSchema = z.object({
+  companyId: uuidSchema,
+  memberId: uuidSchema
+});
+
+export const companyInvitationParamsSchema = z.object({
+  companyId: uuidSchema,
+  invitationId: uuidSchema
+});
+
+export const companyRoleSchema = z.enum([
+  "owner",
+  "admin",
+  "estimator",
+  "sales",
+  "supervisor",
+  "member",
+  "accountant",
+  "guest"
+]);
+
+export const createInvitationSchema = z.object({
+  email: z.string().trim().email(),
+  role: companyRoleSchema
+});
+
+export const acceptInvitationSchema = z.object({
+  token: z.string().trim().min(1)
+});
+
+export const updateMemberStatusSchema = z.object({
+  active: z.boolean()
+});
+
+export const updateMemberRoleSchema = z.object({
+  role: companyRoleSchema
+});
+
+export const auditLogQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  action: z.string().trim().optional()
+});
+

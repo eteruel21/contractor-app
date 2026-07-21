@@ -22,7 +22,8 @@ import {
   createCategorySchema,
   deactivateCategorySchema,
   createYieldSchema,
-  deactivateYieldSchema
+  deactivateYieldSchema,
+  catalogItemQuerySchema
 } from "./schemas.js";
 
 import {
@@ -68,8 +69,18 @@ export async function registerCatalogRoutes(
       const userId = authenticatedUserId(request, reply);
       if (!userId) return;
 
-      const items = await getPlatformCatalogItemsService(userId);
-      return { items };
+      const parsedQuery = catalogItemQuerySchema.safeParse(request.query);
+      const queryData = parsedQuery.success ? parsedQuery.data : catalogItemQuerySchema.parse({});
+
+      const result = await getPlatformCatalogItemsService(userId, {
+        page: queryData.page,
+        limit: queryData.limit,
+        search: queryData.search || queryData.q,
+        categoryId: queryData.categoryId,
+        categoryName: queryData.categoryName
+      });
+
+      return result;
     }
   );
 

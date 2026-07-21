@@ -16,17 +16,26 @@ import {
   listBudgetSchema,
   companyQuerySchema,
   createBudgetSchema,
-  createBudgetItemSchema
+  createBudgetItemSchema,
+  approveBudgetSchema,
+  rejectBudgetSchema,
+  convertCalculationSchema
 } from "./schemas.js";
 
 import {
   getClientBudgetsService,
+  getClientBudgetDetailService,
   getCompanyBudgetsService,
   createProjectBudgetService,
   getBudgetDetailsService,
   addBudgetItemService,
-  deleteBudgetItemService
+  deleteBudgetItemService,
+  approveBudgetService,
+  rejectBudgetService,
+  getBudgetHistoryService
 } from "./services.js";
+
+import { getCalculationDetailService } from "../calculations/services.js";
 
 function authenticatedUserId(
   request: FastifyRequest,
@@ -58,6 +67,33 @@ export async function registerBudgetRoutes(
 
       const budgets = await getClientBudgetsService(userId);
       return { budgets };
+    }
+  );
+
+  app.get(
+    "/budgets/client/:budgetId",
+    {
+      preHandler: [authenticateRequest, requireActiveUser]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = budgetParamsSchema.safeParse(request.params);
+      if (!parsedParams.success) {
+        return reply.status(400).send({
+          message: "Identificador de presupuesto no válido."
+        });
+      }
+
+      const budget = await getClientBudgetDetailService(userId, parsedParams.data.budgetId);
+      if (!budget) {
+        return reply.status(404).send({
+          message: "No se encontró el presupuesto."
+        });
+      }
+
+      return { budget };
     }
   );
 
@@ -161,15 +197,15 @@ export async function registerBudgetRoutes(
         });
       }
 
-      const item = await addBudgetItemService(userId, parsedParams.data.budgetId, parsedBody.data);
-
-      if (!item) {
-        return reply.status(500).send({
-          message: "No se pudo crear la partida."
-        });
+      try {
+        const item = await addBudgetItemService(userId, parsedParams.data.budgetId, parsedBody.data);
+        if (!item) {
+          return reply.status(500).send({ message: "No se pudo crear la partida." });
+        }
+        return reply.status(201).send({ item });
+      } catch (err: any) {
+        return reply.status(400).send({ message: err.message || "Error al añadir la partida." });
       }
-
-      return reply.status(201).send({ item });
     }
   );
 
@@ -191,14 +227,161 @@ export async function registerBudgetRoutes(
         });
       }
 
-      await deleteBudgetItemService(
-        userId,
-        parsedParams.data.budgetId,
-        parsedParams.data.itemId,
-        parsedQuery.data.companyId
-      );
+      try {
+        await deleteBudgetItemService(
+          userId,
+          parsedParams.data.budgetId,
+          parsedParams.data.itemId,
+          parsedQuery.data.companyId
+        );
+        return { success: true };
+      } catch (err: any) {
+        return reply.status(400).send({ message: err.message || "Error al eliminar la partida." });
+      }
+    }
+  );
 
-      return { success: true };
+  app.post(
+    "/budgets/:budgetId/approve",
+    {
+      preHandler: [authenticateRequest, requireActiveUser]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = budgetParamsSchema.safeParse(request.params);
+      const parsedBody = approveBudgetSchema.safeParse(request.body || {});
+
+      if (!parsedParams.success || !parsedBody.success) {
+        return reply.status(400).send({ message: "Datos no válidos para la aprobación." });
+      }
+
+      try {
+        const budget = await approveBudgetService(userId, parsedParams.data.budgetId, parsedBody.data.companyId);
+        return { budget };
+      } catch (err: any) {
+        return reply.status(400).send({ message: err.message || "Error al aprobar el presupuesto." });
+      }
+    }
+  );
+
+  app.post(
+    "/budgets/:budgetId/reject",
+    {
+      preHandler: [authenticateRequest, requireActiveUser]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = budgetParamsSchema.safeParse(request.params);
+      const parsedBody = rejectBudgetSchema.safeParse(request.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        return reply.status(400).send({
+          message: "Motivo de rechazo o identificador no válido.",
+          fields: parsedBody.success ? undefined : parsedBody.error.flatten().fieldErrors
+        });
+      }
+
+      try {
+        const budget = await rejectBudgetService(
+          userId,
+          parsedParams.data.budgetId,
+          parsedBody.data.rejectionReason,
+          parsedBody.data.companyId
+        );
+        return { budget };
+      } catch (err: any) {
+        return reply.status(400).send({ message: err.message || "Error al rechazar el presupuesto." });
+      }
+    }
+  );
+
+  app.get(
+    "/budgets/:budgetId/history",
+    {
+      preHandler: [authenticateRequest, requireActiveUser]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = budgetParamsSchema.safeParse(request.params);
+      const parsedQuery = companyQuerySchema.safeParse(request.query || {});
+
+      if (!parsedParams.success) {
+        return reply.status(400).send({ message: "Identificador de presupuesto no válido." });
+      }
+
+      const history = await getBudgetHistoryService(userId, parsedParams.data.budgetId, parsedQuery.data?.companyId);
+      return { history };
+    }
+  );
+
+  app.post(
+    "/budgets/:budgetId/items/from-calculation",
+    {
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator"])]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = budgetParamsSchema.safeParse(request.params);
+      const parsedBody = convertCalculationSchema.safeParse(request.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        return reply.status(400).send({
+          message: "Datos de conversión de cálculo no válidos.",
+          fields: parsedBody.success ? undefined : parsedBody.error.flatten().fieldErrors
+        });
+      }
+
+      const { companyId, calculationId, sectionId, items } = parsedBody.data;
+
+      let itemsToInsert = items || [];
+
+      if (calculationId) {
+        const savedCalc = await getCalculationDetailService(userId, calculationId, companyId);
+        if (!savedCalc) {
+          return reply.status(404).send({ message: "No se encontró el cálculo guardado." });
+        }
+
+        const lineItems = savedCalc.results_data?.lineItems || [];
+        if (lineItems.length > 0) {
+          itemsToInsert = lineItems.map((li: any) => ({
+            sectionId: sectionId ?? null,
+            catalogItemId: null,
+            platformCatalogItemId: null,
+            itemType: li.itemType || "manual",
+            description: li.description || "Partida de cálculo",
+            unitName: li.unitName || "unidad",
+            quantity: Number(li.quantity) || 1,
+            unitCost: Number(li.unitCost) || 0,
+            unitPrice: Number(li.unitPrice) || 0,
+            discountPercentage: 0,
+            taxable: true,
+            notes: `Generado desde cálculo: ${savedCalc.title}`
+          }));
+        }
+      }
+
+      if (itemsToInsert.length === 0) {
+        return reply.status(400).send({ message: "No hay partidas para convertir o insertar." });
+      }
+
+      const createdItems = [];
+      for (const itemInput of itemsToInsert) {
+        const item = await addBudgetItemService(userId, parsedParams.data.budgetId, {
+          companyId,
+          ...itemInput
+        });
+        if (item) createdItems.push(item);
+      }
+
+      return reply.status(201).send({ items: createdItems });
     }
   );
 }

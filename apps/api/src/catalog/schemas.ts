@@ -71,3 +71,13 @@ export const createYieldSchema = z.object({
 export const deactivateYieldSchema = z.object({
   companyId: uuidSchema
 });
+
+export const catalogItemQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  search: z.string().trim().optional(),
+  q: z.string().trim().optional(),
+  categoryId: uuidSchema.optional(),
+  categoryName: z.string().trim().optional()
+});
+

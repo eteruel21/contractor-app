@@ -82,3 +82,27 @@ export function validateClientName(
 
   return null;
 }
+
+export const contactParamsSchema = z.object({
+  clientId: uuidSchema,
+  contactId: uuidSchema
+});
+
+export const createContactSchema = z.object({
+  companyId: uuidSchema,
+  name: z.string().trim().min(2).max(250),
+  position: z.string().trim().max(150).optional().default(""),
+  email: z.string().trim().email().or(z.literal("")).optional().default(""),
+  phone: z.string().trim().max(30).optional().default(""),
+  isPrimary: z.boolean().default(false)
+});
+
+export const updateContactSchema = z.object({
+  companyId: uuidSchema,
+  name: z.string().trim().min(2).max(250).optional(),
+  position: z.string().trim().max(150).optional(),
+  email: z.string().trim().email().or(z.literal("")).optional(),
+  phone: z.string().trim().max(30).optional(),
+  isPrimary: z.boolean().optional()
+});
+

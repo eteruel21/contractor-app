@@ -22,7 +22,7 @@ type OptionItem = {
   title: string;
   description: string;
   icon: any;
-  onPress?: () => void;
+  onPress: () => void;
 };
 
 const baseOptions: OptionItem[] = [
@@ -125,10 +125,8 @@ export default function MoreScreen() {
             <Pressable
               key={option.id}
               onPress={option.onPress}
-              disabled={!option.onPress}
               style={({ pressed }) => [
                 styles.option,
-                !option.onPress && styles.disabledOption,
                 pressed && styles.pressedOption,
               ]}
             >
@@ -136,11 +134,7 @@ export default function MoreScreen() {
                 <Ionicons
                   name={option.icon}
                   size={24}
-                  color={
-                    option.onPress
-                      ? colors.primary
-                      : "#94A3B8"
-                  }
+                  color={colors.primary}
                 />
               </View>
 
@@ -154,17 +148,11 @@ export default function MoreScreen() {
                 </Text>
               </View>
 
-              {option.onPress ? (
-                <Ionicons
-                  name="chevron-forward-outline"
-                  size={21}
-                  color="#94A3B8"
-                />
-              ) : (
-                <Text style={styles.soonText}>
-                  Próximamente
-                </Text>
-              )}
+              <Ionicons
+                name="chevron-forward-outline"
+                size={21}
+                color="#94A3B8"
+              />
             </Pressable>
           ))}
         </View>
@@ -220,10 +208,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  disabledOption: {
-    opacity: 0.65,
-  },
-
   pressedOption: {
     opacity: 0.75,
     transform: [{ scale: 0.99 }],
@@ -256,9 +240,4 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  soonText: {
-    color: "#94A3B8",
-    fontSize: 9,
-    fontWeight: "800",
-  },
 });

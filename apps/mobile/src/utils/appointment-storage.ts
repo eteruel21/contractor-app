@@ -1,4 +1,10 @@
 import { loadLocalData, saveLocalData } from "./local-storage";
+import {
+  createRemoteActivity,
+  deleteRemoteActivity,
+  fetchCompanyActivities,
+  updateRemoteActivity
+} from "@/services/activity-service";
 
 export type AppointmentStatus =
   | "scheduled"
@@ -39,9 +45,12 @@ function createId(): string {
     .slice(2, 9)}`;
 }
 
-export async function getAppointments(): Promise<Appointment[]> {
-  const items =
-    await loadLocalData<Appointment[]>(APPOINTMENTS_KEY);
+export async function getAppointments(companyId?: string, projectId?: string): Promise<Appointment[]> {
+  if (companyId) {
+    return await fetchCompanyActivities(companyId, { projectId });
+  }
+
+  const items = await loadLocalData<Appointment[]>(APPOINTMENTS_KEY);
 
   if (!Array.isArray(items)) return [];
 
@@ -54,8 +63,9 @@ export async function getAppointments(): Promise<Appointment[]> {
 
 export async function getAppointmentById(
   id: string,
+  companyId?: string
 ): Promise<Appointment | null> {
-  const items = await getAppointments();
+  const items = await getAppointments(companyId);
   return items.find((item) => item.id === id) ?? null;
 }
 
@@ -65,7 +75,18 @@ export async function saveAppointment(
     "id" | "createdAt" | "updatedAt"
   >,
   id?: string,
+  companyId?: string,
+  projectId?: string
 ): Promise<Appointment> {
+  if (companyId) {
+    if (id && !id.startsWith("local-")) {
+      const updated = await updateRemoteActivity(companyId, id, data);
+      if (updated) return updated;
+    } else {
+      return await createRemoteActivity(companyId, data, projectId);
+    }
+  }
+
   const items = await getAppointments();
   const now = new Date().toISOString();
 
@@ -98,7 +119,12 @@ export async function saveAppointment(
 
 export async function deleteAppointment(
   id: string,
+  companyId?: string
 ): Promise<Appointment[]> {
+  if (companyId && !id.startsWith("local-")) {
+    await deleteRemoteActivity(companyId, id);
+  }
+
   const items = await getAppointments();
   const updated = items.filter((item) => item.id !== id);
 

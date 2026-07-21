@@ -12,17 +12,62 @@ export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type CreateYieldInput = z.infer<typeof createYieldSchema>;
 export type PricingInput = z.infer<typeof pricingSchema>;
 
-export async function findPlatformCatalogItems(userId: string) {
+export async function findPlatformCatalogItems(
+  userId: string,
+  options: {
+    page?: number | undefined;
+    limit?: number | undefined;
+    search?: string | undefined;
+    categoryId?: string | undefined;
+    categoryName?: string | undefined;
+  } = {}
+) {
+  const page = options.page && options.page >= 1 ? options.page : 1;
+  const limit = options.limit && options.limit >= 1 ? options.limit : 20;
+  const offset = (page - 1) * limit;
+  const searchPattern = options.search ? `%${options.search}%` : null;
+
   return withUserTransaction(userId, async (client) => {
-    const result = await client.query(`
-      SELECT *
-      FROM public.effective_platform_catalog_prices
-      WHERE active = true
-      ORDER BY name ASC
-    `);
-    return result.rows;
+    const result = await client.query(
+      `
+        SELECT
+          item.*,
+          COUNT(*) OVER() AS total_count
+        FROM public.effective_platform_catalog_prices AS item
+        WHERE item.active = true
+          AND (
+            $1::text IS NULL OR (
+              item.name ILIKE $1 OR
+              item.code ILIKE $1 OR
+              item.sku ILIKE $1 OR
+              item.description ILIKE $1 OR
+              item.category_name ILIKE $1
+            )
+          )
+          AND ($2::text IS NULL OR item.category_name = $2)
+        ORDER BY item.name ASC
+        LIMIT $3 OFFSET $4
+      `,
+      [searchPattern, options.categoryName || null, limit, offset]
+    );
+
+    const totalItems = parseInt(result.rows[0]?.total_count ?? "0", 10);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const items = result.rows.map(({ total_count, ...item }) => item);
+
+    return {
+      items,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages
+      }
+    };
   });
 }
+
 
 export async function setPersonalCatalogPricingRepo(userId: string, itemId: string, input: PricingInput) {
   return withUserTransaction(userId, async (client) => {

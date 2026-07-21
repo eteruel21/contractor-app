@@ -99,3 +99,19 @@ export const createBudgetItemSchema = z.object({
     .optional()
     .default("")
 });
+
+export const approveBudgetSchema = z.object({
+  companyId: uuidSchema.optional()
+});
+
+export const rejectBudgetSchema = z.object({
+  companyId: uuidSchema.optional(),
+  rejectionReason: z.string().trim().min(2, "El motivo de rechazo es obligatorio.").max(2000)
+});
+
+export const convertCalculationSchema = z.object({
+  companyId: uuidSchema,
+  calculationId: uuidSchema.optional(),
+  sectionId: uuidSchema.optional(),
+  items: z.array(createBudgetItemSchema.omit({ companyId: true })).optional()
+});

@@ -114,7 +114,7 @@ export default function AppointmentFormScreen() {
   useEffect(() => {
     if (isNew || !id) return;
 
-    void getAppointmentById(id).then((item) => {
+    void getAppointmentById(id, activeCompany?.id).then((item) => {
       if (!item) return;
 
       setForm({
@@ -132,7 +132,7 @@ export default function AppointmentFormScreen() {
         notificationId: item.notificationId,
       });
     });
-  }, [id, isNew]);
+  }, [id, isNew, activeCompany?.id]);
 
   useEffect(() => {
     let active = true;
@@ -261,6 +261,7 @@ export default function AppointmentFormScreen() {
           notificationId,
         },
         isNew ? undefined : id,
+        activeCompany?.id,
       );
 
       router.back();

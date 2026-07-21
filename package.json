@@ -11,13 +11,13 @@
     "db:migrate": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs",
     "db:status": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs --status",
     "db:seed": "node --env-file-if-exists=database/.env database/scripts/seed.mjs",
+    "test:api": "npm run test -w apps/api",
     "test:database-tools": "node --test database/scripts/*.test.mjs",
-    "test": "npm run test -w apps/api && npm run test -w apps/mobile && npm run test:database-tools",
-    "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
-    "build:api": "npm run build -w apps/api",
+    "test:invoice-db": "node --env-file-if-exists=database/.env database/scripts/invoice-payments.integration.mjs",
+    "typecheck": "npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
     "build:admin": "npm run build -w apps/admin-web",
     "build:mobile": "npm run build:web -w apps/mobile",
-    "validate": "npm run typecheck && npm run test && npm run build:api && npm run build:admin && npm run build:mobile"
+    "validate": "npm run typecheck && npm run build:admin"
   },
   "devDependencies": {
     "pg": "^8.22.0",

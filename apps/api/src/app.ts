@@ -2,6 +2,7 @@ import { registerAdminRoutes } from "./admin/routes.js";
 import { registerInvoiceRoutes } from "./invoices/routes.js";
 import { registerOperationRoutes } from "./operations/routes.js";
 import { registerBudgetRoutes } from "./budgets/routes.js";
+import { registerCalculationRoutes } from "./calculations/routes.js";
 import { registerProjectRoutes } from "./projects/routes.js";
 import { registerClientRoutes } from "./clients/routes.js";
 import { registerCompanyRoutes } from "./companies/routes.js";
@@ -15,6 +16,11 @@ import { corsOrigins, env } from "./config/env.js";
 import { registerCatalogRoutes } from "./catalog/routes.js";
 import { pool } from "./db/pool.js";
 import { registerProfileRoutes } from "./profile/routes.js";
+import { registerActivityRoutes } from "./activities/routes.js";
+import { registerProjectTaskRoutes } from "./projects/tasks/routes.js";
+import { registerProjectProgressRoutes } from "./projects/progress/routes.js";
+import { registerStorageRoutes } from "./storage/routes.js";
+import { registerNotificationRoutes } from "./notifications/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -54,9 +60,15 @@ export async function buildApp() {
   await app.register(registerClientRoutes);
   await app.register(registerProjectRoutes);
   await app.register(registerBudgetRoutes);
+  await app.register(registerCalculationRoutes);
   await app.register(registerOperationRoutes);
   await app.register(registerInvoiceRoutes);
   await app.register(registerAdminRoutes);
+  await app.register(registerActivityRoutes);
+  await app.register(registerProjectTaskRoutes);
+  await app.register(registerProjectProgressRoutes);
+  await app.register(registerStorageRoutes);
+  await app.register(registerNotificationRoutes);
 
   app.get("/health", async () => {
     return {

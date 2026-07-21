@@ -1,14 +1,15 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 
-import { formatMoney, type BudgetItem, type BudgetSection } from "@/types/budget";
-import { getClientDisplayName } from "@/types/client";
-import type { Company } from "@/types/company";
+import { formatMoney } from "@/types/budget";
 import { formatShortDate } from "@/utils/format";
-import type { InvoiceWithDetails } from "@/types/invoice";
+import {
+  getInvoiceStatusLabel,
+  type InvoiceSnapshot,
+  type InvoiceWithDetails
+} from "@/types/invoice";
 
 type InvoicePdfInput = {
-  company: Company;
   invoice: InvoiceWithDetails;
 };
 
@@ -27,8 +28,8 @@ function formatDate(value: string | null | undefined, timezone?: string) {
 }
 
 function renderItems(
-  section: BudgetSection | null,
-  items: BudgetItem[],
+  section: InvoiceSnapshot["sections"][number] | null,
+  items: InvoiceSnapshot["items"],
   currencyCode?: string,
 ) {
   const sectionName = section?.name ?? "Sin sección";
@@ -57,13 +58,13 @@ function renderItems(
               }
             </td>
             <td class="center">
-              ${escapeHtml(item.unit_name)}
+              ${escapeHtml(item.unitName)}
             </td>
             <td class="right">
               ${Number(item.quantity).toLocaleString("es-PA")}
             </td>
             <td class="right">
-              ${formatMoney(item.unit_price, currencyCode)}
+              ${formatMoney(item.unitPrice, currencyCode)}
             </td>
             <td class="right strong">
               ${formatMoney(item.subtotal, currencyCode)}
@@ -76,60 +77,64 @@ function renderItems(
 }
 
 export function buildInvoiceHtml({
-  company,
   invoice,
 }: InvoicePdfInput) {
-  const clientName = invoice.client
-    ? getClientDisplayName(invoice.client)
-    : "Cliente no registrado";
+  const snapshot = invoice.snapshot_data;
 
-  const clientAddress = invoice.budget?.address?.address ?? "Sin dirección registrada";
-
-  const budget = invoice.budget;
-
-  let itemsHtml = "";
-  let subtotal = 0;
-  let taxAmount = 0;
-  let total = 0;
-  let currencyCode = company.currency_code || "USD";
-
-  if (budget) {
-    currencyCode = budget.currency_code;
-    subtotal = budget.subtotal;
-    taxAmount = budget.tax_amount;
-    total = budget.total;
-
-    const sectionsHtml = budget.sections
-      .map((section) => {
-        const items = budget.items.filter(
-          (item) => item.section_id === section.id,
-        );
-        return renderItems(section, items, budget.currency_code);
-      })
-      .join("");
-
-    const orphanItems = budget.items.filter(
-      (item) => !item.section_id,
+  if (!snapshot || invoice.status === "draft") {
+    throw new Error(
+      "La factura debe estar emitida y tener un snapshot válido antes de generar el PDF."
     );
-
-    const orphanHtml =
-      orphanItems.length > 0
-        ? renderItems(null, orphanItems, budget.currency_code)
-        : "";
-
-    itemsHtml = sectionsHtml + orphanHtml;
-  } else {
-    itemsHtml = `
-      <tr>
-        <td colspan="5" class="empty-row">
-          No hay partidas vinculadas a esta factura.
-        </td>
-      </tr>
-    `;
   }
 
-  const logoHtml = company.logo_url
-    ? `<img src="${escapeHtml(company.logo_url)}" class="company-logo" alt="Logo" />`
+  const company = snapshot.company;
+  const client = snapshot.client;
+  const invoiceData = snapshot.invoice;
+  const clientName =
+    client.businessName?.trim() ||
+    [client.firstName, client.lastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    "Cliente no registrado";
+  const clientAddressValue = client.address?.address;
+  const clientAddress =
+    typeof clientAddressValue === "string" && clientAddressValue.trim()
+      ? clientAddressValue
+      : "Sin dirección registrada";
+  const currencyCode = snapshot.currency || "USD";
+  const sectionIds = new Set(snapshot.sections.map((section) => section.id));
+  const sectionsHtml = snapshot.sections
+    .map((section) => {
+      const items = snapshot.items.filter(
+        (item) => item.sectionId === section.id
+      );
+      return renderItems(section, items, currencyCode);
+    })
+    .join("");
+  const orphanItems = snapshot.items.filter(
+    (item) => !item.sectionId || !sectionIds.has(item.sectionId)
+  );
+  const orphanHtml = orphanItems.length
+    ? renderItems(null, orphanItems, currencyCode)
+    : "";
+  const itemsHtml = sectionsHtml || orphanHtml
+    ? sectionsHtml + orphanHtml
+    : `
+        <tr>
+          <td colspan="5" class="empty-row">
+            No hay partidas registradas en esta factura.
+          </td>
+        </tr>
+      `;
+  const primaryTax = snapshot.taxes[0];
+  const notesAndConditions = [
+    invoiceData.notes,
+    snapshot.conditions
+  ].filter(Boolean).join("\n\n");
+
+  const logoHtml = company.logoUrl
+    ? `<img src="${escapeHtml(company.logoUrl)}" class="company-logo" alt="Logo" />`
     : "";
 
   return `
@@ -332,9 +337,9 @@ export function buildInvoiceHtml({
   <div class="header">
     <div>
       ${logoHtml}
-      <div class="company-name">${escapeHtml(company.legal_name || company.name)}</div>
+      <div class="company-name">${escapeHtml(company.legalName || company.name)}</div>
       <div class="company-meta">
-        ${company.tax_id ? `RUC / ID: ${escapeHtml(company.tax_id)}<br/>` : ""}
+        ${company.taxId ? `RUC / ID: ${escapeHtml(company.taxId)}<br/>` : ""}
         ${company.address ? `${escapeHtml(company.address)}<br/>` : ""}
         ${company.phone ? `Telf: ${escapeHtml(company.phone)} ` : ""}
         ${company.email ? `· Correo: ${escapeHtml(company.email)}` : ""}
@@ -343,8 +348,8 @@ export function buildInvoiceHtml({
 
     <div class="doc-box">
       <div class="doc-label">Factura</div>
-      <div class="doc-number">${escapeHtml(invoice.invoice_number)}</div>
-      <div class="status">Estado: ${escapeHtml(invoice.status === "paid" ? "Pagada" : invoice.status === "cancelled" ? "Cancelada" : "Pendiente")}</div>
+      <div class="doc-number">${escapeHtml(invoiceData.number)}</div>
+      <div class="status">Estado: ${escapeHtml(getInvoiceStatusLabel(invoice.status))}</div>
     </div>
   </div>
 
@@ -354,17 +359,17 @@ export function buildInvoiceHtml({
       <div class="main-text">${escapeHtml(clientName)}</div>
       <div class="muted">
         Dirección: ${escapeHtml(clientAddress)}<br/>
-        ${invoice.client?.phone ? `Telf: ${escapeHtml(invoice.client.phone)}<br/>` : ""}
-        ${invoice.client?.email ? `Correo: ${escapeHtml(invoice.client.email)}` : ""}
+        ${client.phone ? `Telf: ${escapeHtml(client.phone)}<br/>` : ""}
+        ${client.email ? `Correo: ${escapeHtml(client.email)}` : ""}
       </div>
     </div>
 
     <div class="card">
       <div class="card-title">Detalles de Factura</div>
       <div class="muted">
-        <strong>Fecha de emisión:</strong> ${formatDate(invoice.issue_date, company.timezone)}<br/>
-        <strong>Fecha de vencimiento:</strong> ${invoice.due_date ? formatDate(invoice.due_date, company.timezone) : "Pago de contado"}<br/>
-        ${budget ? `<strong>Presupuesto ref:</strong> ${escapeHtml(budget.budget_number)}` : ""}
+        <strong>Fecha de emisión:</strong> ${formatDate(invoiceData.issueDate, company.timezone)}<br/>
+        <strong>Fecha de vencimiento:</strong> ${invoiceData.dueDate ? formatDate(invoiceData.dueDate, company.timezone) : "Pago de contado"}<br/>
+        <strong>Presupuesto ref:</strong> ${escapeHtml(snapshot.source.budgetNumber)}
       </div>
     </div>
   </div>
@@ -388,25 +393,25 @@ export function buildInvoiceHtml({
     <div class="totals-box">
       <div class="total-row">
         <span>Subtotal:</span>
-        <span class="strong">${formatMoney(subtotal, currencyCode)}</span>
+        <span class="strong">${formatMoney(snapshot.totals.subtotal, currencyCode)}</span>
       </div>
       <div class="total-row">
-        <span>ITBMS/IVA (${company.tax_rate}%):</span>
-        <span class="strong">${formatMoney(taxAmount, currencyCode)}</span>
+        <span>ITBMS/IVA (${primaryTax?.rate ?? 0}%):</span>
+        <span class="strong">${formatMoney(snapshot.totals.tax, currencyCode)}</span>
       </div>
       <div class="total-row grand-total">
         <span>Total:</span>
-        <span>${formatMoney(total, currencyCode)}</span>
+        <span>${formatMoney(snapshot.totals.total, currencyCode)}</span>
       </div>
     </div>
   </div>
 
   ${
-    invoice.notes
+    notesAndConditions
       ? `
     <div style="margin-top: 24px;">
       <div class="card-title">Notas / Condiciones</div>
-      <div class="muted" style="white-space: pre-line;">${escapeHtml(invoice.notes)}</div>
+      <div class="muted" style="white-space: pre-line;">${escapeHtml(notesAndConditions)}</div>
     </div>
     `
       : ""
@@ -422,17 +427,16 @@ export function buildInvoiceHtml({
 }
 
 export async function shareInvoicePdf({
-  company,
   invoice,
 }: InvoicePdfInput): Promise<{
   error: string | null;
 }> {
   try {
-    const html = buildInvoiceHtml({ company, invoice });
+    const html = buildInvoiceHtml({ invoice });
     const { uri } = await Print.printToFileAsync({ html });
     await Sharing.shareAsync(uri, {
       mimeType: "application/pdf",
-      dialogTitle: `Compartir factura ${invoice.invoice_number}`,
+      dialogTitle: `Compartir factura ${invoice.snapshot_data?.invoice.number ?? "sin número"}`,
       UTI: "com.adobe.pdf",
     });
     return { error: null };

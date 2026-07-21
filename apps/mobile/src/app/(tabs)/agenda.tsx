@@ -53,14 +53,14 @@ export default function AgendaScreen() {
     useCallback(() => {
       let active = true;
 
-      void getAppointments().then((items) => {
+      void getAppointments(activeCompany?.id).then((items) => {
         if (active) setAppointments(items);
       });
 
       return () => {
         active = false;
       };
-    }, []),
+    }, [activeCompany?.id]),
   );
 
   const grouped = useMemo(() => {
@@ -83,7 +83,7 @@ export default function AgendaScreen() {
 
   async function removeAppointment(item: Appointment) {
     await cancelScheduledNotification(item.notificationId);
-    setAppointments(await deleteAppointment(item.id));
+    setAppointments(await deleteAppointment(item.id, activeCompany?.id));
   }
 
   function confirmDelete(item: Appointment) {

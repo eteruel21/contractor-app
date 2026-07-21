@@ -33,11 +33,12 @@ function RootNavigator() {
 
   const isAuthenticated = Boolean(session);
   const isContractor = isAuthenticated && profile?.role === "contractor";
+  const isClient = isAuthenticated && profile?.role === "client";
 
   const needsProfileSetup = isContractor && !profile?.primary_category;
   const isApproved = isAuthenticated && Boolean(profile?.active);
   const isPendingApproval = isAuthenticated && !profile?.active && !needsProfileSetup;
-  
+
   const isClientAuthenticated = isApproved && profile?.role === "client";
   const isContractorAuthenticated = isApproved && profile?.role === "contractor";
 
@@ -105,6 +106,7 @@ function RootNavigator() {
         <Stack.Screen name="agenda" />
         <Stack.Screen name="calculos" />
         <Stack.Screen name="clientes" />
+        <Stack.Screen name="facturas" />
         <Stack.Screen name="presupuestos" />
         <Stack.Screen name="proyectos" />
         <Stack.Screen name="catalogo" />

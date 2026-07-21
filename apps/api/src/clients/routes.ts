@@ -20,6 +20,9 @@ import {
   deactivateClientSchema,
   addressSchema,
   addressActionSchema,
+  contactParamsSchema,
+  createContactSchema,
+  updateContactSchema,
   validateClientName
 } from "./schemas.js";
 
@@ -33,7 +36,11 @@ import {
   addClientAddressService,
   updateClientAddressService,
   setPrimaryClientAddressService,
-  deleteClientAddressService
+  deleteClientAddressService,
+  getClientContactsService,
+  createClientContactService,
+  updateClientContactService,
+  deleteClientContactService
 } from "./services.js";
 
 function authenticatedUserId(
@@ -330,6 +337,125 @@ export async function registerClientRoutes(
         return reply.status(404).send({
           message: "No se encontró la dirección."
         });
+      }
+
+      return { success: true };
+    }
+  );
+
+  // --- Contactos de cliente (T-113) ---
+
+  app.get(
+    "/clients/:clientId/contacts",
+    {
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales", "supervisor", "member"])]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = clientParamsSchema.safeParse(request.params);
+      const parsedQuery = companyQuerySchema.safeParse(request.query);
+
+      if (!parsedParams.success || !parsedQuery.success) {
+        return reply.status(400).send({ message: "Parámetros no válidos." });
+      }
+
+      const contacts = await getClientContactsService(
+        userId,
+        parsedQuery.data.companyId,
+        parsedParams.data.clientId
+      );
+
+      return { contacts };
+    }
+  );
+
+  app.post(
+    "/clients/:clientId/contacts",
+    {
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = clientParamsSchema.safeParse(request.params);
+      const parsedBody = createContactSchema.safeParse(request.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        return reply.status(400).send({
+          message: "Los datos del contacto no son válidos.",
+          fields: parsedBody.error?.flatten().fieldErrors
+        });
+      }
+
+      const contact = await createClientContactService(
+        userId,
+        parsedParams.data.clientId,
+        parsedBody.data
+      );
+
+      return reply.status(201).send({ contact });
+    }
+  );
+
+  app.patch(
+    "/clients/:clientId/contacts/:contactId",
+    {
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "sales"])]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = contactParamsSchema.safeParse(request.params);
+      const parsedBody = updateContactSchema.safeParse(request.body);
+
+      if (!parsedParams.success || !parsedBody.success) {
+        return reply.status(400).send({ message: "Los datos del contacto no son válidos." });
+      }
+
+      const contact = await updateClientContactService(
+        userId,
+        parsedParams.data.clientId,
+        parsedParams.data.contactId,
+        parsedBody.data
+      );
+
+      if (!contact) {
+        return reply.status(404).send({ message: "No se encontró el contacto." });
+      }
+
+      return { contact };
+    }
+  );
+
+  app.delete(
+    "/clients/:clientId/contacts/:contactId",
+    {
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin"])]
+    },
+    async (request, reply) => {
+      const userId = authenticatedUserId(request, reply);
+      if (!userId) return;
+
+      const parsedParams = contactParamsSchema.safeParse(request.params);
+      const parsedQuery = companyQuerySchema.safeParse(request.query);
+
+      if (!parsedParams.success || !parsedQuery.success) {
+        return reply.status(400).send({ message: "Parámetros no válidos." });
+      }
+
+      const deleted = await deleteClientContactService(
+        userId,
+        parsedQuery.data.companyId,
+        parsedParams.data.clientId,
+        parsedParams.data.contactId
+      );
+
+      if (!deleted) {
+        return reply.status(404).send({ message: "No se encontró el contacto." });
       }
 
       return { success: true };

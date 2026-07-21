@@ -349,3 +349,141 @@ export async function deleteClientAddressRepo(userId: string, companyId: string,
     return true;
   });
 }
+
+// --- Contactos de Cliente (T-113) ---
+
+export async function findClientContactsRepo(userId: string, companyId: string, clientId: string) {
+  return withUserTransaction(userId, async (client) => {
+    const result = await client.query(
+      `
+        SELECT *
+        FROM public.client_contacts
+        WHERE company_id = $1 AND client_id = $2
+        ORDER BY is_primary DESC, created_at ASC
+      `,
+      [companyId, clientId]
+    );
+    return result.rows;
+  });
+}
+
+export async function createClientContactRepo(
+  userId: string,
+  clientId: string,
+  input: {
+    companyId: string;
+    name: string;
+    position?: string;
+    email?: string;
+    phone?: string;
+    isPrimary?: boolean;
+  }
+) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.isPrimary) {
+      await client.query(
+        `
+          UPDATE public.client_contacts
+          SET is_primary = false
+          WHERE company_id = $1 AND client_id = $2 AND is_primary = true
+        `,
+        [input.companyId, clientId]
+      );
+    }
+
+    const result = await client.query(
+      `
+        INSERT INTO public.client_contacts (
+          company_id, client_id, name, position, email, phone, is_primary
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      `,
+      [
+        input.companyId,
+        clientId,
+        input.name,
+        input.position || null,
+        input.email ? input.email.toLowerCase() : null,
+        input.phone || null,
+        input.isPrimary ?? false
+      ]
+    );
+
+    return result.rows[0] ?? null;
+  });
+}
+
+export async function updateClientContactRepo(
+  userId: string,
+  clientId: string,
+  contactId: string,
+  input: {
+    companyId: string;
+    name?: string | undefined;
+    position?: string | undefined;
+    email?: string | undefined;
+    phone?: string | undefined;
+    isPrimary?: boolean | undefined;
+  }
+) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.isPrimary) {
+      await client.query(
+        `
+          UPDATE public.client_contacts
+          SET is_primary = false
+          WHERE company_id = $1 AND client_id = $2 AND id != $3 AND is_primary = true
+        `,
+        [input.companyId, clientId, contactId]
+      );
+    }
+
+    const result = await client.query(
+      `
+        UPDATE public.client_contacts
+        SET
+          name = COALESCE($1, name),
+          position = COALESCE($2, position),
+          email = COALESCE($3, email),
+          phone = COALESCE($4, phone),
+          is_primary = COALESCE($5, is_primary),
+          updated_at = now()
+        WHERE id = $6 AND client_id = $7 AND company_id = $8
+        RETURNING *
+      `,
+      [
+        input.name ?? null,
+        input.position ?? null,
+        input.email ? input.email.toLowerCase() : null,
+        input.phone ?? null,
+        input.isPrimary ?? null,
+        contactId,
+        clientId,
+        input.companyId
+      ]
+    );
+
+    return result.rows[0] ?? null;
+  });
+}
+
+export async function deleteClientContactRepo(
+  userId: string,
+  companyId: string,
+  clientId: string,
+  contactId: string
+) {
+  return withUserTransaction(userId, async (client) => {
+    const result = await client.query(
+      `
+        DELETE FROM public.client_contacts
+        WHERE id = $1 AND client_id = $2 AND company_id = $3
+        RETURNING *
+      `,
+      [contactId, clientId, companyId]
+    );
+    return result.rows[0] ?? null;
+  });
+}
+

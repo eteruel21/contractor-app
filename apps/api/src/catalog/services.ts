@@ -17,8 +17,17 @@ import {
   type PricingInput
 } from "./repository.js";
 
-export async function getPlatformCatalogItemsService(userId: string) {
-  return findPlatformCatalogItems(userId);
+export async function getPlatformCatalogItemsService(
+  userId: string,
+  options: {
+    page?: number | undefined;
+    limit?: number | undefined;
+    search?: string | undefined;
+    categoryId?: string | undefined;
+    categoryName?: string | undefined;
+  } = {}
+) {
+  return findPlatformCatalogItems(userId, options);
 }
 
 export async function setPersonalCatalogPricingService(userId: string, itemId: string, input: PricingInput) {
