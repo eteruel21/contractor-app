@@ -124,7 +124,7 @@ export default function BudgetDetailScreen() {
             budgetId,
           );
           setAssociatedInvoice(invoice);
-        } catch (err) {
+        } catch {
           // Ignore
         }
       }
@@ -136,7 +136,15 @@ export default function BudgetDetailScreen() {
   );
 
   useEffect(() => {
-    void loadBudget();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void loadBudget();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadBudget]);
 
   async function handleDeleteItem(item: BudgetItem) {

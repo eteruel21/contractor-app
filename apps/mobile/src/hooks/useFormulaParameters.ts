@@ -58,7 +58,15 @@ export function useFormulaParameters(
   }, [companyId, formulaCode]);
 
   useEffect(() => {
-    void reload();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void reload();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [reload]);
 
   useEffect(() => {

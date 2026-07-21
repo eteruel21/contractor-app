@@ -152,9 +152,6 @@ export default function ConcreteCalculatorScreen() {
     return formatDecimalUtil(val, maxDigits, activeCompany?.currency_code);
   };
 
-  const formatMoney = (val: number) => {
-    return formatMoneyUtil(val, activeCompany?.currency_code);
-  };
   const [form, setForm] = useState<FormState>(initialForm);
   const [sandPriceMode, setSandPriceMode] =
     useState<AggregatePriceMode>("cubicMeter");
@@ -179,10 +176,7 @@ export default function ConcreteCalculatorScreen() {
   useEffect(() => {
     const companyId = activeCompany?.id;
 
-    if (!companyId) {
-      setCatalogItems([]);
-      return;
-    }
+    if (!companyId) return;
 
     async function loadCatalog(id: string) {
       setCatalogLoading(true);
@@ -941,15 +935,17 @@ export default function ConcreteCalculatorScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <CatalogPricePicker
-        visible={Boolean(catalogTarget)}
-        target={catalogTarget}
-        items={catalogItems}
-        loading={catalogLoading}
-        currencyCode={activeCompany?.currency_code}
-        onClose={() => setCatalogTarget(null)}
-        onSelect={handleCatalogItemSelected}
-      />
+      {catalogTarget ? (
+        <CatalogPricePicker
+          visible
+          target={catalogTarget}
+          items={catalogItems}
+          loading={catalogLoading}
+          currencyCode={activeCompany?.currency_code}
+          onClose={() => setCatalogTarget(null)}
+          onSelect={handleCatalogItemSelected}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -1005,10 +1001,6 @@ function CatalogPricePicker({
   onSelect: (item: CatalogItemWithDetails) => void;
 }) {
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    if (visible) setSearch("");
-  }, [visible, target]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();

@@ -454,13 +454,11 @@ export async function listCatalogYields(
     const response =
       await authenticatedRequest<{
         yields:
-          Array<
-            CatalogYield & {
+          (CatalogYield & {
               output_unit:
                 | Unit
                 | null;
-            }
-          >;
+            })[];
       }>(
         `/catalog/yields?${query}`
       );

@@ -321,16 +321,14 @@ export default function FlooringScreen() {
     }
   }
 
-  const areaFields: Array<[keyof Form, string, string]> = [
+  const areaFields: [keyof Form, string, string][] = [
     ["length", "Largo", "m"],
     ["width", "Ancho", "m"],
     ["directArea", "Área directa (opcional)", "m²"],
     ["excludedArea", "Área excluida", "m²"],
   ];
 
-  const materialFields: Array<
-    [keyof Form, string, string]
-  > = [
+  const materialFields: [keyof Form, string, string][] = [
     ["tileLengthCm", "Largo de pieza", "cm"],
     ["tileWidthCm", "Ancho de pieza", "cm"],
     ["piecesPerBox", "Piezas por caja", "und."],
@@ -546,7 +544,7 @@ function Grid({
   form,
   update,
 }: {
-  fields: Array<[keyof Form, string, string]>;
+  fields: [keyof Form, string, string][];
   form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {

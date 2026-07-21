@@ -140,7 +140,7 @@ export default function GypsumScreen() {
       setError("El área de puertas y ventanas debe ser menor que el muro.");
       return;
     }
-    const positive: Array<[keyof Form, string]> = [
+    const positive: [keyof Form, string][] = [
       ["boardWidth", "ancho de lámina"], ["boardHeight", "alto de lámina"],
       ["studSpacing", "separación de studs"], ["studLength", "largo del stud"],
       ["trackLength", "largo del track"], ["screwsPerBox", "tornillos por caja"],
@@ -206,12 +206,12 @@ export default function GypsumScreen() {
     }
   }
 
-  const dimensions: Array<[keyof Form, string, string, string]> = [
+  const dimensions: [keyof Form, string, string, string][] = [
     ["wallLength", "Largo", "0.00", "m"],
     ["wallHeight", "Altura", "0.00", "m"],
     ["openingsArea", "Puertas y ventanas", "0.00", "m²"],
   ];
-  const structure: Array<[keyof Form, string, string, string]> = [
+  const structure: [keyof Form, string, string, string][] = [
     ["boardWidth", "Ancho de lámina", "1.22", "m"],
     ["boardHeight", "Alto de lámina", "2.44", "m"],
     ["waste", "Desperdicio", "10", "%"],
@@ -219,7 +219,7 @@ export default function GypsumScreen() {
     ["studLength", "Largo del stud", "3", "m"],
     ["trackLength", "Largo del track", "3", "m"],
   ];
-  const finishes: Array<[keyof Form, string, string, string]> = [
+  const finishes: [keyof Form, string, string, string][] = [
     ["screwsPerBoard", "Tornillos por lámina", "40", "und."],
     ["screwsPerBox", "Tornillos por caja", "1000", "und."],
     ["tapePerM2", "Cinta por m²", "1.5", "m"],
@@ -227,7 +227,7 @@ export default function GypsumScreen() {
     ["compoundPerM2", "Compuesto por m²", "0.6", "kg"],
     ["compoundPackageKg", "Peso por envase", "28", "kg"],
   ];
-  const prices: Array<[keyof Form, string]> = [
+  const prices: [keyof Form, string][] = [
     ["boardPrice", "Lámina"], ["studPrice", "Stud"],
     ["trackPrice", "Track"], ["screwPrice", "Caja de tornillos"],
     ["tapePrice", "Rollo de cinta"],
@@ -314,9 +314,9 @@ export default function GypsumScreen() {
           {success ? <Message text={success} /> : null}
         </ScrollView>
       </KeyboardAvoidingView>
-      <CatalogPicker visible={Boolean(target)} target={target} items={items}
+      {target ? <CatalogPicker visible target={target} items={items}
         loading={catalogLoading} currency={currency} onClose={() => setTarget(null)}
-        onSelect={choose} />
+        onSelect={choose} /> : null}
     </SafeAreaView>
   );
 }
@@ -330,7 +330,7 @@ function Section({ title, description, children }: {
 }
 
 function FieldGrid({ fields, form, update }: {
-  fields: Array<[keyof Form, string, string, string]>; form: Form;
+  fields: [keyof Form, string, string, string][]; form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {
   return <View style={styles.grid}>{fields.map(([field, label, placeholder, unit]) =>
@@ -366,7 +366,6 @@ function CatalogPicker({ visible, target, items, loading, currency, onClose, onS
   onSelect: (item: CatalogItemWithDetails) => void;
 }) {
   const [search, setSearch] = useState("");
-  useEffect(() => { if (visible) setSearch(""); }, [visible, target]);
   const filtered = useMemo(() => items.filter((item) => {
     const typeOk = target === "labor"
       ? item.item_type === "labor" || item.item_type === "service"
@@ -402,7 +401,7 @@ function Results({ result, currency, onAdd }: {
 }) {
   const n = (value: number, digits = 0) => formatDecimal(value, digits, currency);
   const m = (value: number) => formatMoney(value, currency);
-  const rows: Array<[string, string, string?]> = [
+  const rows: [string, string, string?][] = [
     ["Área neta", `${n(result.netWallArea, 2)} m²`],
     ["Área terminada", `${n(result.finishedArea, 2)} m²`],
     ["Láminas", `${n(result.boardsToBuy)} unidades`, `${n(result.boardsExact, 2)} calculadas`],

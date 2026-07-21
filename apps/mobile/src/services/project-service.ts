@@ -288,12 +288,10 @@ export async function listProjectsByCompany(
     const response =
       await authenticatedRequest<{
         projects:
-          Array<
-            ProjectRow & {
+          (ProjectRow & {
               client:
                 ProjectSummary["client"];
-            }
-          >;
+            })[];
       }>(
         `/projects?companyId=${encodeURIComponent(companyId)}`
       );
@@ -329,15 +327,13 @@ export async function listProjectsForClient(
     const response =
       await authenticatedRequest<{
         projects:
-          Array<
-            ProjectRow & {
+          (ProjectRow & {
               company:
                 | {
                     name: string;
                   }
                 | null;
-            }
-          >;
+            })[];
       }>("/projects/client");
 
     return {

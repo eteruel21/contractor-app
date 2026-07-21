@@ -420,15 +420,6 @@ describe("T-056: Calculadoras de Construcción (10 Calculadoras)", () => {
 
   // 7. Muebles MDF
   describe("7. Calculadora de Muebles MDF (calculateMdfFurniture)", () => {
-    const defaultPrices = {
-      boardPiece: 35,
-      edgeMeter: 0.5,
-      hardwareKit: 15,
-      screwBox: 8,
-      supplies: 10,
-      laborMeter: 40
-    };
-
     it("Caso normal", () => {
       const result = calculateMdfFurniture(
         {

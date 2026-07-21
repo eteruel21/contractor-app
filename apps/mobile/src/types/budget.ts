@@ -4,6 +4,8 @@ import type {
 } from "@/types/client";
 import type { Project } from "@/types/project";
 
+import { formatMoney as formatMoneyUtil } from "@/utils/format";
+
 export type BudgetStatus =
   | "draft"
   | "sent"
@@ -110,8 +112,6 @@ export function getBudgetStatusLabel(
 
   return labels[status];
 }
-
-import { formatMoney as formatMoneyUtil } from "@/utils/format";
 
 export function formatMoney(value: number, currencyCode?: string): string {
   return formatMoneyUtil(value, currencyCode);

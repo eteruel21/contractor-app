@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,14 +20,9 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function ProfileScreen() {
   const { profile, user, updateProfile } = useAuth();
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState(profile?.full_name ?? "");
+  const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    setFullName(profile?.full_name ?? "");
-    setPhone(profile?.phone ?? "");
-  }, [profile?.full_name, profile?.phone]);
 
   const initial = useMemo(
     () => (fullName.trim().charAt(0) || "P").toUpperCase(),

@@ -131,10 +131,7 @@ export default function MasonryCalculatorScreen() {
   useEffect(() => {
     const companyId = activeCompany?.id;
 
-    if (!companyId) {
-      setCatalogItems([]);
-      return;
-    }
+    if (!companyId) return;
 
     async function loadCatalog(id: string) {
       setCatalogLoading(true);
@@ -761,15 +758,17 @@ export default function MasonryCalculatorScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <CatalogPicker
-        visible={Boolean(catalogTarget)}
-        target={catalogTarget}
-        items={catalogItems}
-        loading={catalogLoading}
-        currencyCode={currencyCode}
-        onClose={() => setCatalogTarget(null)}
-        onSelect={selectCatalogItem}
-      />
+      {catalogTarget ? (
+        <CatalogPicker
+          visible
+          target={catalogTarget}
+          items={catalogItems}
+          loading={catalogLoading}
+          currencyCode={currencyCode}
+          onClose={() => setCatalogTarget(null)}
+          onSelect={selectCatalogItem}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -904,10 +903,6 @@ function CatalogPicker({
   onSelect: (item: CatalogItemWithDetails) => void;
 }) {
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    if (visible) setSearch("");
-  }, [target, visible]);
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();

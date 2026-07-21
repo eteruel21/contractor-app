@@ -91,10 +91,10 @@ type SystemConfig = {
   shortTitle: string;
   description: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
-  equipment: Array<{
+  equipment: {
     field: DeviceTarget;
     label: string;
-  }>;
+  }[];
 };
 
 const KEY = "@contractor-pro/special-systems-settings";
@@ -456,17 +456,13 @@ export default function SpecialSystemsScreen() {
     }
   }
 
-  const equipmentFields: Array<
-    [keyof Form, string, string]
-  > = config.equipment.map(({ field, label }) => [
+  const equipmentFields: [keyof Form, string, string][] = config.equipment.map(({ field, label }) => [
     field,
     label,
     "und.",
   ]);
 
-  const routeFields: Array<
-    [keyof Form, string, string]
-  > = [
+  const routeFields: [keyof Form, string, string][] = [
     ["wiredPoints", "Puntos cableados", "puntos"],
     ["averageRouteLength", "Recorrido promedio", "m/punto"],
     ["cableRunsPerPoint", "Cables por punto", "cables"],
@@ -475,9 +471,7 @@ export default function SpecialSystemsScreen() {
     ["conduitPieceLength", "Longitud de tubería", "m/pza."],
   ];
 
-  const priceFields: Array<
-    [keyof Form, string, string]
-  > = config.equipment.map(({ field, label }) => {
+  const priceFields: [keyof Form, string, string][] = config.equipment.map(({ field, label }) => {
     const priceField = `${field}Price` as keyof Form;
     return [priceField, label, "B/."];
   });
@@ -740,7 +734,7 @@ function Grid({
   form,
   update,
 }: {
-  fields: Array<[keyof Form, string, string]>;
+  fields: [keyof Form, string, string][];
   form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {

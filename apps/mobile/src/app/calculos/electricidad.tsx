@@ -361,18 +361,14 @@ export default function ElectricalScreen() {
     }
   }
 
-  const pointFields: Array<
-    [keyof Form, string, string]
-  > = [
+  const pointFields: [keyof Form, string, string][] = [
     ["lightPoints", "Puntos de luz", "und."],
     ["switchPoints", "Interruptores", "und."],
     ["outletPoints", "Tomacorrientes", "und."],
     ["dedicatedPoints", "Puntos dedicados", "und."],
   ];
 
-  const routeFields: Array<
-    [keyof Form, string, string]
-  > = [
+  const routeFields: [keyof Form, string, string][] = [
     [
       "averageRouteLength",
       "Recorrido promedio por punto",
@@ -397,9 +393,7 @@ export default function ElectricalScreen() {
     ],
   ];
 
-  const circuitFields: Array<
-    [keyof Form, string, string]
-  > = [
+  const circuitFields: [keyof Form, string, string][] = [
     [
       "lightingPointsPerCircuit",
       "Luces por circuito",
@@ -669,7 +663,7 @@ function Grid({
   form,
   update,
 }: {
-  fields: Array<[keyof Form, string, string]>;
+  fields: [keyof Form, string, string][];
   form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {

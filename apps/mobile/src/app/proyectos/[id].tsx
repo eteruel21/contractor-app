@@ -17,7 +17,6 @@ import {
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import {
@@ -81,14 +80,6 @@ export default function ProjectDetailScreen() {
   const [progressInput, setProgressInput] =
     useState("");
 
-  const projectTitle = useMemo(() => {
-    if (!project) return "Proyecto";
-
-    return project.project_code
-      ? `${project.project_code} · ${project.name}`
-      : project.name;
-  }, [project]);
-
   const loadProject = useCallback(
     async (showRefresh = false) => {
       if (!activeCompany || !projectId) return;
@@ -142,7 +133,15 @@ export default function ProjectDetailScreen() {
   );
 
   useEffect(() => {
-    void loadProject();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void loadProject();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadProject]);
 
   async function handleChangeStatus(

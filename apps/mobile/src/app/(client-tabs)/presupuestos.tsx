@@ -19,13 +19,14 @@ import { formatMoney } from "../../utils/format";
 
 export default function ClientBudgetsScreen() {
   const { profile } = useAuth();
+  const profileId = profile?.id;
   const [budgets, setBudgets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadBudgets = useCallback(
     async (showRefresh = false) => {
-      if (!profile?.id) return;
+      if (!profileId) return;
 
       if (showRefresh) {
         setRefreshing(true);
@@ -34,7 +35,7 @@ export default function ClientBudgetsScreen() {
       }
 
       const { budgets: loadedBudgets, error } = await listBudgetsForClient(
-        profile.id,
+        profileId,
       );
 
       if (error) {
@@ -46,7 +47,7 @@ export default function ClientBudgetsScreen() {
       setLoading(false);
       setRefreshing(false);
     },
-    [profile?.id],
+    [profileId],
   );
 
   useFocusEffect(

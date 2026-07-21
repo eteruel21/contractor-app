@@ -120,7 +120,6 @@ export async function requireActiveUser(
 
     const record = result.rows[0];
     if (process.env.NODE_ENV !== "production") {
-      console.log(`[requireActiveUser DEBUG] userId=${user.id} record=`, record);
     }
     if (!record) {
       reply.status(403).send({

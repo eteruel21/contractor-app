@@ -131,7 +131,7 @@ export default function PvcCeilingScreen() {
       setError("Introduce largo y ancho, o escribe el área y perímetro directos.");
       return;
     }
-    const positive: Array<[keyof Form, string]> = [
+    const positive: [keyof Form, string][] = [
       ["panelWidth", "ancho de la lámina"], ["panelLength", "largo de la lámina"],
       ["supportSpacing", "separación de studs"], ["supportLength", "largo del stud"],
       ["carrierSpacing", "separación de cargadores"],
@@ -188,12 +188,12 @@ export default function PvcCeilingScreen() {
     else setSuccess("La partida fue guardada en el presupuesto.");
   }
 
-  const dimensions: Array<[keyof Form, string, string, string]> = [
+  const dimensions: [keyof Form, string, string, string][] = [
     ["length", "Largo", "0.00", "m"], ["width", "Ancho", "0.00", "m"],
     ["directArea", "Área directa (opcional)", "0.00", "m²"],
     ["directPerimeter", "Perímetro directo (opcional)", "0.00", "m"],
   ];
-  const structure: Array<[keyof Form, string, string, string]> = [
+  const structure: [keyof Form, string, string, string][] = [
     ["supportSpacing", "Separación de studs", "0.40", "m"],
     ["supportLength", "Largo del stud", "3", "m"],
     ["carrierSpacing", "Separación de cargadores", "1.20", "m"],
@@ -203,7 +203,7 @@ export default function PvcCeilingScreen() {
     ["screwsPerM2", "Tornillos por m²", "12", "und."],
     ["screwsPerBox", "Tornillos por caja", "1000", "und."],
   ];
-  const prices: Array<[keyof Form, string]> = [
+  const prices: [keyof Form, string][] = [
     ["panelPrice", "Lámina PVC"], ["trackPrice", "Track"],
     ["supportPrice", "Stud"], ["carrierPrice", "Cargador"],
     ["hangerPrice", "Suspensión"], ["screwPrice", "Caja de tornillos"],
@@ -285,9 +285,9 @@ export default function PvcCeilingScreen() {
         {success ? <Message text={success} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
-    <CatalogPicker visible={Boolean(target)} target={target} items={items}
+    {target ? <CatalogPicker visible target={target} items={items}
       loading={catalogLoading} currency={currency} onClose={() => setTarget(null)}
-      onSelect={choose} />
+      onSelect={choose} /> : null}
   </SafeAreaView>;
 }
 
@@ -300,7 +300,7 @@ function Section({ title, description, children }: {
 }
 
 function FieldGrid({ fields, form, update }: {
-  fields: Array<[keyof Form, string, string, string]>; form: Form;
+  fields: [keyof Form, string, string, string][]; form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {
   return <View style={styles.grid}>{fields.map(([field, label, placeholder, unit]) =>
@@ -333,7 +333,6 @@ function CatalogPicker({ visible, target, items, loading, currency, onClose, onS
   onSelect: (item: CatalogItemWithDetails) => void;
 }) {
   const [search, setSearch] = useState("");
-  useEffect(() => { if (visible) setSearch(""); }, [visible, target]);
   const filtered = useMemo(() => items.filter((item) => {
     const valid = target === "labor" ? item.item_type === "labor" ||
       item.item_type === "service" : item.item_type === "material";
@@ -365,7 +364,7 @@ function Results({ result, currency, onAdd }: {
 }) {
   const n = (value: number, digits = 0) => formatDecimal(value, digits, currency);
   const m = (value: number) => formatMoney(value, currency);
-  const rows: Array<[string, string, string?]> = [
+  const rows: [string, string, string?][] = [
     ["Área neta", `${n(result.netArea, 2)} m²`],
     ["Área con desperdicio", `${n(result.areaWithWaste, 2)} m²`],
     ["Láminas PVC", `${n(result.panelsToBuy)} piezas`, `${n(result.panelsExact, 2)} calculadas`],
