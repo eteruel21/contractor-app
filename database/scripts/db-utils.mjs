@@ -56,15 +56,21 @@ export function stripOuterTransaction(contents, filename) {
     /^(?:\s|--[^\r\n]*(?:\r?\n|$)|\/\*[\s\S]*?\*\/)*BEGIN;\s*/iu,
     "",
   );
-  const withoutCommit = withoutBegin.replace(/\s*COMMIT;\s*$/iu, "");
+  const commitMatch =
+    /^[^\S\r\n]*COMMIT;[^\S\r\n]*$/imu.exec(withoutBegin);
 
-  if (withoutBegin === contents || withoutCommit === withoutBegin) {
+  if (withoutBegin === contents || !commitMatch) {
     throw new Error(
-      `${filename} debe comenzar con BEGIN; y terminar con COMMIT;.`,
+      `${filename} debe contener una transacción exterior delimitada por BEGIN; y COMMIT;.`,
     );
   }
 
-  return withoutCommit;
+  const beforeCommit = withoutBegin.slice(0, commitMatch.index).trimEnd();
+  const afterCommit = withoutBegin
+    .slice(commitMatch.index + commitMatch[0].length)
+    .trim();
+
+  return [beforeCommit, afterCommit].filter(Boolean).join("\n\n");
 }
 
 export function stripPsqlMetaCommands(contents, filename) {

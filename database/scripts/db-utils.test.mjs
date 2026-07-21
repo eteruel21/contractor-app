@@ -40,10 +40,20 @@ test("permite comentarios SQL antes de la transacción exterior", () => {
   );
 });
 
+test("conserva la verificación SQL posterior al COMMIT", () => {
+  assert.equal(
+    stripOuterTransaction(
+      "-- Catálogo oficial\n\nbegin;\nINSERT INTO catalog VALUES (1);\n\ncommit;\n\n-- Verificación esperada\nselect count(*) as partidas_importadas from catalog;\n",
+      "001_seed.sql",
+    ),
+    "INSERT INTO catalog VALUES (1);\n\n-- Verificación esperada\nselect count(*) as partidas_importadas from catalog;",
+  );
+});
+
 test("rechaza migraciones sin transacción exterior", () => {
   assert.throws(
     () => stripOuterTransaction("SELECT 1;", "001_test.sql"),
-    /debe comenzar con BEGIN; y terminar con COMMIT;/u,
+    /debe contener una transacción exterior delimitada por BEGIN; y COMMIT;/u,
   );
 });
 
