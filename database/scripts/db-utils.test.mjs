@@ -30,6 +30,16 @@ test("retira únicamente la transacción exterior", () => {
   );
 });
 
+test("permite comentarios SQL antes de la transacción exterior", () => {
+  assert.equal(
+    stripOuterTransaction(
+      "-- encabezado\n/* metadatos */\nbegin;\nSELECT 1;\ncommit;\n",
+      "001_seed.sql",
+    ),
+    "SELECT 1;",
+  );
+});
+
 test("rechaza migraciones sin transacción exterior", () => {
   assert.throws(
     () => stripOuterTransaction("SELECT 1;", "001_test.sql"),

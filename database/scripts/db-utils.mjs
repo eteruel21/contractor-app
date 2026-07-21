@@ -52,7 +52,10 @@ export async function readSqlFiles(directoryName) {
 }
 
 export function stripOuterTransaction(contents, filename) {
-  const withoutBegin = contents.replace(/^\s*BEGIN;\s*/iu, "");
+  const withoutBegin = contents.replace(
+    /^(?:\s|--[^\r\n]*(?:\r?\n|$)|\/\*[\s\S]*?\*\/)*BEGIN;\s*/iu,
+    "",
+  );
   const withoutCommit = withoutBegin.replace(/\s*COMMIT;\s*$/iu, "");
 
   if (withoutBegin === contents || withoutCommit === withoutBegin) {
