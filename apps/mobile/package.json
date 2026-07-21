@@ -36,7 +36,10 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "^5.7.0"
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "start": "expo start",
@@ -44,6 +47,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "build:web": "expo export -p web && node scripts/prepare-cloudflare-web.mjs",
     "lint": "expo lint"
   },

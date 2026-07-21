@@ -12,10 +12,12 @@
     "db:status": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs --status",
     "db:seed": "node --env-file-if-exists=database/.env database/scripts/seed.mjs",
     "test:database-tools": "node --test database/scripts/*.test.mjs",
-    "typecheck": "npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
+    "test": "npm run test -w apps/api && npm run test -w apps/mobile && npm run test:database-tools",
+    "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
+    "build:api": "npm run build -w apps/api",
     "build:admin": "npm run build -w apps/admin-web",
     "build:mobile": "npm run build:web -w apps/mobile",
-    "validate": "npm run typecheck && npm run build:admin"
+    "validate": "npm run typecheck && npm run test && npm run build:api && npm run build:admin && npm run build:mobile"
   },
   "devDependencies": {
     "pg": "^8.22.0",

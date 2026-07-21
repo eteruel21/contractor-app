@@ -57,47 +57,6 @@ Migraciones.
  T-060 — Corregir scripts raíz
 npm run typecheck debe incluir API.
 npm run validate debe validar todo el monorepo.
-P0 — Staging y despliegue
- T-061 — Elegir alojamiento para PostgreSQL
-Debe ser permanente.
-Debe aceptar backups y conexiones seguras.
- T-062 — Elegir alojamiento para Fastify
-API siempre disponible.
-HTTPS.
-Variables secretas.
-Logs.
- T-063 — Desplegar PostgreSQL de staging
- T-064 — Desplegar API de staging
- T-065 — Configurar variables de la API
-DATABASE_URL.
-Secretos JWT.
-Issuer y audience.
-CORS.
-Correo.
-CAPTCHA.
- T-066 — Configurar variables de los frontends
-EXPO_PUBLIC_API_URL.
-VITE_API_URL.
- T-067 — Eliminar configuración antigua de Supabase
-Código.
-Variables.
-Documentación.
-Cloudflare.
- T-068 — Configurar CORS de staging
-Permitir únicamente los dominios correspondientes.
- T-069 — Probar desde un teléfono real
-Registro.
-Login.
-Clientes.
-Presupuestos.
-PDF.
- T-070 — Configurar backups automáticos
- T-071 — Probar restauración de backup
- T-072 — Configurar monitoreo y alertas
-Disponibilidad.
-Errores.
-Uso de base de datos.
-Fallos de autenticación.
 P1 — Facturación
  T-073 — Diseñar snapshot de factura
 Empresa.
