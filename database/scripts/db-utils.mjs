@@ -104,6 +104,12 @@ export async function ensureHistoryTables(client) {
         checksum text NOT NULL,
         applied_at timestamptz NOT NULL DEFAULT now()
       );
+
+      GRANT USAGE ON SCHEMA app_migrations TO contractor_migrator;
+      GRANT SELECT ON TABLE
+        app_migrations.schema_migrations,
+        app_migrations.seed_history
+      TO contractor_migrator;
     `);
     await client.query("COMMIT");
   } catch (error) {

@@ -4,6 +4,8 @@ import {
   ensureHistoryTables,
   readSqlFiles,
   requireEnv,
+  stripOuterTransaction,
+  stripPsqlMetaCommands,
   withAdvisoryLock,
 } from "./db-utils.mjs";
 
@@ -64,16 +66,15 @@ try {
         continue;
       }
 
-      try {
-        await client.query(file.contents);
-      } catch (error) {
-        await client.query("ROLLBACK").catch(() => undefined);
-        throw error;
-      }
+      const sql = stripPsqlMetaCommands(
+        stripOuterTransaction(file.contents, file.filename),
+        file.filename,
+      );
       await client.query("BEGIN");
 
       try {
         await client.query("SET LOCAL ROLE contractor_owner");
+        await client.query(sql);
         await client.query(
           `INSERT INTO app_migrations.seed_history (filename, checksum)
            VALUES ($1, $2)`,
