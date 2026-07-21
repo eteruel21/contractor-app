@@ -19,15 +19,19 @@ import { getClientContractorCompanies } from "../../services/client-service";
 
 export default function ClientHomeScreen() {
   const { profile, user, signOut } = useAuth();
+  const profileId = profile?.id;
   const [contractors, setContractors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!profileId) return;
 
-    setLoading(true);
-    getClientContractorCompanies(profile.id)
+    let active = true;
+
+    getClientContractorCompanies(profileId)
       .then((res) => {
+        if (!active) return;
+
         if (res.error) {
           Alert.alert("Error al cargar proveedores", res.error);
         } else {
@@ -35,12 +39,17 @@ export default function ClientHomeScreen() {
         }
       })
       .catch((err) => {
+        if (!active) return;
         console.error(err);
       })
       .finally(() => {
-        setLoading(false);
+        if (active) setLoading(false);
       });
-  }, [profile?.id]);
+
+    return () => {
+      active = false;
+    };
+  }, [profileId]);
 
   const performSignOut = async () => {
     const { error } = await signOut();

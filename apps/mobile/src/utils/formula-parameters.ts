@@ -1,4 +1,4 @@
-﻿export function getFormulaNumber(
+export function getFormulaNumber(
   parameters: Record<string, number> | null | undefined,
   key: string,
   fallback: number,

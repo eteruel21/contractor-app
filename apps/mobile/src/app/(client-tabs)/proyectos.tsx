@@ -18,13 +18,14 @@ import { listProjectsForClient } from "../../services/project-service";
 
 export default function ClientProjectsScreen() {
   const { profile } = useAuth();
+  const profileId = profile?.id;
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadProjects = useCallback(
     async (showRefresh = false) => {
-      if (!profile?.id) return;
+      if (!profileId) return;
 
       if (showRefresh) {
         setRefreshing(true);
@@ -33,7 +34,7 @@ export default function ClientProjectsScreen() {
       }
 
       const { projects: loadedProjects, error } = await listProjectsForClient(
-        profile.id,
+        profileId,
       );
 
       if (error) {
@@ -45,7 +46,7 @@ export default function ClientProjectsScreen() {
       setLoading(false);
       setRefreshing(false);
     },
-    [profile?.id],
+    [profileId],
   );
 
   useFocusEffect(

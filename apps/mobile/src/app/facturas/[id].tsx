@@ -59,7 +59,15 @@ export default function InvoiceDetailScreen() {
   );
 
   useEffect(() => {
-    void loadInvoice();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void loadInvoice();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadInvoice]);
 
   const handleShareInvoice = async () => {

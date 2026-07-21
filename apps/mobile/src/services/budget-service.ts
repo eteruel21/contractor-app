@@ -433,8 +433,7 @@ export async function listBudgetsForClient(
     const response =
       await authenticatedRequest<{
         budgets:
-          Array<
-            BudgetRow & {
+          (BudgetRow & {
               project:
                 | {
                     name: string;
@@ -446,8 +445,7 @@ export async function listBudgetsForClient(
                     name: string;
                   }
                 | null;
-            }
-          >;
+            })[];
       }>("/budgets/client");
 
     return {

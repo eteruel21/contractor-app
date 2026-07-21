@@ -351,7 +351,7 @@ export default function AirConditioningScreen() {
     }
   }
 
-  const areaFields: Array<[keyof Form, string, string]> = [
+  const areaFields: [keyof Form, string, string][] = [
     ["length", "Largo", "m"],
     ["width", "Ancho", "m"],
     ["directArea", "Área directa (opcional)", "m²"],
@@ -359,7 +359,7 @@ export default function AirConditioningScreen() {
     ["units", "Cantidad de equipos", "und."],
   ];
 
-  const loadFields: Array<[keyof Form, string, string]> = [
+  const loadFields: [keyof Form, string, string][] = [
     ["occupants", "Personas", "pers."],
     ["btuPerSquareMeter", "Carga base", "BTU/m²"],
     ["extraBtuPerPerson", "BTU por persona adicional", "BTU"],
@@ -367,7 +367,7 @@ export default function AirConditioningScreen() {
     ["selectedCapacity", "Capacidad manual (opcional)", "BTU/und."],
   ];
 
-  const routeFields: Array<[keyof Form, string, string]> = [
+  const routeFields: [keyof Form, string, string][] = [
     ["copperRoute", "Recorrido de cobre", "m/und."],
     ["includedCopper", "Cobre incluido", "m/und."],
     ["cableRoute", "Recorrido eléctrico", "m/und."],
@@ -562,7 +562,7 @@ function Grid({
   form,
   update,
 }: {
-  fields: Array<[keyof Form, string, string]>;
+  fields: [keyof Form, string, string][];
   form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {

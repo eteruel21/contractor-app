@@ -10,6 +10,21 @@ jobs:
   validate:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: panama2104
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,14 +38,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck API
-        run: npm run typecheck -w apps/api
+      - name: Run Database Bootstrap & Migrations
+        env:
+          DATABASE_ADMIN_URL: postgresql://postgres:panama2104@127.0.0.1:5432/postgres
+          DATABASE_NAME: contractor_pro
+          CONTRACTOR_MIGRATOR_PASSWORD: 663c3028304a4a54a87a270b55faf81a
+          CONTRACTOR_API_PASSWORD: b3aa117571e64f518ee5bea0123815d0
+          MIGRATOR_DATABASE_URL: postgresql://contractor_migrator:663c3028304a4a54a87a270b55faf81a@127.0.0.1:5432/contractor_pro
+        run: |
+          npm run db:bootstrap
+          npm run db:migrate
+          npm run db:seed
+
+      - name: Typecheck Monorepo
+        run: npm run typecheck
 
       - name: Build API
-        run: npm run build -w apps/api
+        run: npm run build:api
 
-      - name: Build admin web
-        run: npm run build -w apps/admin-web
+      - name: Build Admin Web
+        run: npm run build:admin
 
-      - name: Typecheck mobile
-        run: npx tsc --noEmit -p apps/mobile/tsconfig.json
+      - name: Build Mobile Web
+        run: npm run build:mobile
+
+      - name: Run Expo Doctor
+        run: npx expo-doctor apps/mobile
+
+      - name: Run Monorepo Tests
+        env:
+          DATABASE_ADMIN_URL: postgresql://postgres:panama2104@127.0.0.1:5432/postgres
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: contractor_pro
+          PGUSER: contractor_api
+          PGPASSWORD: b3aa117571e64f518ee5bea0123815d0
+          JWT_SECRET: super-secret-jwt-key-minimum-43-characters-for-testing-in-ci
+        run: npm run test
+
+      - name: Validate Monorepo
+        env:
+          DATABASE_ADMIN_URL: postgresql://postgres:panama2104@127.0.0.1:5432/postgres
+          PGHOST: 127.0.0.1
+          PGPORT: 5432
+          PGDATABASE: contractor_pro
+          PGUSER: contractor_api
+          PGPASSWORD: b3aa117571e64f518ee5bea0123815d0
+          JWT_SECRET: super-secret-jwt-key-minimum-43-characters-for-testing-in-ci
+        run: npm run validate

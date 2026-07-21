@@ -114,7 +114,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         await insertToken(client, userId, "email_verification", verificationTokenHash, tokenExpiresAt);
 
         if (env.NODE_ENV !== "production") {
-          console.log(`[EMAIL SIMULATOR] Verification token for ${input.email}: ${verificationToken}`);
         }
 
         await client.query("COMMIT");
@@ -521,7 +520,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         await insertToken(client, user.id, "email_verification", verificationTokenHash, tokenExpiresAt);
 
         if (env.NODE_ENV !== "production") {
-          console.log(`[EMAIL SIMULATOR] Resent verification token for ${email}: ${verificationToken}`);
         }
 
         await client.query("COMMIT");
@@ -598,7 +596,6 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         await insertToken(client, user.id, "password_reset", resetTokenHash, tokenExpiresAt);
 
         if (env.NODE_ENV !== "production") {
-          console.log(`[EMAIL SIMULATOR] Password reset token for ${email}: ${resetToken}`);
         }
 
         await client.query("COMMIT");

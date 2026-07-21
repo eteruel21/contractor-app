@@ -208,8 +208,18 @@ export function CompanyProvider({
   useEffect(() => {
     if (authLoading) return;
 
-    setLoading(true);
-    void refreshCompanies();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (!active) return;
+
+      setLoading(true);
+      void refreshCompanies();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [
     authLoading,
     refreshCompanies

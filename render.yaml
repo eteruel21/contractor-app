@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: contractor-api-staging
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_PORT
+        value: 3001
+      - key: PGSSL
+        value: require
+      - key: JWT_ISSUER
+        value: contractor-api-staging
+      - key: JWT_AUDIENCE
+        value: contractor-app-staging
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PGHOST
+        sync: false
+      - key: PGPORT
+        sync: false
+      - key: PGDATABASE
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false

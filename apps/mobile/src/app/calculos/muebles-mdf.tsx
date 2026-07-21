@@ -329,14 +329,14 @@ export default function MdfFurnitureScreen() {
     }
   }
 
-  const dimensionFields: Array<[keyof Form, string, string]> = [
+  const dimensionFields: [keyof Form, string, string][] = [
     ["width", "Ancho del mueble", "m"],
     ["height", "Alto del mueble", "m"],
     ["depth", "Profundidad", "m"],
     ["quantity", "Cantidad de muebles", "und."],
   ];
 
-  const panelFields: Array<[keyof Form, string, string]> = [
+  const panelFields: [keyof Form, string, string][] = [
     ["verticalPanels", "Paneles verticales", "und."],
     ["horizontalPanels", "Tapas y bases", "und."],
     ["shelves", "Entrepaños", "und."],
@@ -346,7 +346,7 @@ export default function MdfFurnitureScreen() {
     ["waste", "Desperdicio", "%"],
   ];
 
-  const boardFields: Array<[keyof Form, string, string]> = [
+  const boardFields: [keyof Form, string, string][] = [
     ["boardWidth", "Ancho tablero MDF", "m"],
     ["boardLength", "Largo tablero MDF", "m"],
     ["backBoardWidth", "Ancho tablero fondo", "m"],
@@ -355,7 +355,7 @@ export default function MdfFurnitureScreen() {
     ["edgeRollLength", "Longitud del rollo", "m"],
   ];
 
-  const hardwareFields: Array<[keyof Form, string, string]> = [
+  const hardwareFields: [keyof Form, string, string][] = [
     ["doors", "Puertas", "und."],
     ["hingesPerDoor", "Bisagras por puerta", "und."],
     ["drawers", "Gavetas", "und."],
@@ -493,7 +493,7 @@ function Grid({
   form,
   update,
 }: {
-  fields: Array<[keyof Form, string, string]>;
+  fields: [keyof Form, string, string][];
   form: Form;
   update: (field: keyof Form, value: string) => void;
 }) {

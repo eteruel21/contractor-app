@@ -134,7 +134,15 @@ export default function ClientDetailScreen() {
   );
 
   useEffect(() => {
-    void loadData();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void loadData();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadData]);
 
   function handleDeleteAddress(address: ClientAddress) {
@@ -358,22 +366,26 @@ export default function ClientDetailScreen() {
         </InfoSection>
       </ScrollView>
 
-      <EditClientModal
-        visible={editModalVisible}
-        companyId={activeCompany.id}
-        client={client}
-        onClose={() => setEditModalVisible(false)}
-        onUpdated={() => void loadData(true)}
-      />
+      {editModalVisible ? (
+        <EditClientModal
+          visible
+          companyId={activeCompany.id}
+          client={client}
+          onClose={() => setEditModalVisible(false)}
+          onUpdated={() => void loadData(true)}
+        />
+      ) : null}
 
-      <EditAddressModal
-        visible={Boolean(editingAddress)}
-        companyId={activeCompany.id}
-        clientId={client.id}
-        address={editingAddress}
-        onClose={() => setEditingAddress(null)}
-        onUpdated={() => void loadData(true)}
-      />
+      {editingAddress ? (
+        <EditAddressModal
+          visible
+          companyId={activeCompany.id}
+          clientId={client.id}
+          address={editingAddress}
+          onClose={() => setEditingAddress(null)}
+          onUpdated={() => void loadData(true)}
+        />
+      ) : null}
 
       <AddAddressModal
         visible={addressModalVisible}
@@ -603,30 +615,16 @@ function EditClientModal({
   onClose: () => void;
   onUpdated: () => void;
 }) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [documentType, setDocumentType] = useState("");
-  const [documentNumber, setDocumentNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [secondaryPhone, setSecondaryPhone] = useState("");
-  const [notes, setNotes] = useState("");
+  const [firstName, setFirstName] = useState(client.first_name ?? "");
+  const [lastName, setLastName] = useState(client.last_name ?? "");
+  const [businessName, setBusinessName] = useState(client.business_name ?? "");
+  const [documentType, setDocumentType] = useState(client.document_type ?? "");
+  const [documentNumber, setDocumentNumber] = useState(client.document_number ?? "");
+  const [email, setEmail] = useState(client.email ?? "");
+  const [phone, setPhone] = useState(client.phone ?? "");
+  const [secondaryPhone, setSecondaryPhone] = useState(client.secondary_phone ?? "");
+  const [notes, setNotes] = useState(client.notes ?? "");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    setFirstName(client.first_name ?? "");
-    setLastName(client.last_name ?? "");
-    setBusinessName(client.business_name ?? "");
-    setDocumentType(client.document_type ?? "");
-    setDocumentNumber(client.document_number ?? "");
-    setEmail(client.email ?? "");
-    setPhone(client.phone ?? "");
-    setSecondaryPhone(client.secondary_phone ?? "");
-    setNotes(client.notes ?? "");
-  }, [client, visible]);
 
   async function handleSave() {
     try {
@@ -750,24 +748,13 @@ function EditAddressModal({
   onClose: () => void;
   onUpdated: () => void;
 }) {
-  const [label, setLabel] = useState("");
-  const [addressText, setAddressText] = useState("");
-  const [province, setProvince] = useState("");
-  const [district, setDistrict] = useState("");
-  const [township, setTownship] = useState("");
-  const [reference, setReference] = useState("");
+  const [label, setLabel] = useState(address?.label ?? "");
+  const [addressText, setAddressText] = useState(address?.address ?? "");
+  const [province, setProvince] = useState(address?.province ?? "");
+  const [district, setDistrict] = useState(address?.district ?? "");
+  const [township, setTownship] = useState(address?.township ?? "");
+  const [reference, setReference] = useState(address?.reference ?? "");
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!address || !visible) return;
-
-    setLabel(address.label);
-    setAddressText(address.address);
-    setProvince(address.province ?? "");
-    setDistrict(address.district ?? "");
-    setTownship(address.township ?? "");
-    setReference(address.reference ?? "");
-  }, [address, visible]);
 
   async function handleSave() {
     if (!address) return;

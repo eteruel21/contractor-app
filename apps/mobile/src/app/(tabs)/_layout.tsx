@@ -58,7 +58,7 @@ export default function TabsLayout() {
         } else {
           hasRestored.current = true;
         }
-      } catch (e) {
+      } catch {
         hasRestored.current = true;
       }
     };

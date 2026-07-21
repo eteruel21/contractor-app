@@ -23,8 +23,7 @@ Promise<{
     const response =
       await authenticatedRequest<{
         memberships:
-          Array<
-            Omit<
+          (Omit<
               CompanyMembership,
               "company"
             > & {
@@ -36,8 +35,7 @@ Promise<{
                   tax_rate:
                     number | string;
                 };
-            }
-          >;
+            })[];
       }>("/companies");
 
     const memberships =

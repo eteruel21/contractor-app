@@ -4,10 +4,17 @@ import { z } from "zod";
 
 const environmentSchema = z.object({
   NODE_ENV: z
-    .enum(["development", "test", "production"])
+    .enum(["development", "staging", "test", "production"])
     .default("development"),
 
   CAPTCHA_SECRET: z.string().optional(),
+  CAPTCHA_ENABLED: z.coerce.boolean().default(false),
+
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
 
   API_HOST: z.string().min(1).default("127.0.0.1"),
 

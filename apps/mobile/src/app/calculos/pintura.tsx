@@ -154,13 +154,13 @@ export default function PaintScreen() {
     else setMessage("La partida fue guardada en el presupuesto.");
   }
 
-  const fields: Array<[keyof Form, string, string]> = [
+  const fields: [keyof Form, string, string][] = [
     ["length", "Largo", "m"], ["height", "Altura", "m"],
     ["wallCount", "Cantidad de muros", "und."],
     ["directArea", "Área directa (opcional)", "m²"],
     ["openings", "Puertas y ventanas", "m²"],
   ];
-  const settings: Array<[keyof Form, string, string]> = [
+  const settings: [keyof Form, string, string][] = [
     ["coats", "Manos de pintura", "manos"],
     ["coverage", "Rendimiento por galón", "m²"],
     ["waste", "Desperdicio", "%"],
@@ -216,7 +216,7 @@ function Section({ title, description, children }: { title: string; description:
   return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>
     <Text style={styles.small}>{description}</Text><View style={styles.body}>{children}</View></View>;
 }
-function Grid({ fields, form, update }: { fields: Array<[keyof Form, string, string]>; form: Form; update: (f: keyof Form, v: string) => void }) {
+function Grid({ fields, form, update }: { fields: [keyof Form, string, string][]; form: Form; update: (f: keyof Form, v: string) => void }) {
   return <View style={styles.grid}>{fields.map(([f, l, u]) => <Input key={f} label={l}
     value={form[f]} onChangeText={(v) => update(f, v)} unit={u} />)}</View>;
 }

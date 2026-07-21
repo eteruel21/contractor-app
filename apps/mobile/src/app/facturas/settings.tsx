@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,14 +23,18 @@ import { updateCompanyBillingDetails } from "@/services/company-service";
 export default function InvoiceSettingsScreen() {
   const { activeCompany, refreshCompanies } = useCompany();
 
-  const [legalName, setLegalName] = useState("");
-  const [taxId, setTaxId] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [invoicePrefix, setInvoicePrefix] = useState("");
-  const [taxRate, setTaxRate] = useState("");
+  const [legalName, setLegalName] = useState(activeCompany?.legal_name ?? "");
+  const [taxId, setTaxId] = useState(activeCompany?.tax_id ?? "");
+  const [phone, setPhone] = useState(activeCompany?.phone ?? "");
+  const [email, setEmail] = useState(activeCompany?.email ?? "");
+  const [address, setAddress] = useState(activeCompany?.address ?? "");
+  const [logoUrl, setLogoUrl] = useState(activeCompany?.logo_url ?? "");
+  const [invoicePrefix, setInvoicePrefix] = useState(
+    activeCompany?.invoice_prefix ?? "FAC",
+  );
+  const [taxRate, setTaxRate] = useState(
+    String(activeCompany?.tax_rate ?? 0),
+  );
   const [saving, setSaving] = useState(false);
 
   const handleSelectLogoFile = () => {
@@ -56,19 +60,6 @@ export default function InvoiceSettingsScreen() {
       );
     }
   };
-
-  useEffect(() => {
-    if (activeCompany) {
-      setLegalName(activeCompany.legal_name ?? "");
-      setTaxId(activeCompany.tax_id ?? "");
-      setPhone(activeCompany.phone ?? "");
-      setEmail(activeCompany.email ?? "");
-      setAddress(activeCompany.address ?? "");
-      setLogoUrl(activeCompany.logo_url ?? "");
-      setInvoicePrefix(activeCompany.invoice_prefix ?? "FAC");
-      setTaxRate(String(activeCompany.tax_rate ?? 0));
-    }
-  }, [activeCompany]);
 
   const handleSave = async () => {
     if (!activeCompany) return;

@@ -85,7 +85,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 export default function ProfessionalProfileScreen() {
-  const { profile, updateContractorProfile, signOut } = useAuth();
+  const { updateContractorProfile, signOut } = useAuth();
 
   // Paso actual (1: Info General, 2: Multimedia, 3: Documentos de Aprobación)
   const [currentStep, setCurrentStep] = useState(1);

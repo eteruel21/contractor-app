@@ -34,7 +34,7 @@ import { getCatalogItemTypeLabel } from "@/types/catalog";
 
 type Filter = CatalogItemType | "all";
 
-const FILTERS: Array<{ label: string; value: Filter }> = [
+const FILTERS: { label: string; value: Filter }[] = [
   { label: "Todos", value: "all" },
   { label: "Materiales", value: "material" },
   { label: "Mano de obra", value: "labor" },
