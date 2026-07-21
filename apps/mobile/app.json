@@ -1,16 +1,19 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Contractor Pro",
+    "slug": "contractor-pro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "contractorpro",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.contractorpro.app",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "com.contractorpro.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

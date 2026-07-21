@@ -7,7 +7,7 @@ import pg from "pg";
 
 const { Client } = pg;
 const testDbName = `contractor_pro_test_scratch_${Math.floor(Math.random() * 1000000)}`;
-const adminUrl = process.env.DATABASE_ADMIN_URL || "postgresql://postgres:panama2104@127.0.0.1:5432/postgres";
+const adminUrl = process.env.DATABASE_ADMIN_URL || "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
 const migratorUrl = `postgresql://contractor_migrator:663c3028304a4a54a87a270b55faf81a@127.0.0.1:5432/${testDbName}`;
 
 test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {

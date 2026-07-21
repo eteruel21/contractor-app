@@ -49,6 +49,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build:web": "expo export -p web && node scripts/prepare-cloudflare-web.mjs",
+    "prebuild": "expo prebuild",
+    "build:android:preview": "eas build -p android --profile preview",
+    "build:ios:preview": "eas build -p ios --profile preview",
+    "build:android:prod": "eas build -p android --profile production",
+    "build:ios:prod": "eas build -p ios --profile production",
     "lint": "expo lint"
   },
   "private": true

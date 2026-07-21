@@ -81,8 +81,6 @@ import {
 } from "@/services/activity-service";
 import type { Appointment } from "@/utils/appointment-storage";
 
-const API_BASE_URL = (process.env.EXPO_PUBLIC_API_URL || "").replace(/\/+$/, "");
-
 export default function ProjectDetailScreen() {
   const params = useLocalSearchParams<{
     id?: string | string[];
@@ -616,7 +614,9 @@ export default function ProjectDetailScreen() {
           ) : (
             <View style={styles.photosGrid}>
               {photos.map((photo) => {
-                const fullImageUrl = `${API_BASE_URL}${photo.signedUrl}`;
+                const fullImageUrl = photo.signedUrl.startsWith("http")
+                  ? photo.signedUrl
+                  : `${(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/+$/, "")}${photo.signedUrl}`;
                 return (
                   <View key={photo.id} style={styles.photoCard}>
                     <Image
