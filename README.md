@@ -1,86 +1,80 @@
 # Contractor Pro
 
-Plataforma para contratistas y clientes de la industria de la construcción en Panamá.
+Plataforma integral de gestión para contratistas, empresas de construcción, profesionales y clientes en Panamá.
 
-## Aplicaciones
+---
 
-- `apps/mobile`: Expo, React Native y Expo Router.
-- `apps/admin-web`: React, Vite y TypeScript.
-- `apps/api`: Node.js, Fastify y TypeScript.
+## 🚀 Estructura del Monorepo
 
-## Arquitectura
+Contractor Pro está construido sobre una arquitectura **Monorepo** moderna con npm workspaces:
 
-- PostgreSQL 18.
-- API REST propia con Fastify.
-- Autenticación mediante JWT.
-- Sesiones renovables almacenadas en PostgreSQL.
-- Row Level Security con `app.current_user_id()`.
-- Cloudflare Pages para las interfaces web.
+- [`apps/api`](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/apps/api): Backend REST de alto rendimiento en **Node.js 22**, **Fastify** y **TypeScript**.
+- [`apps/admin-web`](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/apps/admin-web): Panel administrativo web desarrollado con **React 19**, **Vite** y **TypeScript**.
+- [`apps/mobile`](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/apps/mobile): Aplicación móvil y web multiplataforma con **Expo 52**, **React Native** y **Expo Router**.
+- [`database`](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/database): Scripts de administración PostgreSQL con migraciones SQL seguras (checksums SHA-256) y catálogo oficial Panamá.
 
-## Requisitos
+---
 
-- Node.js 22 o posterior.
-- npm 10 o posterior.
-- PostgreSQL 18.
-- Base de datos `contractor_pro`.
+## 🛠️ Módulos de la Aplicación
 
-## Instalación
+1. **Gestión Comercial y Presupuestos**: Creación de presupuestos con partidas, desgloses, estados de aprobación y exportación.
+2. **Calculadoras de Construcción Especializadas**: Bloques, repello, concreto, gypsum, cielo raso PVC, pintura, electricidad, pisos, muebles MDF, AC y domótica.
+3. **Facturación, Cobros y Notas de Crédito**: Emisión de facturas con snapshots inmutables, registro de abonos y notas de crédito.
+4. **Gestión de Proyectos y Avances**: Tareas, porcentaje de avance e historial multimedia con imágenes privadas protegidas por URLs firmadas.
+5. **Agenda y Calendario de Campo**: Programación de visitas, entregas e inspecciones.
+6. **Gestión de Clientes y Equipos**: Miembros de empresa, roles y control de acceso RBAC.
+7. **Privacidad, Legal y Derechos ARCO**: Exportación de datos en formato JSON (`GET /account/export`), eliminación y anonimización de cuenta (`DELETE /account`), Términos de Uso y Política de Privacidad.
 
-Ejecutar desde la raíz:
+---
 
-`npm install`
+## 📚 Documentación del Sistema
 
-## Variables de entorno
+- 🏛️ [**Arquitectura del Sistema**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/architecture.md)
+- 💻 [**Guía de Instalación Local**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/local-installation.md)
+- 🗄️ [**Migraciones y Semillas**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/migrations-and-seeds.md)
+- 🚢 [**Guía de Despliegue**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/deployment.md)
+- 📜 [**Términos de Uso**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/terms-of-service.md)
+- 🔒 [**Política de Privacidad**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/privacy-policy.md)
+- ⏱️ [**Política de Retención de Documentos**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/document-retention-policy.md)
+- 🛡️ [**Informe de Auditoría de Seguridad**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/security-audit-report.md)
+- 💾 [**Verificación de Backups**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/backup-restore-verification.md)
+- 🔄 [**Procedimiento de Rollback**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/rollback-procedure.md)
+- 🧪 [**Informe de Prueba Piloto**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/pilot-testing-report.md)
+- 📊 [**Monitoreo y Alertas**](file:///c:/Users/Eliel%20Teruel/CONTRACTOR-APP/docs/monitoring-and-alerts.md)
 
-API, en `apps/api/.env`:
+---
 
-- `HOST=0.0.0.0`
-- `PORT=3001`
-- `DATABASE_URL=postgresql://contractor_api:password@127.0.0.1:5432/contractor_pro`
-- `JWT_SECRET=replace-with-a-secure-secret`
-- `JWT_ISSUER=contractor-api`
-- `JWT_AUDIENCE=contractor-app`
+## ⚡ Comandos Rápidos
 
-Aplicación móvil, en `apps/mobile/.env`:
+### Validación y Despliegue Seguro
+```bash
+# Validación completa del código (tipos y builds)
+npm run validate
 
-- `EXPO_PUBLIC_API_URL=http://127.0.0.1:3001`
+# Despliegue seguro interactivo sin push automático a main
+npm run deploy:safe
 
-Panel administrativo, en `apps/admin-web/.env`:
+# Despliegue directo a Cloudflare Pages
+npm run deploy:admin
+npm run deploy:mobile
+```
 
-- `VITE_API_URL=http://127.0.0.1:3001`
+### Base de Datos PostgreSQL
+```bash
+npm run db:bootstrap  # Creación inicial de esquemas y roles
+npm run db:migrate    # Aplicar migraciones SQL pendientes
+npm run db:status     # Estado de migraciones (aplicadas vs pendientes)
+npm run db:seed       # Importación del catálogo de rubros Panamá
+```
 
-## Desarrollo
+### Pruebas de Sistema
+```bash
+npm run test:api             # Pruebas integrales de API backend
+npm run test:database-tools  # Pruebas de herramientas de base de datos
+```
 
-- API: `npm run dev -w apps/api`
-- Panel: `npm run dev -w apps/admin-web`
-- Móvil: `npm run start -w apps/mobile`
+---
 
-## Base de datos
+## 🔒 Licencia y Confidencialidad
 
-Las migraciones PostgreSQL están en `database/migrations` y se registran con
-checksum en `app_migrations.schema_migrations`.
-
-1. Copiar las variables de `database/.env.example` al entorno local.
-2. Ejecutar `npm run db:bootstrap` con una conexión administrativa.
-3. Ejecutar `npm run db:migrate` con la conexión del migrador.
-4. Ejecutar `npm run db:seed` para importar el catálogo oficial.
-
-Comandos disponibles:
-
-- `npm run db:bootstrap`: crea la base y los roles con privilegios mínimos.
-- `npm run db:baseline`: registra, después de verificarlo, un esquema existente.
-- `npm run db:migrate`: aplica únicamente migraciones pendientes.
-- `npm run db:status`: muestra migraciones aplicadas y pendientes.
-- `npm run db:seed`: aplica seeds pendientes y verifica sus checksums.
-
-No se deben modificar migraciones o seeds ya aplicados. Cualquier cambio de
-esquema o datos debe añadirse en un archivo nuevo.
-
-## Verificaciones
-
-- `npm run typecheck -w apps/api`
-- `npm run build -w apps/api`
-- `npm run build -w apps/admin-web`
-- `npx tsc --noEmit -p apps/mobile/tsconfig.json`
-
-Los archivos `.env` contienen información privada y no deben subirse al repositorio.
+Propiedad privada de Contractor Pro - Todos los derechos reservados.

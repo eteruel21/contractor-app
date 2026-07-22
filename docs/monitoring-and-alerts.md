@@ -1,42 +1,40 @@
-# Estrategia de Monitoreo y Alertas — Staging y Producción (T-072)
+# Estrategia de Monitoreo y Alertas — Producción (T-147)
 
-Este documento define la configuración de monitoreo continuo de disponibilidad, captura de errores, salud de la base de datos y alertas de fallos de autenticación para Contractor App.
+Este documento define la configuración y activación de monitoreo continuo de disponibilidad, captura de errores, salud de la base de datos y alertas operativas para **Contractor Pro**.
 
 ---
 
-## 1. Monitoreo de Disponibilidad (Uptime)
+## 1. Monitoreo de Disponibilidad (Uptime Activation)
 
-- **Endpoint Primario**: `GET https://staging-api.contractor.app/health`
+- **Endpoint API Primario**: `GET https://api.contractor.com.pa/health`
+- **Endpoint Database Check**: `GET https://api.contractor.com.pa/health/database`
 - **Frecuencia de Muestreo**: Cada 60 segundos.
-- **Criterio de Alerta**:
+- **Criterio de Alerta Crítica**:
   - Código HTTP != 200 por más de 2 intervalos consecutivos (2 minutos).
-  - Tiempo de respuesta > 2000 ms.
-- **Herramienta Recomendada**: Better Stack / UptimeRobot / Datadog.
+  - Latencia de respuesta > 2000 ms.
+- **Servicios de Monitoreo Configurados**: Better Stack / UptimeRobot / Cloudflare Health Checks.
 
 ---
 
-## 2. Diagnóstico de Base de Datos y Recursos
+## 2. Alertas de Base de Datos PostgreSQL
 
-- **Endpoint de Base de Datos**: `GET https://staging-api.contractor.app/health/database`
-- **Criterio de Alerta**:
-  - Estado 503 Service Unavailable ("No se pudo conectar con PostgreSQL").
-  - Agotamiento de pool de conexiones o incremento anómalo en la latencia de consulta (`server_time`).
-
----
-
-## 3. Captura y Rastreo de Errores
-
-- **Formato de Logs**: Salida estructurada JSON mediante el logger de Fastify (Pino) a `stdout`.
-- **Integración de Telemetría**: Sentry / Datadog APM.
-- **Criterio de Alerta**:
-  - Tasa de errores 5xx > 1% en un periodo de 5 minutos.
-  - Excepciones no capturadas (`uncaughtException` / `unhandledRejection`).
+- **Métrica Evaluada**: Conexiones activas, latencia de consulta y estado del pool.
+- **Regla de Alerta**:
+  - Estado HTTP 503 (`"No se pudo conectar con PostgreSQL"`).
+  - Uso de conexiones de base de datos > 85% del límite configurado.
 
 ---
 
-## 4. Alertas de Fallos de Autenticación y Seguridad
+## 3. Logs y Registro de Errores
 
-- **Monitoreo de Endpoints Críticos**: `/api/auth/login` y `/api/auth/refresh`.
-- **Regla de Alerta por Fuerza Bruta / Ataque**:
-  - Más de 20 respuestas `401 Unauthorized` o `429 Too Many Requests` desde un mismo bloque de IP en 5 minutos.
-  - Disparo de notificación automática a Slack/Discord/Email para el equipo de Operaciones y Seguridad.
+- **Formato de Logs**: Salida JSON estructurada mediante logger de Fastify (Pino) enviada a almacenamiento de auditoría.
+- **Rastreo de Excepciones**: Agregación de errores 5xx con alerta directa si la tasa supera 1% en un intervalo de 5 minutos.
+
+---
+
+## 4. Alertas de Seguridad y Rate Limiting
+
+- **Monitoreo de Endpoints de Autenticación**: `/auth/login`, `/auth/refresh`, `/account/delete`.
+- **Regla de Seguridad**:
+  - Disparo de bloqueo por rate limiting (respuestas `429 Too Many Requests`) > 15 eventos por minuto.
+  - Alerta inmediata a canales de guardia ante múltiples intentos fallidos de autenticación.

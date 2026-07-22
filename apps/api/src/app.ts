@@ -21,6 +21,7 @@ import { registerProjectTaskRoutes } from "./projects/tasks/routes.js";
 import { registerProjectProgressRoutes } from "./projects/progress/routes.js";
 import { registerStorageRoutes } from "./storage/routes.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
+import { registerAccountLegalRoutes } from "./account/routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -69,6 +70,7 @@ export async function buildApp() {
   await app.register(registerProjectProgressRoutes);
   await app.register(registerStorageRoutes);
   await app.register(registerNotificationRoutes);
+  await app.register(registerAccountLegalRoutes);
 
   app.get("/health", async () => {
     return {

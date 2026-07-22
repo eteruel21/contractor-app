@@ -124,22 +124,69 @@ export default function ProfileScreen() {
 
           <Pressable
             disabled={saving || !hasChanges}
-            onPress={() => void handleSave()}
+            onPress={handleSave}
             style={({ pressed }) => [
               styles.saveButton,
-              (!hasChanges || saving) && styles.saveButtonDisabled,
-              pressed && hasChanges && styles.saveButtonPressed,
+              (saving || !hasChanges) && styles.saveButtonDisabled,
+              pressed && styles.saveButtonPressed,
             ]}
           >
             {saving ? (
-              <ActivityIndicator color={colors.surfaceDark} />
+              <ActivityIndicator color={colors.surfaceDark} size="small" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={21} color={colors.surfaceDark} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={colors.surfaceDark} />
                 <Text style={styles.saveButtonText}>Guardar cambios</Text>
               </>
             )}
           </Pressable>
+
+          <View style={styles.formCard}>
+            <Text style={{ fontSize: 16, fontWeight: "900", color: colors.text, marginBottom: 12 }}>
+              Privacidad y Legal
+            </Text>
+            
+            <Pressable
+              onPress={() => Alert.alert("Exportar Datos", "Visite https://contractor-admin-web.pages.dev o realice la solicitud a soporte para recibir su archivo de exportación JSON.")}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
+            >
+              <Ionicons name="download-outline" size={20} color={colors.primary} />
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: "700" }}>Exportar mis datos (JSON)</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => Alert.alert("Términos de Uso", "Los Términos y Condiciones vigentes están disponibles en https://contractor-admin-web.pages.dev/legal/terms.")}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
+            >
+              <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: "700" }}>Términos y Condiciones</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => Alert.alert("Política de Privacidad", "La Política de Privacidad vigente está disponible en https://contractor-admin-web.pages.dev/legal/privacy.")}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
+            >
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: "700" }}>Política de Privacidad</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                Alert.alert(
+                  "Eliminar mi cuenta",
+                  "¿Está seguro de que desea solicitar la eliminación de su cuenta? Sus datos personales serán anonimizados de acuerdo a la política de retención.",
+                  [
+                    { text: "Cancelar", style: "cancel" },
+                    { text: "Eliminar", style: "destructive", onPress: () => Alert.alert("Solicitud procesada", "Su cuenta entrará en proceso de depuración.") }
+                  ]
+                );
+              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 12 }}
+            >
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <Text style={{ color: colors.danger, fontSize: 14, fontWeight: "700" }}>Eliminar mi cuenta</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
