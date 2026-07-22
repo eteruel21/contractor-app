@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { env } from "../config/env.js";
 import { pool } from "../db/pool.js";
 import { withUserTransaction } from "../db/with-user-transaction.js";
@@ -48,6 +48,30 @@ import {
   sendVerificationEmail,
   sendPasswordResetEmail
 } from "../services/email.js";
+
+function logAuthError(
+  request: FastifyRequest,
+  operation: string,
+  error: unknown
+): void {
+  request.log.error(
+    {
+      operation,
+      errorType: error instanceof Error ? error.name : typeof error
+    },
+    "Falló una operación de autenticación."
+  );
+}
+
+const genericVerificationResponse = {
+  success: true,
+  message: "Si el correo está registrado, recibirás un nuevo enlace de verificación."
+} as const;
+
+const genericPasswordRecoveryResponse = {
+  success: true,
+  message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña."
+} as const;
 
 function getCookieOptions() {
   const isProductionOrStaging = env.NODE_ENV === "production" || env.NODE_ENV === "staging";
@@ -124,6 +148,8 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         registration_device: input.registrationDevice
       };
 
+      const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
+      const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -131,23 +157,9 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         const userId = await insertUser(client, input.email, passwordHash, metadata);
         await insertIdentity(client, userId, input.email);
 
-        const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
-        const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
         await insertToken(client, userId, "email_verification", verificationTokenHash, tokenExpiresAt);
 
-        await sendVerificationEmail({
-          to: input.email,
-          fullName: input.fullName,
-          token: verificationToken
-        });
-
         await client.query("COMMIT");
-
-        return reply.status(201).send({
-          requiresEmailConfirmation: true,
-          message: "Registro completado con éxito. Por favor, verifica tu correo electrónico para activar tu cuenta."
-        });
       } catch (error) {
         await client.query("ROLLBACK");
         const databaseError = error as { code?: string };
@@ -156,13 +168,34 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
             message: "Ya existe una cuenta con ese correo."
           });
         }
-        request.log.error(error);
+        logAuthError(request, "register", error);
         return reply.status(500).send({
           message: "No se pudo completar el registro."
         });
       } finally {
         client.release();
       }
+
+      const delivery = await sendVerificationEmail({
+        to: input.email,
+        fullName: input.fullName,
+        token: verificationToken
+      });
+
+      if (!delivery.sent) {
+        request.log.warn(
+          { operation: "register_verification_email", reason: delivery.reason },
+          "No se pudo entregar un correo de autenticación."
+        );
+      }
+
+      return reply.status(201).send({
+        requiresEmailConfirmation: true,
+        emailDeliverySucceeded: delivery.sent,
+        message: delivery.sent
+          ? "Registro completado con éxito. Por favor, verifica tu correo electrónico para activar tu cuenta."
+          : "La cuenta fue creada, pero el correo de verificación no pudo enviarse. Solicita un nuevo enlace más tarde."
+      });
     }
   );
 
@@ -245,7 +278,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           };
         });
       } catch (error) {
-        request.log.error(error);
+        logAuthError(request, "login", error);
         return reply.status(500).send({
           message: "No se pudo iniciar sesión."
         });
@@ -358,7 +391,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         };
       } catch (error) {
         await client.query("ROLLBACK");
-        request.log.error(error);
+        logAuthError(request, "refresh_session", error);
         return reply.status(500).send({
           message: "No se pudo renovar la sesión."
         });
@@ -421,7 +454,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           requiresApproval: status !== "active"
         };
       } catch (error) {
-        request.log.error(error);
+        logAuthError(request, "load_profile", error);
         return reply.status(500).send({
           message: "No se pudo cargar el perfil."
         });
@@ -467,7 +500,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return { success: true, message: "Correo verificado con éxito." };
       } catch (error) {
         await client.query("ROLLBACK");
-        request.log.error(error);
+        logAuthError(request, "verify_email", error);
         return reply.status(500).send({ message: "No se pudo verificar el correo." });
       } finally {
         client.release();
@@ -493,12 +526,8 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
       const { email } = parsedBody.data;
       const user = await findUserByEmail(email);
-      if (!user) {
-        return { success: true, message: "Si el correo está registrado, recibirás un nuevo enlace de verificación." };
-      }
-
-      if (user.email_confirmed_at) {
-        return reply.status(400).send({ message: "Esta cuenta ya está verificada." });
+      if (!user || user.email_confirmed_at) {
+        return genericVerificationResponse;
       }
 
       // Check frequency: limit resend rate
@@ -515,11 +544,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       );
 
       if (recentResult.rows[0]) {
-        return reply.status(429).send({
-          message: "Debes esperar 60 segundos antes de volver a solicitar un enlace de verificación."
-        });
+        return genericVerificationResponse;
       }
 
+      const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
+      const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -535,26 +564,31 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           [user.id]
         );
 
-        const { token: verificationToken, hash: verificationTokenHash } = generateSecureToken();
-        const tokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
         await insertToken(client, user.id, "email_verification", verificationTokenHash, tokenExpiresAt);
 
-        await sendVerificationEmail({
-          to: user.email,
-          fullName: null,
-          token: verificationToken
-        });
-
         await client.query("COMMIT");
-        return { success: true, message: "Si el correo está registrado, recibirás un nuevo enlace de verificación." };
       } catch (error) {
         await client.query("ROLLBACK");
-        request.log.error(error);
-        return reply.status(500).send({ message: "No se pudo reenviar la verificación." });
+        logAuthError(request, "resend_verification", error);
+        return genericVerificationResponse;
       } finally {
         client.release();
       }
+
+      const delivery = await sendVerificationEmail({
+        to: user.email,
+        fullName: null,
+        token: verificationToken
+      });
+
+      if (!delivery.sent) {
+        request.log.warn(
+          { operation: "resend_verification_email", reason: delivery.reason },
+          "No se pudo entregar un correo de autenticación."
+        );
+      }
+
+      return genericVerificationResponse;
     }
   );
 
@@ -577,7 +611,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       const { email } = parsedBody.data;
       const user = await findUserByEmail(email);
       if (!user) {
-        return { success: true, message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña." };
+        return genericPasswordRecoveryResponse;
       }
 
       // Check recovery frequency: limit rate (60 seconds)
@@ -594,11 +628,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       );
 
       if (recentResult.rows[0]) {
-        return reply.status(429).send({
-          message: "Debes esperar 60 segundos antes de volver a solicitar la recuperación."
-        });
+        return genericPasswordRecoveryResponse;
       }
 
+      const { token: resetToken, hash: resetTokenHash } = generateSecureToken();
+      const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
@@ -614,26 +648,31 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           [user.id]
         );
 
-        const { token: resetToken, hash: resetTokenHash } = generateSecureToken();
-        const tokenExpiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
-
         await insertToken(client, user.id, "password_reset", resetTokenHash, tokenExpiresAt);
 
-        await sendPasswordResetEmail({
-          to: user.email,
-          fullName: null,
-          token: resetToken
-        });
-
         await client.query("COMMIT");
-        return { success: true, message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña." };
       } catch (error) {
         await client.query("ROLLBACK");
-        request.log.error(error);
-        return reply.status(500).send({ message: "No se pudo iniciar la recuperación." });
+        logAuthError(request, "recover_password", error);
+        return genericPasswordRecoveryResponse;
       } finally {
         client.release();
       }
+
+      const delivery = await sendPasswordResetEmail({
+        to: user.email,
+        fullName: null,
+        token: resetToken
+      });
+
+      if (!delivery.sent) {
+        request.log.warn(
+          { operation: "password_reset_email", reason: delivery.reason },
+          "No se pudo entregar un correo de autenticación."
+        );
+      }
+
+      return genericPasswordRecoveryResponse;
     }
   );
 
@@ -675,10 +714,10 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         await revokeAllUserSessions(client, tokenRecord.user_id);
 
         await client.query("COMMIT");
-        return { success: true, message: "Tu contraseña ha sido restablecida e iniciada una nueva sesión en todos tus dispositivos." };
+        return { success: true, message: "Tu contraseña fue restablecida y se cerraron las sesiones activas en todos tus dispositivos." };
       } catch (error) {
         await client.query("ROLLBACK");
-        request.log.error(error);
+        logAuthError(request, "reset_password", error);
         return reply.status(500).send({ message: "No se pudo restablecer la contraseña." });
       } finally {
         client.release();
@@ -729,7 +768,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         return { sessions };
       } catch (error) {
-        request.log.error(error);
+        logAuthError(request, "list_sessions", error);
         return reply.status(500).send({ message: "No se pudieron obtener las sesiones." });
       }
     }
@@ -772,7 +811,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         return { success: true, message: "Sesión cerrada correctamente." };
       } catch (error) {
-        request.log.error(error);
+        logAuthError(request, "revoke_session", error);
         return reply.status(500).send({ message: "No se pudo cerrar la sesión." });
       }
     }
@@ -803,7 +842,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         return { success: true, message: "Todas las otras sesiones activas se han cerrado." };
       } catch (error) {
-        request.log.error(error);
+        logAuthError(request, "revoke_other_sessions", error);
         return reply.status(500).send({ message: "No se pudieron cerrar las demás sesiones." });
       }
     }

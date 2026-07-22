@@ -144,7 +144,7 @@ export default function InvoicesListScreen() {
             <Ionicons name="receipt-outline" size={48} color="#94A3B8" />
             <Text style={styles.emptyTitle}>No hay facturas</Text>
             <Text style={styles.emptySubtitle}>
-              Las facturas se generan aprobando un presupuesto y haciendo clic en "Generar factura".
+              Las facturas se generan aprobando un presupuesto y haciendo clic en &quot;Generar factura&quot;.
             </Text>
           </View>
         }

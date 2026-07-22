@@ -31,18 +31,19 @@ jobs:
           --health-retries 5
 
     env:
+      NODE_ENV: test
       PGHOST: 127.0.0.1
       PGPORT: 5432
-      PGDATABASE: contractor_ci
+      PGDATABASE: contractor_ci_test
       PGUSER: postgres
       PGPASSWORD: postgres
       JWT_SECRET: "ci_jwt_secret_key_at_least_43_characters_long_for_testing_purposes"
       DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
-      DATABASE_NAME: contractor_ci
+      DATABASE_NAME: contractor_ci_test
       CONTRACTOR_MIGRATOR_PASSWORD: migrator_ci_password
       CONTRACTOR_API_PASSWORD: api_ci_password
-      MIGRATOR_DATABASE_URL: postgresql://contractor_migrator:migrator_ci_password@127.0.0.1:5432/contractor_ci
-      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/contractor_ci
+      MIGRATOR_DATABASE_URL: postgresql://contractor_migrator:migrator_ci_password@127.0.0.1:5432/contractor_ci_test
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/contractor_ci_test
 
     steps:
       - name: 1. Checkout repository

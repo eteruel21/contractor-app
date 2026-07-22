@@ -13,11 +13,18 @@ type PasswordResetEmailInput = {
   token: string;
 };
 
+export type EmailDeliveryResult =
+  | { sent: true }
+  | {
+      sent: false;
+      reason: "not_configured" | "delivery_failed";
+    };
+
 function createTransporter() {
-  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.EMAIL_FROM) {
     return nodemailer.createTransport({
       host: env.SMTP_HOST,
-      port: env.SMTP_PORT || 587,
+      port: env.SMTP_PORT,
       secure: env.SMTP_PORT === 465,
       auth: {
         user: env.SMTP_USER,
@@ -40,10 +47,10 @@ export function buildPasswordResetLinks(token: string) {
   return { deepLink, webLink };
 }
 
-export async function sendVerificationEmail({ to, fullName, token }: VerificationEmailInput): Promise<{ sent: boolean }> {
+export async function sendVerificationEmail({ to, fullName, token }: VerificationEmailInput): Promise<EmailDeliveryResult> {
   const name = fullName?.trim() || "Usuario";
   const { deepLink, webLink } = buildVerificationLinks(token);
-  const sender = env.EMAIL_FROM || "no-reply@contractor.app";
+  const sender = env.EMAIL_FROM;
 
   const html = `
     <!DOCTYPE html>
@@ -101,17 +108,12 @@ ${webLink}
 Token de Verificación: ${token}
   `.trim();
 
-  const transporter = createTransporter();
-
-  if (!transporter) {
-    console.log(`[EMAIL DEV LOG] Para: ${to} | Asunto: Verifica tu cuenta - Contractor Pro`);
-    console.log(`[EMAIL DEV LOG] DeepLink: ${deepLink}`);
-    console.log(`[EMAIL DEV LOG] WebLink: ${webLink}`);
-    console.log(`[EMAIL DEV LOG] Token: ${token}`);
-    return { sent: true };
-  }
-
   try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      return { sent: false, reason: "not_configured" };
+    }
+
     await transporter.sendMail({
       from: sender,
       to,
@@ -120,16 +122,15 @@ Token de Verificación: ${token}
       html
     });
     return { sent: true };
-  } catch (error) {
-    console.error("Error enviando email de verificación:", error);
-    return { sent: false };
+  } catch {
+    return { sent: false, reason: "delivery_failed" };
   }
 }
 
-export async function sendPasswordResetEmail({ to, fullName, token }: PasswordResetEmailInput): Promise<{ sent: boolean }> {
+export async function sendPasswordResetEmail({ to, fullName, token }: PasswordResetEmailInput): Promise<EmailDeliveryResult> {
   const name = fullName?.trim() || "Usuario";
   const { deepLink, webLink } = buildPasswordResetLinks(token);
-  const sender = env.EMAIL_FROM || "no-reply@contractor.app";
+  const sender = env.EMAIL_FROM;
 
   const html = `
     <!DOCTYPE html>
@@ -187,17 +188,12 @@ ${webLink}
 Token de Recuperación: ${token}
   `.trim();
 
-  const transporter = createTransporter();
-
-  if (!transporter) {
-    console.log(`[EMAIL DEV LOG] Para: ${to} | Asunto: Restablecimiento de Contraseña - Contractor Pro`);
-    console.log(`[EMAIL DEV LOG] DeepLink: ${deepLink}`);
-    console.log(`[EMAIL DEV LOG] WebLink: ${webLink}`);
-    console.log(`[EMAIL DEV LOG] Token: ${token}`);
-    return { sent: true };
-  }
-
   try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      return { sent: false, reason: "not_configured" };
+    }
+
     await transporter.sendMail({
       from: sender,
       to,
@@ -206,8 +202,7 @@ Token de Recuperación: ${token}
       html
     });
     return { sent: true };
-  } catch (error) {
-    console.error("Error enviando email de recuperación:", error);
-    return { sent: false };
+  } catch {
+    return { sent: false, reason: "delivery_failed" };
   }
 }

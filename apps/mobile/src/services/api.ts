@@ -124,6 +124,8 @@ type AuthResponse = {
   user?: AppProfile | null;
   requiresApproval?: boolean;
   requiresEmailConfirmation?: boolean;
+  emailDeliverySucceeded?: boolean;
+  message?: string;
 };
 
 type ApiErrorBody = {
@@ -305,6 +307,17 @@ export async function register(
       }
     );
 
+  if (
+    response.requiresEmailConfirmation &&
+    response.emailDeliverySucceeded === false
+  ) {
+    throw new ApiError(
+      response.message ||
+        "La cuenta fue creada, pero el correo de verificación no pudo enviarse. Solicita un nuevo enlace más tarde.",
+      503
+    );
+  }
+
   const session = toStoredSession(response);
   if (!session.requiresEmailConfirmation) {
     await storeSession(session);
@@ -482,9 +495,16 @@ export async function confirmEmailApi(token: string): Promise<{ message?: string
   });
 }
 
-export async function resetPasswordApi(token: string, password: string): Promise<{ message?: string }> {
+export async function requestPasswordReset(email: string): Promise<{ message?: string }> {
+  return publicRequest<{ message?: string }>("/auth/recover-password", {
+    method: "POST",
+    body: JSON.stringify({ email })
+  });
+}
+
+export async function resetPasswordApi(token: string, newPassword: string): Promise<{ message?: string }> {
   return publicRequest<{ message?: string }>("/auth/reset-password", {
     method: "POST",
-    body: JSON.stringify({ token, password })
+    body: JSON.stringify({ token, newPassword })
   });
 }

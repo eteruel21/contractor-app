@@ -48,15 +48,23 @@ test("T-110: valida esquemas de creación y aceptación de invitaciones", () => 
   );
 
   assert.equal(
+    createInvitationSchema.safeParse({
+      email: "propietario@ejemplo.com",
+      role: "owner"
+    }).success,
+    false
+  );
+
+  assert.equal(
     acceptInvitationSchema.safeParse({
-      token: "tok_123456789"
+      token: "a".repeat(64)
     }).success,
     true
   );
 
   assert.equal(
     acceptInvitationSchema.safeParse({
-      token: ""
+      token: "demasiado-corto"
     }).success,
     false
   );
@@ -94,9 +102,7 @@ test("T-112: permite asignar roles válidos de empresa", () => {
     "estimator",
     "sales",
     "supervisor",
-    "member",
-    "accountant",
-    "guest"
+    "member"
   ];
 
   for (const role of validRoles) {
@@ -107,7 +113,12 @@ test("T-112: permite asignar roles válidos de empresa", () => {
   }
 
   assert.equal(
-    updateMemberRoleSchema.safeParse({ role: "hacker" }).success,
+    updateMemberRoleSchema.safeParse({ role: "accountant" }).success,
+    false
+  );
+
+  assert.equal(
+    updateMemberRoleSchema.safeParse({ role: "guest" }).success,
     false
   );
 });

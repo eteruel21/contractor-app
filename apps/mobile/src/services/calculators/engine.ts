@@ -64,7 +64,7 @@ class FormulaEngine {
     return this.calculators.get(code);
   }
 
-  list(): Array<{ code: FormulaCode; name: string; category: string }> {
+  list(): { code: FormulaCode; name: string; category: string }[] {
     return Array.from(this.calculators.values()).map((c) => ({
       code: c.code,
       name: c.name,

@@ -17,6 +17,7 @@ import {
   loadStoredSession,
   login,
   logout,
+  requestPasswordReset,
   register,
   type StoredSession,
   updateContractorProfile as updateContractorProfileRequest,
@@ -403,14 +404,21 @@ export function AuthProvider({
 
   const resetPassword = useCallback(
     async (
-      _email: string
+      email: string
     ): Promise<AuthResult> => {
-      return {
-        error: {
-          message:
-            "La recuperación de contraseña se habilitará al conectar el servicio de correo."
-        }
-      };
+      try {
+        await requestPasswordReset(
+          email.trim().toLowerCase()
+        );
+
+        return { error: null };
+      } catch (error) {
+        return {
+          error: {
+            message: errorMessage(error)
+          }
+        };
+      }
     },
     []
   );

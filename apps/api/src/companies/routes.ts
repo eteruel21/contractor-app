@@ -158,6 +158,12 @@ export async function registerCompanyRoutes(
         parsedBody.data.role
       );
 
+      if (!invitation) {
+        return reply.status(403).send({
+          message: "No se pudo crear la invitación con los permisos indicados."
+        });
+      }
+
       return reply.status(201).send({ invitation });
     }
   );
@@ -192,7 +198,7 @@ export async function registerCompanyRoutes(
 
       const parsedBody = acceptInvitationSchema.safeParse(request.body);
       if (!parsedBody.success) {
-        return reply.status(400).send({ message: "El token de invitación es requerido." });
+        return reply.status(400).send({ message: "El token de invitación no es válido." });
       }
 
       const result = await acceptCompanyInvitationService(userId, parsedBody.data.token);
@@ -225,7 +231,7 @@ export async function registerCompanyRoutes(
       );
 
       if (!revoked) {
-        return reply.status(444).send({ message: "No se pudo revocar la invitación." });
+        return reply.status(404).send({ message: "No se encontró una invitación pendiente para revocar." });
       }
 
       return { success: true };
@@ -237,7 +243,7 @@ export async function registerCompanyRoutes(
   app.get(
     "/companies/:companyId/members",
     {
-      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales", "supervisor", "member", "accountant"])]
+      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales", "supervisor", "member"])]
     },
     async (request, reply) => {
       const userId = authenticatedUserId(request, reply);

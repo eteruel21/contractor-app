@@ -123,7 +123,7 @@ export async function createRemoteActivity(
     const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
     await saveLocalData(APPOINTMENTS_KEY, [appointment, ...cached.filter((c) => c.id !== appointment.id)]);
     return appointment;
-  } catch (error) {
+  } catch {
     const now = new Date().toISOString();
     const fallbackId = `local-${Date.now()}`;
     const appointment: Appointment = {

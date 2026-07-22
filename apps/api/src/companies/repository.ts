@@ -116,19 +116,31 @@ export async function createCompanyInvitationRepo(
   companyId: string,
   email: string,
   role: string,
-  token: string,
+  tokenHash: string,
   expiresAt: Date
 ) {
   return withUserTransaction(userId, async (client) => {
     const result = await client.query(
       `
-        INSERT INTO public.company_invitations (
-          company_id, email, role, token, invited_by, status, expires_at
-        )
-        VALUES ($1, LOWER($2), $3::public.company_role, $4, app.current_user_id(), 'pending', $5)
-        RETURNING *
+        SELECT
+          created.created_invitation_id AS id,
+          created.created_company_id AS company_id,
+          created.created_email AS email,
+          created.created_role AS role,
+          created.created_invited_by AS invited_by,
+          created.created_status AS status,
+          created.created_expires_at AS expires_at,
+          created.created_created_at AS created_at,
+          created.created_updated_at AS updated_at
+        FROM private.create_company_invitation(
+          $1,
+          $2,
+          $3::public.company_role,
+          $4,
+          $5
+        ) AS created
       `,
-      [companyId, email, role, token, expiresAt]
+      [companyId, email, role, tokenHash, expiresAt]
     );
     return result.rows[0] ?? null;
   });
@@ -139,7 +151,15 @@ export async function findCompanyInvitationsRepo(userId: string, companyId: stri
     const result = await client.query(
       `
         SELECT
-          invitation.*,
+          invitation.id,
+          invitation.company_id,
+          invitation.email,
+          invitation.role,
+          invitation.invited_by,
+          invitation.status,
+          invitation.expires_at,
+          invitation.created_at,
+          invitation.updated_at,
           inviter.email AS inviter_email
         FROM public.company_invitations AS invitation
         LEFT JOIN app_auth.users AS inviter ON inviter.id = invitation.invited_by
@@ -154,89 +174,37 @@ export async function findCompanyInvitationsRepo(userId: string, companyId: stri
   });
 }
 
-export async function findInvitationByTokenRepo(userId: string, token: string) {
+export async function acceptCompanyInvitationRepo(userId: string, tokenHash: string) {
   return withUserTransaction(userId, async (client) => {
-    const result = await client.query(
+    const result = await client.query<{
+      id: string;
+      company_id: string;
+    }>(
       `
-        SELECT *
-        FROM public.company_invitations
-        WHERE token = $1
+        SELECT
+          accepted.accepted_invitation_id AS id,
+          accepted.accepted_company_id AS company_id
+        FROM private.accept_company_invitation($1) AS accepted
       `,
-      [token]
+      [tokenHash]
     );
     return result.rows[0] ?? null;
   });
 }
 
-export async function acceptCompanyInvitationRepo(userId: string, token: string) {
-  return withUserTransaction(userId, async (client) => {
-    const invResult = await client.query(
-      `
-        SELECT *
-        FROM public.company_invitations
-        WHERE token = $1
-          AND status = 'pending'
-          AND expires_at > now()
-      `,
-      [token]
-    );
-
-    const invitation = invResult.rows[0];
-    if (!invitation) return null;
-
-    // Check if user is already member
-    const memberCheck = await client.query(
-      `
-        SELECT *
-        FROM public.company_members
-        WHERE company_id = $1 AND user_id = app.current_user_id()
-      `,
-      [invitation.company_id]
-    );
-
-    if (memberCheck.rows.length > 0) {
-      await client.query(
-        `
-          UPDATE public.company_members
-          SET active = true, role = $1::public.company_role, updated_at = now()
-          WHERE company_id = $2 AND user_id = app.current_user_id()
-        `,
-        [invitation.role, invitation.company_id]
-      );
-    } else {
-      await client.query(
-        `
-          INSERT INTO public.company_members (company_id, user_id, role, active)
-          VALUES ($1, app.current_user_id(), $2::public.company_role, true)
-        `,
-        [invitation.company_id, invitation.role]
-      );
-    }
-
-    // Update invitation status
-    await client.query(
-      `
-        UPDATE public.company_invitations
-        SET status = 'accepted', updated_at = now()
-        WHERE id = $1
-      `,
-      [invitation.id]
-    );
-
-    return invitation;
-  });
-}
-
 export async function revokeCompanyInvitationRepo(userId: string, companyId: string, invitationId: string) {
   return withUserTransaction(userId, async (client) => {
-    const result = await client.query(
+    const result = await client.query<{
+      id: string;
+      company_id: string;
+    }>(
       `
-        UPDATE public.company_invitations
-        SET status = 'revoked', updated_at = now()
-        WHERE id = $1 AND company_id = $2 AND status = 'pending'
-        RETURNING *
+        SELECT
+          revoked.revoked_invitation_id AS id,
+          revoked.revoked_company_id AS company_id
+        FROM private.revoke_company_invitation($1, $2) AS revoked
       `,
-      [invitationId, companyId]
+      [companyId, invitationId]
     );
     return result.rows[0] ?? null;
   });

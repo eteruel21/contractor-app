@@ -127,6 +127,8 @@ export default function InvoiceDetailScreen() {
   );
 
   useEffect(() => {
+    // Loading a new route entity intentionally starts the local loading transition.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadInvoice();
   }, [loadInvoice]);
 

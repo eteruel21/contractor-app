@@ -7,6 +7,7 @@ import {
   quoteLiteral,
   stripOuterTransaction,
   stripPsqlMetaCommands,
+  validateTestDatabaseUrl,
 } from "./db-utils.mjs";
 
 test("calcula checksums SHA-256 estables", () => {
@@ -78,4 +79,22 @@ test("escapa literales y valida identificadores", () => {
   assert.equal(quoteIdentifier("contractor_pro"), '"contractor_pro"');
   assert.equal(quoteLiteral("se'creto"), "'se''creto'");
   assert.throws(() => quoteIdentifier("contractor-pro"), /inválido/u);
+});
+
+test("acepta únicamente URLs de bases marcadas como pruebas", () => {
+  const safeUrl = "postgresql://localhost:5432/contractor_ci_test";
+
+  assert.equal(validateTestDatabaseUrl(safeUrl, "test"), safeUrl);
+  assert.throws(
+    () => validateTestDatabaseUrl("postgresql://localhost:5432/contractor_pro", "test"),
+    /inequívocamente de pruebas/u,
+  );
+  assert.throws(
+    () => validateTestDatabaseUrl("postgresql://localhost:5432/staging_test", "test"),
+    /nunca prod, staging, main o live/u,
+  );
+  assert.throws(
+    () => validateTestDatabaseUrl(safeUrl, "production"),
+    /NODE_ENV=test/u,
+  );
 });

@@ -5,11 +5,30 @@ import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 
+import { quoteIdentifier, requireEnv } from "./db-utils.mjs";
+
 const { Client } = pg;
-const testDbName = `contractor_pro_test_scratch_${Math.floor(Math.random() * 1000000)}`;
-const adminUrl = process.env.DATABASE_ADMIN_URL || "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
-const migratorPassword = process.env.CONTRACTOR_MIGRATOR_PASSWORD || "663c3028304a4a54a87a270b55faf81a";
-const migratorUrl = `postgresql://contractor_migrator:${migratorPassword}@127.0.0.1:5432/${testDbName}`;
+const testDbName = `test_contractor_scratch_${Math.floor(Math.random() * 1000000)}`;
+
+if (process.env.NODE_ENV !== "test") {
+  throw new Error("Las pruebas destructivas de migraciones requieren NODE_ENV=test.");
+}
+
+const adminUrl = requireEnv("DATABASE_ADMIN_URL");
+const migratorPassword = requireEnv("CONTRACTOR_MIGRATOR_PASSWORD");
+const migratorUrl = new URL(adminUrl);
+const validationUrl = new URL(adminUrl);
+
+if (migratorUrl.protocol !== "postgres:" && migratorUrl.protocol !== "postgresql:") {
+  throw new Error("DATABASE_ADMIN_URL debe usar el protocolo postgres o postgresql.");
+}
+
+migratorUrl.username = "contractor_migrator";
+migratorUrl.password = migratorPassword;
+migratorUrl.pathname = `/${testDbName}`;
+migratorUrl.hash = "";
+validationUrl.pathname = `/${testDbName}`;
+validationUrl.hash = "";
 
 test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
   const adminClient = new Client({ connectionString: adminUrl });
@@ -17,7 +36,7 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
 
   try {
     // 1. Limpiar base de datos si existe
-    await adminClient.query(`DROP DATABASE IF EXISTS ${testDbName}`);
+    await adminClient.query(`DROP DATABASE IF EXISTS ${quoteIdentifier(testDbName)}`);
 
     // 2. Ejecutar bootstrap desde cero
     execSync("node --env-file-if-exists=database/.env database/scripts/bootstrap.mjs", {
@@ -27,12 +46,12 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
 
     // 3. Ejecutar migraciones (migrate.mjs) desde cero
     execSync("node --env-file-if-exists=database/.env database/scripts/migrate.mjs", {
-      env: { ...process.env, MIGRATOR_DATABASE_URL: migratorUrl },
+      env: { ...process.env, MIGRATOR_DATABASE_URL: migratorUrl.toString() },
       stdio: "pipe"
     });
 
     // 4. Verificar historial de migraciones
-    const migratorClient = new Client({ connectionString: migratorUrl });
+    const migratorClient = new Client({ connectionString: migratorUrl.toString() });
     await migratorClient.connect();
 
     try {
@@ -51,14 +70,22 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
       const validateFkSqlPath = path.join(process.cwd(), "database", "scripts", "validate_foreign_keys.sql");
       if (fs.existsSync(validateFkSqlPath)) {
         const validateSql = fs.readFileSync(validateFkSqlPath, "utf8");
-        const fkResult = await adminClient.query(validateSql);
-        assert.ok(fkResult, "La validación de llaves foráneas debe ejecutarse sin errores");
+        const validationClient = new Client({
+          connectionString: validationUrl.toString()
+        });
+        await validationClient.connect();
+        try {
+          const fkResult = await validationClient.query(validateSql);
+          assert.ok(fkResult, "La validación de llaves foráneas debe ejecutarse sin errores");
+        } finally {
+          await validationClient.end();
+        }
       }
     } finally {
       await migratorClient.end();
     }
   } finally {
-    await adminClient.query(`DROP DATABASE IF EXISTS ${testDbName}`);
+    await adminClient.query(`DROP DATABASE IF EXISTS ${quoteIdentifier(testDbName)}`);
     await adminClient.end();
   }
 });

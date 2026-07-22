@@ -3,11 +3,11 @@ import { randomUUID } from "node:crypto";
 
 import pg from "pg";
 
-import { requireEnv } from "./db-utils.mjs";
+import { requireTestDatabaseUrl } from "./db-utils.mjs";
 
 const { Client } = pg;
 const client = new Client({
-  connectionString: requireEnv("TEST_DATABASE_URL")
+  connectionString: requireTestDatabaseUrl()
 });
 
 async function setRole(role, userId) {

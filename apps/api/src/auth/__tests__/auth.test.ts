@@ -154,4 +154,38 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
     const activeSessionsRes = await adminPool.query("SELECT COUNT(*) FROM app_auth.sessions WHERE user_id = $1 AND revoked_at IS NULL", [userId]);
     expect(Number(activeSessionsRes.rows[0].count)).toBe(0);
   });
+
+  it("7. Recuperación no revela si el correo existe ni si SMTP falló", async () => {
+    const existingAccount = await app.inject({
+      method: "POST",
+      url: "/auth/recover-password",
+      payload: { email: testEmail }
+    });
+    const unknownAccount = await app.inject({
+      method: "POST",
+      url: "/auth/recover-password",
+      payload: { email: `missing_${testSuffix}@example.com` }
+    });
+
+    expect(existingAccount.statusCode).toBe(200);
+    expect(unknownAccount.statusCode).toBe(200);
+    expect(existingAccount.json()).toEqual(unknownAccount.json());
+  });
+
+  it("8. Reenvío de verificación no revela el estado de la cuenta", async () => {
+    const confirmedAccount = await app.inject({
+      method: "POST",
+      url: "/auth/resend-verification",
+      payload: { email: testEmail }
+    });
+    const unknownAccount = await app.inject({
+      method: "POST",
+      url: "/auth/resend-verification",
+      payload: { email: `unknown_${testSuffix}@example.com` }
+    });
+
+    expect(confirmedAccount.statusCode).toBe(200);
+    expect(unknownAccount.statusCode).toBe(200);
+    expect(confirmedAccount.json()).toEqual(unknownAccount.json());
+  });
 });
