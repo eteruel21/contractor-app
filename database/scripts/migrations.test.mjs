@@ -51,7 +51,7 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
       const validateFkSqlPath = path.join(process.cwd(), "database", "scripts", "validate_foreign_keys.sql");
       if (fs.existsSync(validateFkSqlPath)) {
         const validateSql = fs.readFileSync(validateFkSqlPath, "utf8");
-        const fkResult = await migratorClient.query(validateSql);
+        const fkResult = await adminClient.query(validateSql);
         assert.ok(fkResult, "La validación de llaves foráneas debe ejecutarse sin errores");
       }
     } finally {

@@ -68,7 +68,7 @@ try {
 
   await client.query(`
     REVOKE ALL ON DATABASE ${database} FROM PUBLIC;
-    GRANT CONNECT, TEMP ON DATABASE ${database} TO contractor_migrator;
+    GRANT ALL ON DATABASE ${database} TO contractor_owner, contractor_migrator;
     GRANT CONNECT ON DATABASE ${database} TO contractor_api;
   `);
 
