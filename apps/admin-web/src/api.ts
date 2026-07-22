@@ -1,12 +1,19 @@
-const API_URL =
-  import.meta.env.VITE_API_URL
-    ?.replace(/\/+$/, "");
-
-if (!API_URL) {
-  throw new Error(
-    "Falta VITE_API_URL en apps/admin-web/.env"
+function getApiUrl(): string {
+  const rawUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, "");
+  const isLocalHost = typeof window !== "undefined" && (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.endsWith(".local")
   );
+
+  if (!rawUrl || (!isLocalHost && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost")))) {
+    return "https://api.contractor.com.pa";
+  }
+
+  return rawUrl;
 }
+
+const API_URL = getApiUrl();
 
 const SESSION_KEY =
   "contractor-pro.admin-session.v1";

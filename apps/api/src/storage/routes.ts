@@ -1,10 +1,15 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
-import fs from "fs/promises";
-import path from "path";
 import { authenticateRequest, requireActiveUser, requireCompanyRole } from "../auth/authenticate.js";
-import { createProjectPhotoRepo, deleteProjectPhotoRepo, findProjectPhotosRepo, getPhotoByIdRepo } from "./repository.js";
-import { generateSignedPhotoUrl, verifyPhotoToken } from "./signed-url.js";
+import { createProjectPhotoRepo, deleteProjectPhotoRepo, findProjectPhotosRepo } from "./repository.js";
+import {
+  buildSecureStorageKey,
+  uploadStorageFile,
+  downloadStorageFile,
+  deleteStorageFile,
+  getStorageSignedUrl
+} from "./provider.js";
+import { verifyPhotoToken } from "./signed-url.js";
 import { pool } from "../db/pool.js";
 
 const uploadPhotoSchema = z.object({
@@ -37,9 +42,6 @@ function authenticatedUserId(request: FastifyRequest, reply: FastifyReply): stri
 }
 
 export async function registerStorageRoutes(app: FastifyInstance): Promise<void> {
-  const uploadsDir = path.join(process.cwd(), "storage", "uploads");
-  await fs.mkdir(uploadsDir, { recursive: true });
-
   // List photos with signed URLs
   app.get(
     "/companies/:companyId/projects/:projectId/photos",
@@ -60,7 +62,7 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
       const photosWithSignedUrls = await Promise.all(
         photos.map(async (photo) => ({
           ...photo,
-          signedUrl: await generateSignedPhotoUrl(photo.id, 60)
+          signedUrl: await getStorageSignedUrl(photo.id, photo.storage_path, 60)
         }))
       );
 
@@ -68,7 +70,7 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
     }
   );
 
-  // Upload photo to private storage
+  // Upload photo to private storage (R2/S3 or local fallback) with secure UUID storagePath
   app.post(
     "/companies/:companyId/projects/:projectId/photos",
     {
@@ -92,18 +94,19 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
       }
 
       const buffer = Buffer.from(parsedBody.data.fileData.replace(/^data:image\/\w+;base64,/, ""), "base64");
-      const fileId = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}-${parsedBody.data.fileName}`;
-      const relativePath = path.join(parsedParams.data.companyId, parsedParams.data.projectId, fileId);
-      const fullPath = path.join(uploadsDir, relativePath);
+      const storagePath = buildSecureStorageKey(parsedParams.data.companyId, parsedParams.data.projectId, parsedBody.data.fileName);
 
-      await fs.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.writeFile(fullPath, buffer);
+      await uploadStorageFile({
+        storagePath,
+        buffer,
+        mimeType: parsedBody.data.mimeType
+      });
 
       const photoRecord = await createProjectPhotoRepo(userId, {
         companyId: parsedParams.data.companyId,
         projectId: parsedParams.data.projectId,
         taskId: parsedBody.data.taskId,
-        storagePath: relativePath,
+        storagePath,
         fileName: parsedBody.data.fileName,
         fileSize: buffer.length,
         mimeType: parsedBody.data.mimeType,
@@ -111,12 +114,12 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
         isPrivate: parsedBody.data.isPrivate
       });
 
-      const signedUrl = await generateSignedPhotoUrl(photoRecord.id, 60);
+      const signedUrl = await getStorageSignedUrl(photoRecord.id, photoRecord.storage_path, 60);
       return reply.status(201).send({ photo: { ...photoRecord, signedUrl } });
     }
   );
 
-  // Delete photo
+  // Delete photo from storage
   app.delete(
     "/companies/:companyId/projects/:projectId/photos/:photoId",
     {
@@ -142,13 +145,7 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
         return reply.status(404).send({ message: "Foto no encontrada." });
       }
 
-      try {
-        const fullPath = path.join(uploadsDir, deleted.storage_path);
-        await fs.unlink(fullPath);
-      } catch {
-        // File may have been removed already
-      }
-
+      await deleteStorageFile(deleted.storage_path);
       return { success: true };
     }
   );
@@ -177,15 +174,14 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
       return reply.status(404).send({ message: "Archivo no encontrado." });
     }
 
-    const fullPath = path.join(uploadsDir, photo.storage_path);
     try {
-      const fileBuffer = await fs.readFile(fullPath);
+      const { buffer, mimeType } = await downloadStorageFile(photo.storage_path);
       return reply
-        .header("Content-Type", photo.mime_type || "image/jpeg")
+        .header("Content-Type", photo.mime_type || mimeType || "image/jpeg")
         .header("Cache-Control", "private, max-age=3600")
-        .send(fileBuffer);
+        .send(buffer);
     } catch {
-      return reply.status(404).send({ message: "Archivo no disponible en el almacenamiento físico." });
+      return reply.status(404).send({ message: "Archivo no disponible en el almacenamiento físico o R2/S3." });
     }
   });
 }

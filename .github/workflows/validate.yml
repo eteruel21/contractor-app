@@ -2,17 +2,24 @@ name: Validate
 
 on:
   pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
+    name: Validate Codebase & Build
     runs-on: ubuntu-latest
 
     services:
       postgres:
-        image: postgres:18
+        image: postgres:18.4-bookworm
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -24,6 +31,12 @@ jobs:
           --health-retries 5
 
     env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: contractor_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      JWT_SECRET: "ci_jwt_secret_key_at_least_43_characters_long_for_testing_purposes"
       DATABASE_ADMIN_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
       DATABASE_NAME: contractor_ci
       CONTRACTOR_MIGRATOR_PASSWORD: migrator_ci_password
@@ -32,40 +45,47 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/contractor_ci
 
     steps:
-      - name: Checkout
+      - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 2. Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - name: Install dependencies
+      - name: 3. Install dependencies
         run: npm ci
 
-      - name: Typecheck API
-        run: npm run typecheck -w apps/api
+      - name: 4. Typecheck all workspaces
+        run: npm run typecheck
 
-      - name: Build API
-        run: npm run build -w apps/api
+      - name: 5. Create roles & database (db:bootstrap)
+        run: npm run db:bootstrap
 
-      - name: Test invoice API contracts
+      - name: 6. Apply database migrations (db:migrate)
+        run: npm run db:migrate
+
+      - name: 7. Seed test catalog data (db:seed)
+        run: npm run db:seed
+
+      - name: 8. Execute API, RLS and auth tests
         run: npm run test:api
 
-      - name: Test database tooling
+      - name: 9. Execute database tooling tests
         run: npm run test:database-tools
 
-      - name: Create and migrate test database
-        run: |
-          npm run db:bootstrap
-          npm run db:migrate
-
-      - name: Test invoice financial lifecycle
+      - name: 10. Execute invoice financial lifecycle tests
         run: npm run test:invoice-db
 
-      - name: Build admin web
-        run: npm run build -w apps/admin-web
+      - name: 11. Build API backend
+        run: npm run build:api
 
-      - name: Typecheck mobile
-        run: npx tsc --noEmit -p apps/mobile/tsconfig.json
+      - name: 12. Test mobile app
+        run: npm run test -w apps/mobile
+
+      - name: 13. Build admin web application
+        run: npm run build:admin
+
+      - name: 14. Build mobile web application
+        run: npm run build:mobile

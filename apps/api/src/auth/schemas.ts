@@ -59,7 +59,6 @@ export const registerSchema = z.object({
     .trim()
     .min(1)
     .optional()
-    .default("mock-captcha-token")
 });
 
 export const refreshSchema = z.object({

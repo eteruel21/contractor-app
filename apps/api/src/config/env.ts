@@ -16,6 +16,13 @@ const environmentSchema = z.object({
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
 
+  S3_ENDPOINT: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_BUCKET: z.string().default("contractor-private-storage"),
+  S3_REGION: z.string().default("auto"),
+  COOKIE_DOMAIN: z.string().optional(),
+
   API_HOST: z.string().min(1).default("127.0.0.1"),
 
   API_PORT: z.coerce
@@ -28,7 +35,7 @@ const environmentSchema = z.object({
   CORS_ORIGINS: z
     .string()
     .default(
-      "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081,http://127.0.0.1:8081"
+      "https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev,https://admin.contractor.com.pa,https://app.contractor.com.pa,https://staging-admin.contractor.app,https://staging-app.contractor.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081,http://127.0.0.1:8081"
     ),
 
   PGHOST: z.string().min(1),

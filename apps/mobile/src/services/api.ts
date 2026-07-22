@@ -35,17 +35,22 @@ async function deleteSecureItem(key: string): Promise<void> {
   await AsyncStorage.removeItem(`fallback_${key}`);
 }
 
-const API_URL =
-  process.env.EXPO_PUBLIC_API_URL?.replace(
-    /\/+$/,
-    ""
+function getMobileApiUrl(): string {
+  const rawUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+  const isLocalHost = typeof window !== "undefined" && (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.endsWith(".local")
   );
 
-if (!API_URL) {
-  throw new Error(
-    "Falta EXPO_PUBLIC_API_URL en apps/mobile/.env"
-  );
+  if (!rawUrl || (!isLocalHost && typeof window !== "undefined" && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost")))) {
+    return "https://api.contractor.com.pa";
+  }
+
+  return rawUrl || "https://api.contractor.com.pa";
 }
+
+const API_URL = getMobileApiUrl();
 
 const SESSION_STORAGE_KEY =
   "contractor-pro.local-session.v1";
@@ -468,4 +473,18 @@ export async function updateContractorProfile(
       body: JSON.stringify(input)
     }
   );
+}
+
+export async function confirmEmailApi(token: string): Promise<{ message?: string }> {
+  return publicRequest<{ message?: string }>("/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token })
+  });
+}
+
+export async function resetPasswordApi(token: string, password: string): Promise<{ message?: string }> {
+  return publicRequest<{ message?: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password })
+  });
 }

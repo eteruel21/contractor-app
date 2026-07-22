@@ -64,6 +64,20 @@ const EMPTY_DATA: AdminData = {
   clientCount: 0,
   priceHistoryCount: 0,
   warnings: [],
+  stats: {
+    totalUsers: 0,
+    activeUsers: 0,
+    totalCompanies: 0,
+    totalProjects: 0,
+    totalClients: 0,
+    totalCategories: 0,
+    totalItems: 0,
+    totalGlobalItems: 0,
+    totalUnits: 0,
+    totalYields: 0,
+    totalFormulas: 0,
+    priceHistoryCount: 0
+  }
 };
 
 function userDraft(user: PlatformUser): UserDraft {

@@ -44,15 +44,38 @@ import {
   hashPassword,
   comparePassword
 } from "./services.js";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail
+} from "../services/email.js";
 
 function getCookieOptions() {
-  return {
+  const isProductionOrStaging = env.NODE_ENV === "production" || env.NODE_ENV === "staging";
+  const maxAgeSeconds = env.REFRESH_TOKEN_DAYS * 24 * 60 * 60;
+  const expiresDate = new Date(Date.now() + maxAgeSeconds * 1000);
+
+  const options: {
+    path: string;
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: "none" | "lax";
+    maxAge: number;
+    expires: Date;
+    domain?: string;
+  } = {
     path: "/",
     httpOnly: true,
-    secure: env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    maxAge: env.REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000
+    secure: isProductionOrStaging,
+    sameSite: isProductionOrStaging ? "none" : "lax",
+    maxAge: maxAgeSeconds,
+    expires: expiresDate
   };
+
+  if (env.COOKIE_DOMAIN) {
+    options.domain = env.COOKIE_DOMAIN;
+  }
+
+  return options;
 }
 
 export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
@@ -78,7 +101,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       const input = parsedBody.data;
 
       // CAPTCHA check
-      const isCaptchaValid = await verifyCaptcha(input.captchaToken || "mock-captcha-token", request.ip);
+      const isCaptchaValid = await verifyCaptcha(input.captchaToken || "", request.ip);
       if (!isCaptchaValid) {
         return reply.status(400).send({
           message: "Protección contra robots inválida. Inténtalo de nuevo."
@@ -113,8 +136,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         await insertToken(client, userId, "email_verification", verificationTokenHash, tokenExpiresAt);
 
-        if (env.NODE_ENV !== "production") {
-        }
+        await sendVerificationEmail({
+          to: input.email,
+          fullName: input.fullName,
+          token: verificationToken
+        });
 
         await client.query("COMMIT");
 
@@ -357,12 +383,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
       await revokeSession(authenticatedUser.sessionId, authenticatedUser.id);
 
-      reply.clearCookie("refreshToken", {
-        path: "/",
-        httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: "lax"
-      });
+      reply.clearCookie("refreshToken", getCookieOptions());
 
       return {
         success: true
@@ -519,8 +540,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         await insertToken(client, user.id, "email_verification", verificationTokenHash, tokenExpiresAt);
 
-        if (env.NODE_ENV !== "production") {
-        }
+        await sendVerificationEmail({
+          to: user.email,
+          fullName: null,
+          token: verificationToken
+        });
 
         await client.query("COMMIT");
         return { success: true, message: "Si el correo está registrado, recibirás un nuevo enlace de verificación." };
@@ -595,8 +619,11 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         await insertToken(client, user.id, "password_reset", resetTokenHash, tokenExpiresAt);
 
-        if (env.NODE_ENV !== "production") {
-        }
+        await sendPasswordResetEmail({
+          to: user.email,
+          fullName: null,
+          token: resetToken
+        });
 
         await client.query("COMMIT");
         return { success: true, message: "Si tu correo está registrado, recibirás un enlace para restablecer tu contraseña." };

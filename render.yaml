@@ -1,5 +1,43 @@
 services:
   - type: web
+    name: contractor-api
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    domains:
+      - api.contractor.com.pa
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_PORT
+        value: 3001
+      - key: PGSSL
+        value: require
+      - key: JWT_ISSUER
+        value: contractor-api
+      - key: JWT_AUDIENCE
+        value: contractor-app
+      - key: CORS_ORIGINS
+        value: https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev,https://admin.contractor.com.pa,https://app.contractor.com.pa
+      - key: PGHOST
+        sync: false
+      - key: PGPORT
+        sync: false
+      - key: PGDATABASE
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  - type: web
     name: contractor-api-staging
     env: docker
     dockerfilePath: Dockerfile
@@ -21,7 +59,7 @@ services:
       - key: JWT_AUDIENCE
         value: contractor-app-staging
       - key: CORS_ORIGINS
-        sync: false
+        value: https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev,https://staging-admin.contractor.app,https://staging-app.contractor.app
       - key: PGHOST
         sync: false
       - key: PGPORT

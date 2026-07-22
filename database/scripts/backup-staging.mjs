@@ -14,10 +14,18 @@ export async function runBackup(options = {}) {
   const backupFilename = `backup_staging_${timestamp}.sql`;
   const backupPath = path.join(backupDir, backupFilename);
 
-  const pgHost = process.env.PGHOST || "127.0.0.1";
-  const pgPort = process.env.PGPORT || "5432";
-  const pgDatabase = process.env.PGDATABASE || "contractor_pro";
-  const pgUser = process.env.PGUSER || "postgres";
+  let parsedUrl = null;
+  if (process.env.DATABASE_ADMIN_URL) {
+    try { parsedUrl = new URL(process.env.DATABASE_ADMIN_URL); } catch {}
+  } else if (process.env.MIGRATOR_DATABASE_URL) {
+    try { parsedUrl = new URL(process.env.MIGRATOR_DATABASE_URL); } catch {}
+  }
+
+  const pgHost = process.env.PGHOST || (parsedUrl ? parsedUrl.hostname : "127.0.0.1");
+  const pgPort = process.env.PGPORT || (parsedUrl ? parsedUrl.port || "5432" : "5432");
+  const pgDatabase = process.env.PGDATABASE || (parsedUrl ? parsedUrl.pathname.slice(1) : "contractor_pro");
+  const pgUser = process.env.PGUSER || (parsedUrl ? parsedUrl.username : "postgres");
+  const pgPassword = process.env.PGPASSWORD || (parsedUrl ? parsedUrl.password : "");
 
   console.log(`[Backup Staging] Iniciando respaldo de la base de datos ${pgDatabase}...`);
 
@@ -30,7 +38,7 @@ export async function runBackup(options = {}) {
 
   const env = {
     ...process.env,
-    PGPASSWORD: process.env.PGPASSWORD,
+    PGPASSWORD: pgPassword,
   };
 
   try {

@@ -3,14 +3,22 @@ import type { FastifyRequest } from "fastify";
 import { env } from "../config/env.js";
 
 export async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
+  if (env.NODE_ENV === "test") {
+    return true;
+  }
+
   const secret = env.CAPTCHA_SECRET;
   if (!secret) return true;
-  if (token === "mock-captcha-token") return true;
+
+  if (!token || token === "mock-captcha-token") {
+    return false;
+  }
+
   try {
     const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `secret=${secret}&response=${token}&remoteip=${ip}`
+      body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}&remoteip=${encodeURIComponent(ip)}`
     });
     const data = (await response.json()) as { success: boolean };
     return !!data.success;

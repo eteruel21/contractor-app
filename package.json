@@ -12,7 +12,7 @@
     "db:status": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs --status",
     "db:seed": "node --env-file-if-exists=database/.env database/scripts/seed.mjs",
     "test:api": "npm run test -w apps/api",
-    "test:database-tools": "node --test database/scripts/*.test.mjs",
+    "test:database-tools": "node --env-file-if-exists=database/.env --test database/scripts/*.test.mjs",
     "test:invoice-db": "node --env-file-if-exists=database/.env database/scripts/invoice-payments.integration.mjs",
     "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w apps/admin-web && npm run typecheck -w apps/mobile",
     "build:api": "npm run build -w apps/api",
@@ -21,7 +21,8 @@
     "deploy:admin": "npm run build:admin && npx wrangler pages deploy apps/admin-web/dist --project-name contractor-admin-web --branch main",
     "deploy:mobile": "npm run build:mobile && npx wrangler pages deploy apps/mobile/dist --project-name contractor-pro-web --branch main",
     "deploy:safe": "node database/scripts/deploy-safe.mjs",
-    "validate": "npm run typecheck && npm run build:api && npm run build:admin"
+    "install-hooks": "node scripts/install-git-hooks.mjs",
+    "validate": "npm run typecheck && npm run build:api && npm run build:admin && npm run build:mobile"
   },
   "devDependencies": {
     "pg": "^8.22.0",

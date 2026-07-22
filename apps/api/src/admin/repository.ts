@@ -9,7 +9,7 @@ import type {
   formulaSchema,
   globalPriceSchema,
   adjustPricesSchema
-} from "./schemas.ts";
+} from "./schemas.js";
 
 export type UserInput = z.infer<typeof userSchema>;
 export type CategoryInput = z.infer<typeof categorySchema>;
@@ -201,6 +201,26 @@ export async function getAdminDashboardDataRepo(userId: string) {
 
     const countRow = counts.rows[0];
 
+    const projectCount = Number(countRow?.project_count ?? 0);
+    const clientCount = Number(countRow?.client_count ?? 0);
+    const priceHistoryCount = Number(countRow?.history_count ?? 0);
+    const warnings: string[] = [];
+
+    const stats = {
+      totalUsers: users.rows.length,
+      activeUsers: users.rows.filter((u) => u.active).length,
+      totalCompanies: companies.rows.length,
+      totalProjects: projectCount,
+      totalClients: clientCount,
+      totalCategories: categories.rows.length,
+      totalItems: items.rows.length,
+      totalGlobalItems: globalItems.rows.length,
+      totalUnits: units.rows.length,
+      totalYields: yields.rows.length,
+      totalFormulas: formulas.rows.length,
+      priceHistoryCount
+    };
+
     return {
       users: users.rows.map((row) => ({
         id: row.id,
@@ -294,20 +314,11 @@ export async function getAdminDashboardDataRepo(userId: string) {
         active: Boolean(row.active),
         parameters: parametersByFormula.get(String(row.id)) ?? []
       })),
-      stats: {
-        totalUsers: users.rows.length,
-        activeUsers: users.rows.filter((u) => u.active).length,
-        totalCompanies: companies.rows.length,
-        totalProjects: Number(countRow?.project_count ?? 0),
-        totalClients: Number(countRow?.client_count ?? 0),
-        totalCategories: categories.rows.length,
-        totalItems: items.rows.length,
-        totalGlobalItems: globalItems.rows.length,
-        totalUnits: units.rows.length,
-        totalYields: yields.rows.length,
-        totalFormulas: formulas.rows.length,
-        priceHistoryCount: Number(countRow?.history_count ?? 0)
-      }
+      projectCount,
+      clientCount,
+      priceHistoryCount,
+      warnings,
+      stats
     };
   });
 }
@@ -334,11 +345,365 @@ export async function updateAdminUserRepo(userId: string, targetUserId: string, 
         input.role,
         input.active,
         input.approvedAt ? new Date(input.approvedAt) : null,
-        input.approvedBy,
+        input.approvedBy || null,
         targetUserId
       ]
     );
 
     return (result.rowCount ?? 0) > 0;
+  });
+}
+
+export async function saveCategoryRepo(userId: string, input: CategoryInput) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.id && input.id.trim().length > 0) {
+      const result = await client.query(
+        `
+          UPDATE public.catalog_categories
+          SET
+            company_id = $1,
+            name = $2,
+            description = $3,
+            active = $4,
+            updated_at = now()
+          WHERE id = $5
+          RETURNING *
+        `,
+        [input.companyId, input.name, input.description ?? "", input.active, input.id]
+      );
+      return result.rows[0];
+    } else {
+      const result = await client.query(
+        `
+          INSERT INTO public.catalog_categories (company_id, name, description, active)
+          VALUES ($1, $2, $3, $4)
+          RETURNING *
+        `,
+        [input.companyId, input.name, input.description ?? "", input.active]
+      );
+      return result.rows[0];
+    }
+  });
+}
+
+export async function saveItemRepo(userId: string, input: ItemInput) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.id && input.id.trim().length > 0) {
+      const result = await client.query(
+        `
+          UPDATE public.catalog_items
+          SET
+            company_id = $1,
+            sku = $2,
+            name = $3,
+            description = $4,
+            item_type = $5::public.catalog_item_type,
+            category_id = $6,
+            unit_id = $7,
+            unit_cost = $8,
+            sale_price = $9,
+            waste_percentage = $10,
+            active = $11,
+            updated_at = now()
+          WHERE id = $12
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.sku ?? "",
+          input.name,
+          input.description ?? "",
+          input.itemType,
+          input.categoryId || null,
+          input.unitId,
+          input.unitCost,
+          input.salePrice,
+          input.wastePercentage,
+          input.active,
+          input.id
+        ]
+      );
+      return result.rows[0];
+    } else {
+      const result = await client.query(
+        `
+          INSERT INTO public.catalog_items (
+            company_id, sku, name, description, item_type, category_id, unit_id, unit_cost, sale_price, waste_percentage, active
+          )
+          VALUES ($1, $2, $3, $4, $5::public.catalog_item_type, $6, $7, $8, $9, $10, $11)
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.sku ?? "",
+          input.name,
+          input.description ?? "",
+          input.itemType,
+          input.categoryId || null,
+          input.unitId,
+          input.unitCost,
+          input.salePrice,
+          input.wastePercentage,
+          input.active
+        ]
+      );
+      return result.rows[0];
+    }
+  });
+}
+
+export async function saveUnitRepo(userId: string, input: UnitInput) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.id && input.id.trim().length > 0) {
+      const result = await client.query(
+        `
+          UPDATE public.units
+          SET
+            company_id = $1,
+            code = $2,
+            name = $3,
+            symbol = $4,
+            unit_type = $5::public.unit_type,
+            conversion_factor = $6,
+            active = $7,
+            updated_at = now()
+          WHERE id = $8
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.code,
+          input.name,
+          input.symbol,
+          input.unitType,
+          input.conversionFactor,
+          input.active,
+          input.id
+        ]
+      );
+      return result.rows[0];
+    } else {
+      const result = await client.query(
+        `
+          INSERT INTO public.units (
+            company_id, code, name, symbol, unit_type, conversion_factor, active
+          )
+          VALUES ($1, $2, $3, $4, $5::public.unit_type, $6, $7)
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.code,
+          input.name,
+          input.symbol,
+          input.unitType,
+          input.conversionFactor,
+          input.active
+        ]
+      );
+      return result.rows[0];
+    }
+  });
+}
+
+export async function saveYieldRepo(userId: string, input: YieldInput) {
+  return withUserTransaction(userId, async (client) => {
+    if (input.id && input.id.trim().length > 0) {
+      const result = await client.query(
+        `
+          UPDATE public.catalog_yields
+          SET
+            company_id = $1,
+            catalog_item_id = $2,
+            output_unit_id = $3,
+            name = $4,
+            output_quantity = $5,
+            labor_hours = $6,
+            crew_size = $7,
+            waste_percentage = $8,
+            notes = $9,
+            active = $10,
+            updated_at = now()
+          WHERE id = $11
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.catalogItemId,
+          input.outputUnitId,
+          input.name,
+          input.outputQuantity,
+          input.laborHours,
+          input.crewSize,
+          input.wastePercentage,
+          input.notes ?? "",
+          input.active,
+          input.id
+        ]
+      );
+      return result.rows[0];
+    } else {
+      const result = await client.query(
+        `
+          INSERT INTO public.catalog_yields (
+            company_id, catalog_item_id, output_unit_id, name, output_quantity, labor_hours, crew_size, waste_percentage, notes, active
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING *
+        `,
+        [
+          input.companyId,
+          input.catalogItemId,
+          input.outputUnitId,
+          input.name,
+          input.outputQuantity,
+          input.laborHours,
+          input.crewSize,
+          input.wastePercentage,
+          input.notes ?? "",
+          input.active
+        ]
+      );
+      return result.rows[0];
+    }
+  });
+}
+
+export async function saveFormulaRepo(userId: string, input: FormulaInput) {
+  return withUserTransaction(userId, async (client) => {
+    let formulaId = input.id;
+    if (formulaId && formulaId.trim().length > 0) {
+      await client.query(
+        `
+          UPDATE public.calculation_formulas
+          SET
+            company_id = $1,
+            code = $2,
+            name = $3,
+            description = $4,
+            active = $5,
+            updated_at = now()
+          WHERE id = $6
+        `,
+        [input.companyId, input.code, input.name, input.description ?? "", input.active, formulaId]
+      );
+    } else {
+      const result = await client.query(
+        `
+          INSERT INTO public.calculation_formulas (company_id, code, name, description, active)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id
+        `,
+        [input.companyId, input.code, input.name, input.description ?? "", input.active]
+      );
+      formulaId = String(result.rows[0]?.id);
+    }
+
+    if (input.parameters && input.parameters.length > 0) {
+      await client.query(
+        `DELETE FROM public.calculation_formula_parameters WHERE formula_id = $1`,
+        [formulaId]
+      );
+
+      for (const param of input.parameters) {
+        await client.query(
+          `
+            INSERT INTO public.calculation_formula_parameters (
+              formula_id, parameter_key, label, numeric_value, unit_label, description, active, sort_order
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          `,
+          [
+            formulaId,
+            param.parameterKey,
+            param.label,
+            param.numericValue,
+            param.unitLabel ?? "",
+            param.description ?? "",
+            param.active,
+            param.sortOrder
+          ]
+        );
+      }
+    }
+
+    return { id: formulaId };
+  });
+}
+
+export async function saveGlobalPriceRepo(userId: string, itemId: string, input: GlobalPriceInput) {
+  return withUserTransaction(userId, async (client) => {
+    const result = await client.query(
+      `
+        UPDATE public.platform_catalog_items
+        SET
+          default_unit_cost = $1,
+          default_sale_price = $2,
+          default_waste_percentage = $3,
+          updated_at = now()
+        WHERE id = $4
+        RETURNING id
+      `,
+      [input.unitCost, input.salePrice, input.wastePercentage, itemId]
+    );
+
+    return (result.rowCount ?? 0) > 0;
+  });
+}
+
+export async function adjustPricesRepo(userId: string, input: AdjustPricesInput) {
+  return withUserTransaction(userId, async (client) => {
+    const factor = 1 + input.percentage / 100;
+    const isCost = input.target === "unit_cost";
+
+    if (isCost) {
+      const result = await client.query(
+        `
+          UPDATE public.platform_catalog_items
+          SET
+            default_unit_cost = ROUND((default_unit_cost * $1)::numeric, 2),
+            updated_at = now()
+          WHERE id = ANY($2::uuid[])
+        `,
+        [factor, input.itemIds]
+      );
+
+      await client.query(
+        `
+          UPDATE public.catalog_items
+          SET
+            unit_cost = ROUND((unit_cost * $1)::numeric, 2),
+            updated_at = now()
+          WHERE id = ANY($2::uuid[])
+        `,
+        [factor, input.itemIds]
+      );
+
+      return result.rowCount ?? 0;
+    } else {
+      const result = await client.query(
+        `
+          UPDATE public.platform_catalog_items
+          SET
+            default_sale_price = ROUND((default_sale_price * $1)::numeric, 2),
+            updated_at = now()
+          WHERE id = ANY($2::uuid[])
+        `,
+        [factor, input.itemIds]
+      );
+
+      await client.query(
+        `
+          UPDATE public.catalog_items
+          SET
+            sale_price = ROUND((sale_price * $1)::numeric, 2),
+            updated_at = now()
+          WHERE id = ANY($2::uuid[])
+        `,
+        [factor, input.itemIds]
+      );
+
+      return result.rowCount ?? 0;
+    }
   });
 }
