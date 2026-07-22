@@ -40,7 +40,6 @@ import {
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   getProjectById,
-  updateProjectProgress,
   updateProjectStatus,
 } from "@/services/project-service";
 import { getClientDisplayName } from "@/types/client";
@@ -48,10 +47,7 @@ import type {
   ProjectStatus,
   ProjectWithDetails,
 } from "@/types/project";
-import {
-  getProjectStatusLabel,
-  PROJECT_STATUS_OPTIONS,
-} from "@/types/project";
+import { PROJECT_STATUS_OPTIONS } from "@/types/project";
 
 import {
   createProjectTask,
@@ -111,7 +107,7 @@ export default function ProjectDetailScreen() {
   // Form states for adding tasks and photos
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const [newTaskPriority, setNewTaskPriority] = useState<ProjectTaskPriority>("medium");
+  const newTaskPriority: ProjectTaskPriority = "medium";
 
   const [showPhotoForm, setShowPhotoForm] = useState(false);
   const [newPhotoCaption, setNewPhotoCaption] = useState("");

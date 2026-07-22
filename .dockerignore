@@ -1,0 +1,58 @@
+# Version control and local tooling metadata
+.git
+.git/**
+**/.git
+**/.git/**
+.github
+.agents
+.codex
+
+# Dependencies, build output, coverage, and logs
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+**/coverage
+*.log
+**/*.log
+
+# Environment files and local secrets. Keep templates available to the build context.
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.*.example
+!**/.env.example
+!**/.env.*.example
+
+# Database backups, dumps, exports, and generated data extracts
+database
+database/**
+database/backups
+database/backups/**
+**/backups
+**/backups/**
+**/dumps
+**/dumps/**
+**/exports
+**/exports/**
+**/*.backup
+**/*.dump
+**/*.dump.gz
+**/*.sql.gz
+**/*backup*.sql
+**/*dump*.sql
+**/*.csv
+
+# Local runtime data and editor/OS files
+uploads
+**/uploads
+**/uploads/**
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+.vscode
+.idea

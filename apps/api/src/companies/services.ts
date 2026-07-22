@@ -1,4 +1,4 @@
-import randomUUID from "node:crypto";
+import { generateSecureToken, hashSecureToken } from "../auth/tokens.js";
 
 import {
   findUserCompanyMembershipsRepo,
@@ -6,7 +6,6 @@ import {
   updateCompanyBillingRepo,
   createCompanyInvitationRepo,
   findCompanyInvitationsRepo,
-  findInvitationByTokenRepo,
   acceptCompanyInvitationRepo,
   revokeCompanyInvitationRepo,
   findCompanyMembersRepo,
@@ -54,17 +53,13 @@ export async function createCompanyInvitationService(
   email: string,
   role: string
 ) {
-  const token = randomUUID.randomUUID();
+  const { token, hash: tokenHash } = generateSecureToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
 
-  const invitation = await createCompanyInvitationRepo(userId, companyId, email, role, token, expiresAt);
-  if (invitation) {
-    await insertAdminAuditLogRepo(userId, companyId, "INVITATION_CREATED", "company_invitation", invitation.id, {
-      email,
-      role
-    });
-  }
-  return invitation;
+  const invitation = await createCompanyInvitationRepo(userId, companyId, email, role, tokenHash, expiresAt);
+  return invitation
+    ? { ...invitation, acceptanceToken: token }
+    : null;
 }
 
 export async function getCompanyInvitationsService(userId: string, companyId: string) {
@@ -72,32 +67,19 @@ export async function getCompanyInvitationsService(userId: string, companyId: st
 }
 
 export async function acceptCompanyInvitationService(userId: string, token: string) {
-  const invitation = await findInvitationByTokenRepo(userId, token);
-  if (!invitation || invitation.status !== "pending" || new Date(invitation.expires_at) < new Date()) {
-    return { success: false, error: "La invitación no es válida o ha expirado." };
-  }
-
-  const acceptedInvitation = await acceptCompanyInvitationRepo(userId, token);
+  const acceptedInvitation = await acceptCompanyInvitationRepo(
+    userId,
+    hashSecureToken(token)
+  );
   if (!acceptedInvitation) {
-    return { success: false, error: "No se pudo procesar la invitación." };
+    return { success: false, error: "La invitación no es válida o no corresponde a tu correo." };
   }
-
-  await insertAdminAuditLogRepo(userId, acceptedInvitation.company_id, "INVITATION_ACCEPTED", "company_invitation", acceptedInvitation.id, {
-    email: acceptedInvitation.email,
-    role: acceptedInvitation.role
-  });
 
   return { success: true, companyId: acceptedInvitation.company_id };
 }
 
 export async function revokeCompanyInvitationService(userId: string, companyId: string, invitationId: string) {
-  const revoked = await revokeCompanyInvitationRepo(userId, companyId, invitationId);
-  if (revoked) {
-    await insertAdminAuditLogRepo(userId, companyId, "INVITATION_REVOKED", "company_invitation", invitationId, {
-      email: revoked.email
-    });
-  }
-  return revoked;
+  return revokeCompanyInvitationRepo(userId, companyId, invitationId);
 }
 
 // --- Miembros & Roles ---

@@ -36,21 +36,27 @@ export const companyInvitationParamsSchema = z.object({
 export const companyRoleSchema = z.enum([
   "owner",
   "admin",
-  "estimator",
-  "sales",
-  "supervisor",
   "member",
-  "accountant",
-  "guest"
+  "supervisor",
+  "sales",
+  "estimator"
+]);
+
+export const invitableCompanyRoleSchema = z.enum([
+  "admin",
+  "member",
+  "supervisor",
+  "sales",
+  "estimator"
 ]);
 
 export const createInvitationSchema = z.object({
   email: z.string().trim().email(),
-  role: companyRoleSchema
+  role: invitableCompanyRoleSchema
 });
 
 export const acceptInvitationSchema = z.object({
-  token: z.string().trim().min(1)
+  token: z.string().trim().min(32).max(256).regex(/^[A-Za-z0-9_-]+$/)
 });
 
 export const updateMemberStatusSchema = z.object({

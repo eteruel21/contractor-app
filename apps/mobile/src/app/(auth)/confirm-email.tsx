@@ -26,6 +26,8 @@ export default function ConfirmEmailScreen() {
 
   useEffect(() => {
     if (params.token) {
+      // The deep-link parameter is an external source that may change while mounted.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTokenInput(params.token);
     }
   }, [params.token]);

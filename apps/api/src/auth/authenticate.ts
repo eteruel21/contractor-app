@@ -165,7 +165,7 @@ export async function requireActiveUser(
   }
 }
 
-export function requireCompanyRole(allowedRoles: ("owner" | "admin" | "estimator" | "sales" | "supervisor" | "member" | "accountant" | "guest")[]) {
+export function requireCompanyRole(allowedRoles: ("owner" | "admin" | "estimator" | "sales" | "supervisor" | "member")[]) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const userId = request.authenticatedUser?.id;
     if (!userId) {

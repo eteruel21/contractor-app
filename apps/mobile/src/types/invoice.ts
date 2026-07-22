@@ -53,13 +53,13 @@ export type InvoiceSnapshot = {
     email: string | null;
     address: Record<string, unknown> | null;
   };
-  sections: Array<{
+  sections: {
     id: string;
     name: string;
     description: string | null;
     sortOrder: number;
-  }>;
-  items: Array<{
+  }[];
+  items: {
     id: string;
     sectionId: string | null;
     catalogItemId: string | null;
@@ -75,13 +75,13 @@ export type InvoiceSnapshot = {
     taxable: boolean;
     sortOrder: number;
     notes: string | null;
-  }>;
-  taxes: Array<{
+  }[];
+  taxes: {
     name: string;
     rate: number;
     taxableAmount: number;
     amount: number;
-  }>;
+  }[];
   totals: {
     subtotal: number;
     discount: number;

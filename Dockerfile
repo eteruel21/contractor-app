@@ -10,9 +10,9 @@ COPY apps/api/package.json ./apps/api/package.json
 # Install dependencies
 RUN npm ci
 
-# Copy source files
+# Copy only the API source required for compilation. Database tooling is not
+# needed by the API process and must not enter either image stage.
 COPY apps/api ./apps/api
-COPY database ./database
 
 # Build Fastify TypeScript project
 RUN npm run build:api
@@ -31,9 +31,8 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/package.json
 RUN npm ci --omit=dev
 
-# Copy built dist files and database scripts
+# Copy only the compiled API into the runtime image.
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/database ./database
 
 EXPOSE 3001
 

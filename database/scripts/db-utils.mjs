@@ -18,6 +18,56 @@ export function requireEnv(name) {
   return value;
 }
 
+const safeTestDatabaseName = /^(?:test[-_][a-z0-9][a-z0-9_-]*|[a-z0-9][a-z0-9_-]*[-_]test)$/i;
+const unsafeEnvironmentMarker = /(?:^|[-_])(?:prod(?:uction)?|stag(?:e|ing)|main|live)(?:$|[-_])/i;
+
+export function validateTestDatabaseUrl(rawUrl, nodeEnvironment) {
+  if (nodeEnvironment !== "test") {
+    throw new Error("La conexión de pruebas requiere NODE_ENV=test.");
+  }
+
+  const connectionString = rawUrl?.trim();
+  if (!connectionString) {
+    throw new Error("TEST_DATABASE_URL es obligatoria para las pruebas de base de datos.");
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(connectionString);
+  } catch {
+    throw new Error("TEST_DATABASE_URL debe ser una URL PostgreSQL válida.");
+  }
+
+  if (parsedUrl.protocol !== "postgres:" && parsedUrl.protocol !== "postgresql:") {
+    throw new Error("TEST_DATABASE_URL debe usar el protocolo postgres o postgresql.");
+  }
+
+  let databaseName;
+  try {
+    databaseName = decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
+  } catch {
+    throw new Error("TEST_DATABASE_URL contiene un nombre de base de datos inválido.");
+  }
+
+  if (
+    !safeTestDatabaseName.test(databaseName) ||
+    unsafeEnvironmentMarker.test(databaseName)
+  ) {
+    throw new Error(
+      "TEST_DATABASE_URL debe usar una base inequívocamente de pruebas y nunca prod, staging, main o live.",
+    );
+  }
+
+  return connectionString;
+}
+
+export function requireTestDatabaseUrl() {
+  return validateTestDatabaseUrl(
+    process.env.TEST_DATABASE_URL,
+    process.env.NODE_ENV,
+  );
+}
+
 export function quoteIdentifier(value) {
   if (!/^[a-z_][a-z0-9_]*$/i.test(value)) {
     throw new Error(`Identificador PostgreSQL inválido: ${value}`);
