@@ -68,7 +68,8 @@ try {
 
   await client.query(`
     REVOKE ALL ON DATABASE ${database} FROM PUBLIC;
-    GRANT CONNECT ON DATABASE ${database} TO contractor_api, contractor_migrator;
+    GRANT CONNECT, TEMP ON DATABASE ${database} TO contractor_migrator;
+    GRANT CONNECT ON DATABASE ${database} TO contractor_api;
   `);
 
   console.log("Roles y permisos base configurados correctamente.");
