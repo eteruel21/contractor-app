@@ -5,6 +5,7 @@ import {
   postgresClientConfig,
   readSqlFiles,
   requireEnv,
+  storedChecksumMatches,
   stripOuterTransaction,
   stripPsqlMetaCommands,
   withAdvisoryLock,
@@ -37,7 +38,14 @@ try {
     }
 
     for (const migration of migrations) {
-      if (appliedMigrations.get(migration.filename) !== migration.checksum) {
+      if (
+        !storedChecksumMatches(
+          migration.contents,
+          appliedMigrations.get(
+            migration.filename,
+          ),
+        )
+      ) {
         throw new Error(
           `La migración aplicada ${migration.filename} cambió de contenido.`,
         );
@@ -55,7 +63,13 @@ try {
     for (const file of files) {
       const previousChecksum = applied.get(file.filename);
 
-      if (previousChecksum && previousChecksum !== file.checksum) {
+      if (
+        previousChecksum &&
+        !storedChecksumMatches(
+          file.contents,
+          previousChecksum,
+        )
+      ) {
         throw new Error(
           `El seed aplicado ${file.filename} cambió de contenido. ` +
             "Crea un seed nuevo en lugar de modificarlo.",

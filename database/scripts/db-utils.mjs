@@ -167,6 +167,29 @@ export function validateSupabaseAdminUrl(rawUrl) {
   return connectionString;
 }
 
+
+const nodePostgresSslQueryParameters = [
+  "sslmode",
+  "sslcert",
+  "sslkey",
+  "sslrootcert",
+];
+
+function stripSupabaseSslQueryParameters(
+  connectionString,
+) {
+  const parsedUrl = new URL(connectionString);
+
+  for (
+    const parameter
+    of nodePostgresSslQueryParameters
+  ) {
+    parsedUrl.searchParams.delete(parameter);
+  }
+
+  return parsedUrl.toString();
+}
+
 export function postgresClientConfig(rawUrl) {
   const { connectionString, parsedUrl } = parsePostgresUrl(
     rawUrl,
@@ -197,7 +220,16 @@ export function postgresClientConfig(rawUrl) {
   const ca = readFileSync(caFilename, "utf8");
 
   return {
-    connectionString,
+    /*
+     * node-postgres reemplaza el objeto ssl cuando la URL
+     * contiene sslmode/sslcert/sslkey/sslrootcert.
+     * Eliminamos únicamente esos parámetros y mantenemos
+     * nuestra CA verificada explícitamente.
+     */
+    connectionString:
+      stripSupabaseSslQueryParameters(
+        connectionString,
+      ),
     ssl: {
       ca,
       rejectUnauthorized: true,
@@ -217,11 +249,51 @@ export function quoteLiteral(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-export function checksum(contents) {
-  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
+function sha256Utf8(contents) {
   return createHash("sha256")
-    .update(normalizedContents, "utf8")
+    .update(contents, "utf8")
     .digest("hex");
+}
+
+export function checksum(contents) {
+  const normalizedContents =
+    contents.replace(/\r\n?/gu, "\n");
+
+  return sha256Utf8(
+    normalizedContents,
+  );
+}
+
+export function legacyCrLfChecksum(
+  contents,
+) {
+  const normalizedContents =
+    contents.replace(/\r\n?/gu, "\n");
+
+  const legacyContents =
+    normalizedContents.replace(
+      /\n/gu,
+      "\r\n",
+    );
+
+  return sha256Utf8(
+    legacyContents,
+  );
+}
+
+export function storedChecksumMatches(
+  contents,
+  storedChecksum,
+) {
+  if (!storedChecksum) {
+    return false;
+  }
+
+  return (
+    storedChecksum === checksum(contents) ||
+    storedChecksum ===
+      legacyCrLfChecksum(contents)
+  );
 }
 
 export async function readSqlFiles(directoryName) {

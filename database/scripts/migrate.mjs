@@ -5,6 +5,7 @@ import {
   postgresClientConfig,
   readSqlFiles,
   requireEnv,
+  storedChecksumMatches,
   stripOuterTransaction,
   stripPsqlMetaCommands,
   withAdvisoryLock,
@@ -64,7 +65,13 @@ try {
     for (const file of files) {
       const previous = applied.get(file.filename);
 
-      if (previous && previous.checksum !== file.checksum) {
+      if (
+        previous &&
+        !storedChecksumMatches(
+          file.contents,
+          previous.checksum,
+        )
+      ) {
         throw new Error(
           `La migración aplicada ${file.filename} cambió de contenido. ` +
             "Crea una migración nueva en lugar de modificarla.",
