@@ -42,30 +42,8 @@ export const invoicePaymentMethodSchema = z.enum([
   "bank_transfer",
   "card",
   "check",
-  "yappy",
-  "paguelofacil",
   "other"
 ]);
-
-export const onlineCheckoutProviderSchema = z.enum(["yappy", "paguelofacil"]);
-
-export const createOnlineCheckoutSchema = z.object({
-  companyId: uuidSchema,
-  provider: onlineCheckoutProviderSchema,
-  amount: z.number()
-    .finite()
-    .positive()
-    .max(9_999_999_999.99)
-    .refine(
-      (value) => Math.abs(value * 100 - Math.round(value * 100)) < 1e-8,
-      "El monto admite como máximo dos decimales."
-    )
-});
-
-export const onlineStatusParamsSchema = z.object({
-  invoiceId: uuidSchema,
-  checkoutId: uuidSchema
-});
 
 export const createInvoicePaymentSchema = z.object({
   companyId: uuidSchema,

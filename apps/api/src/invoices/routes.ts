@@ -18,21 +18,13 @@ import {
   createInvoiceCreditNoteSchema,
   createInvoicePaymentSchema,
   createInvoiceSchema,
-  createOnlineCheckoutSchema,
   invoiceActionSchema,
   invoiceCreditNoteParamsSchema,
   invoiceParamsSchema,
   invoicePaymentParamsSchema,
   invoiceStatusSchema,
-  onlineStatusParamsSchema,
   reverseInvoicePaymentSchema
 } from "./schemas.js";
-
-import {
-  createOnlineCheckoutSessionService,
-  getOnlineCheckoutStatusService,
-  processPaymentWebhookService
-} from "./payment-gateway-service.js";
 
 import {
   cancelInvoiceCreditNoteService,
@@ -505,106 +497,4 @@ export async function registerInvoiceRoutes(
       return result;
     }
   );
-
-  // --- Cobros Digitales (Yappy / PagueloFacil) ---
-
-  app.post(
-    "/invoices/:invoiceId/payments/online-checkout",
-    {
-      preHandler: [authenticateRequest, requireActiveUser, requireCompanyRole(["owner", "admin", "estimator", "sales"])]
-    },
-    async (request, reply) => {
-      const userId = authenticatedUserId(request, reply);
-      if (!userId) return;
-
-      const params = invoiceParamsSchema.safeParse(request.params);
-      const body = createOnlineCheckoutSchema.safeParse(request.body);
-
-      if (!params.success || !body.success) {
-        return reply.status(400).send({
-          message: "Los datos de la sesión de cobro digital no son válidos."
-        });
-      }
-
-      try {
-        const checkout = await createOnlineCheckoutSessionService(
-          userId,
-          body.data.companyId,
-          params.data.invoiceId,
-          body.data.provider,
-          body.data.amount
-        );
-
-        if (!checkout) {
-          return reply.status(404).send({ message: "No se encontró la factura." });
-        }
-
-        return reply.status(201).send({ checkout });
-      } catch (error) {
-        return reply.status(400).send({
-          message: error instanceof Error ? error.message : "Error al iniciar el cobro digital."
-        });
-      }
-    }
-  );
-
-  app.get(
-    "/invoices/:invoiceId/payments/online-status/:checkoutId",
-    {
-      preHandler: [authenticateRequest, requireActiveUser]
-    },
-    async (request, reply) => {
-      const userId = authenticatedUserId(request, reply);
-      if (!userId) return;
-
-      const params = onlineStatusParamsSchema.safeParse(request.params);
-      const query = companyQuerySchema.safeParse(request.query);
-
-      if (!params.success || !query.success) {
-        return reply.status(400).send({ message: "Parámetros no válidos." });
-      }
-
-      const checkout = await getOnlineCheckoutStatusService(
-        userId,
-        query.data.companyId,
-        params.data.invoiceId,
-        params.data.checkoutId
-      );
-
-      if (!checkout) {
-        return reply.status(404).send({ message: "Sesión de cobro no encontrada." });
-      }
-
-      return { checkout };
-    }
-  );
-
-  // Webhook público para confirmaciones automáticas de Yappy / PagueloFacil
-  app.post(
-    "/payments/webhooks/:provider",
-    async (request, reply) => {
-      const providerParam = (request.params as { provider?: string })?.provider;
-      if (providerParam !== "yappy" && providerParam !== "paguelofacil") {
-        return reply.status(400).send({ message: "Proveedor no soportado." });
-      }
-
-      const body = request.body as { reference?: string; status?: "completed" | "failed"; transactionId?: string };
-      if (!body?.reference || !body?.status) {
-        return reply.status(400).send({ message: "Payload de webhook no válido." });
-      }
-
-      const result = await processPaymentWebhookService(providerParam, {
-        reference: body.reference,
-        status: body.status,
-        ...(body.transactionId ? { transactionId: body.transactionId } : {})
-      });
-
-      if (!result.success) {
-        return reply.status(400).send(result);
-      }
-
-      return reply.send(result);
-    }
-  );
 }
-

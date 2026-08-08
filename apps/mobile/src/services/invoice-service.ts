@@ -7,9 +7,7 @@ import type {
   InvoiceManualStatus,
   InvoicePayment,
   InvoicePaymentMethod,
-  InvoiceWithDetails,
-  OnlinePaymentCheckout,
-  OnlinePaymentProvider
+  InvoiceWithDetails
 } from "../types/invoice";
 
 function errorMessage(
@@ -513,52 +511,3 @@ export async function cancelInvoiceCreditNote(
     };
   }
 }
-
-export async function createOnlinePaymentCheckout(input: {
-  companyId: string;
-  invoiceId: string;
-  provider: OnlinePaymentProvider;
-  amount: number;
-}): Promise<{
-  checkout: OnlinePaymentCheckout | null;
-  error: string | null;
-}> {
-  try {
-    const response = await authenticatedRequest<{
-      checkout: OnlinePaymentCheckout;
-    }>(`/invoices/${input.invoiceId}/payments/online-checkout`, {
-      method: "POST",
-      body: JSON.stringify({
-        companyId: input.companyId,
-        provider: input.provider,
-        amount: input.amount
-      })
-    });
-
-    return { checkout: response.checkout, error: null };
-  } catch (error) {
-    return { checkout: null, error: errorMessage(error) };
-  }
-}
-
-export async function getOnlinePaymentCheckoutStatus(input: {
-  companyId: string;
-  invoiceId: string;
-  checkoutId: string;
-}): Promise<{
-  checkout: OnlinePaymentCheckout | null;
-  error: string | null;
-}> {
-  try {
-    const response = await authenticatedRequest<{
-      checkout: OnlinePaymentCheckout;
-    }>(
-      `/invoices/${input.invoiceId}/payments/online-status/${input.checkoutId}?companyId=${encodeURIComponent(input.companyId)}`
-    );
-
-    return { checkout: response.checkout, error: null };
-  } catch (error) {
-    return { checkout: null, error: errorMessage(error) };
-  }
-}
-
