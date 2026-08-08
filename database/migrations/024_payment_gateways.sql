@@ -1,5 +1,7 @@
 BEGIN;
 
+SET ROLE contractor_owner;
+
 SET search_path = public, app_commercial, app_auth;
 
 -- Migration 024: Digital Payment Gateways Integration (Yappy & PagueloFacil)
@@ -33,5 +35,7 @@ CREATE POLICY online_payment_checkouts_company_member_policy ON public.online_pa
     WITH CHECK (public.is_company_member(company_id));
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.online_payment_checkouts TO contractor_api;
+
+RESET ROLE;
 
 COMMIT;
