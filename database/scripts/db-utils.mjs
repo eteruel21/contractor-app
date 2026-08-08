@@ -1,83 +1,226 @@
-import crypto from "node:crypto";
-import { readdir, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-export const databaseRoot = path.resolve(currentDir, "..");
+export const databaseRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 
 export function requireEnv(name) {
-  const value = process.env[name];
+  const value = process.env[name]?.trim();
+
   if (!value) {
     throw new Error(`Falta la variable de entorno ${name}.`);
   }
+
   return value;
 }
 
-export function validateSupabaseAdminUrl(urlString) {
-  let parsed = null;
-  try {
-    parsed = new URL(urlString);
-  } catch {
-    throw new Error("SUPABASE_ADMIN_URL debe ser una URL válida.");
+const safeTestDatabaseName = /^(?:test[-_][a-z0-9][a-z0-9_-]*|[a-z0-9][a-z0-9_-]*[-_]test)$/i;
+const unsafeEnvironmentMarker = /(?:^|[-_])(?:prod(?:uction)?|stag(?:e|ing)|main|live)(?:$|[-_])/i;
+
+export function validateTestDatabaseUrl(rawUrl, nodeEnvironment) {
+  if (nodeEnvironment !== "test") {
+    throw new Error("La conexión de pruebas requiere NODE_ENV=test.");
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  const connectionString = rawUrl?.trim();
+  if (!connectionString) {
+    throw new Error("TEST_DATABASE_URL es obligatoria para las pruebas de base de datos.");
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(connectionString);
+  } catch {
+    throw new Error("TEST_DATABASE_URL debe ser una URL PostgreSQL válida.");
+  }
+
+  if (parsedUrl.protocol !== "postgres:" && parsedUrl.protocol !== "postgresql:") {
+    throw new Error("TEST_DATABASE_URL debe usar el protocolo postgres o postgresql.");
+  }
+
+  let databaseName;
+  try {
+    databaseName = decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
+  } catch {
+    throw new Error("TEST_DATABASE_URL contiene un nombre de base de datos inválido.");
+  }
+
+  if (
+    !safeTestDatabaseName.test(databaseName) ||
+    unsafeEnvironmentMarker.test(databaseName)
+  ) {
+    throw new Error(
+      "TEST_DATABASE_URL debe usar una base inequívocamente de pruebas y nunca prod, staging, main o live.",
+    );
+  }
+
+  return connectionString;
+}
+
+export function requireTestDatabaseUrl() {
+  return validateTestDatabaseUrl(
+    process.env.TEST_DATABASE_URL,
+    process.env.NODE_ENV,
+  );
+}
+
+
+function parsePostgresUrl(rawUrl, variableName) {
+  const connectionString = rawUrl?.trim();
+
+  if (!connectionString) {
+    throw new Error(`${variableName} es obligatoria.`);
+  }
+
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(connectionString);
+  } catch {
+    throw new Error(
+      `${variableName} debe ser una URL PostgreSQL valida.`,
+    );
+  }
+
+  if (
+    parsedUrl.protocol !== "postgres:" &&
+    parsedUrl.protocol !== "postgresql:"
+  ) {
+    throw new Error(
+      `${variableName} debe usar postgres o postgresql.`,
+    );
+  }
+
+  return {
+    connectionString,
+    parsedUrl,
+  };
+}
+
+export function validateLocalAdminUrl(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "DATABASE_ADMIN_URL",
+  );
+
+  const hostname = parsedUrl.hostname
+    .replace(/^\[|\]$/gu, "")
+    .toLowerCase();
+
+  const localHosts = new Set([
+    "localhost",
+    "127.0.0.1",
+    "::1",
+  ]);
+
+  if (!localHosts.has(hostname)) {
+    throw new Error(
+      "DATABASE_ADMIN_URL solo puede ejecutarse contra PostgreSQL local.",
+    );
+  }
+
+  const username = decodeURIComponent(parsedUrl.username);
+
+  if (username !== "postgres") {
+    throw new Error(
+      "DATABASE_ADMIN_URL debe usar el usuario administrativo postgres.",
+    );
+  }
+
+  return connectionString;
+}
+
+export function validateSupabaseAdminUrl(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "SUPABASE_ADMIN_URL",
+  );
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+
   const isSupabaseHost =
     hostname.endsWith(".supabase.co") ||
     hostname.endsWith(".pooler.supabase.com");
 
   if (!isSupabaseHost) {
     throw new Error(
-      "SUPABASE_ADMIN_URL debe apuntar a un host *.supabase.co o *.pooler.supabase.com.",
+      "SUPABASE_ADMIN_URL debe apuntar a un host de Supabase.",
     );
   }
 
-  return urlString;
-}
+  const username = decodeURIComponent(parsedUrl.username);
 
-export function postgresClientConfig(connectionString) {
-  let parsed = null;
-  try {
-    parsed = new URL(connectionString);
-  } catch {
-    //
+  if (
+    username !== "postgres" &&
+    !username.startsWith("postgres.")
+  ) {
+    throw new Error(
+      "SUPABASE_ADMIN_URL debe usar el usuario administrativo postgres.",
+    );
   }
 
-  const host = parsed ? parsed.hostname.toLowerCase() : "";
-  const isPooler = host.endsWith(".pooler.supabase.com");
-  const isDirect = host.endsWith(".supabase.co");
+  return connectionString;
+}
 
-  if (isPooler || isDirect) {
-    const sslCaFile = process.env.DATABASE_SSL_CA_FILE
-      ? path.resolve(process.env.DATABASE_SSL_CA_FILE)
-      : path.join(databaseRoot, "certs", "supabase-ca.crt");
+export function postgresClientConfig(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "DATABASE_URL",
+  );
 
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  const isSupabase =
+    hostname.endsWith(".supabase.co") ||
+    hostname.endsWith(".pooler.supabase.com");
+
+  if (!isSupabase) {
     return {
       connectionString,
-      ssl: {
-        rejectUnauthorized: false,
-      },
     };
   }
 
-  return { connectionString };
+  const caFilename =
+    process.env.DATABASE_SSL_CA_FILE?.trim();
+
+  if (!caFilename) {
+    throw new Error(
+      "DATABASE_SSL_CA_FILE es obligatorio para Supabase.",
+    );
+  }
+
+  const ca = readFileSync(caFilename, "utf8");
+
+  return {
+    connectionString,
+    ssl: {
+      ca,
+      rejectUnauthorized: true,
+    },
+  };
 }
 
-export function quoteLiteral(str) {
-  return "'" + str.replace(/'/g, "''") + "'";
+export function quoteIdentifier(value) {
+  if (!/^[a-z_][a-z0-9_]*$/i.test(value)) {
+    throw new Error(`Identificador PostgreSQL inválido: ${value}`);
+  }
+
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
-export function quoteIdentifier(str) {
-  return '"' + str.replace(/"/g, '""') + '"';
+export function quoteLiteral(value) {
+  return `'${value.replaceAll("'", "''")}'`;
 }
 
 export function checksum(contents) {
-  return crypto
-    .createHash("sha256")
-    .update(contents, "utf8")
+  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
+  return createHash("sha256")
+    .update(normalizedContents, "utf8")
     .digest("hex");
 }
 
@@ -109,14 +252,18 @@ export function stripOuterTransaction(contents, filename) {
     );
   }
 
-  return withoutBegin.slice(0, commitMatch.index);
+  const beforeCommit = withoutBegin.slice(0, commitMatch.index).trimEnd();
+  const afterCommit = withoutBegin
+    .slice(commitMatch.index + commitMatch[0].length)
+    .trim();
+
+  return [beforeCommit, afterCommit].filter(Boolean).join("\n\n");
 }
 
 export function stripPsqlMetaCommands(contents, filename) {
   const lines = contents.split(/\r?\n/u);
-
-  const unsupportedCommands = lines.filter((line) =>
-    /^\s*\\(?!(?:un)?restrict\b)[a-z]+\b/iu.test(line),
+  const unsupportedCommands = lines.filter(
+    (line) => /^\s*\\/u.test(line) && !/^\s*\\(?:un)?restrict\b/u.test(line),
   );
 
   if (unsupportedCommands.length > 0) {
@@ -173,6 +320,9 @@ export async function withAdvisoryLock(client, key, callback) {
   try {
     return await callback();
   } catch (error) {
+    // Una consulta SQL que abrió su propia transacción puede dejar la sesión en
+    // estado abortado. ROLLBACK permite liberar el advisory lock sin ocultar el
+    // error original.
     await client.query("ROLLBACK").catch(() => undefined);
     throw error;
   } finally {
