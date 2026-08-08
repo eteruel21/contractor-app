@@ -1,4 +1,9 @@
-import { authenticatedRequest } from "@/services/api";
+import { authenticatedRequest } from "./api";
+import {
+  cacheOfflineData,
+  enqueueOfflineAction,
+  getCachedOfflineData
+} from "./offline-sync-service";
 
 export type ProjectTaskStatus = "todo" | "in_progress" | "review" | "completed";
 export type ProjectTaskPriority = "low" | "medium" | "high" | "urgent";
@@ -20,6 +25,7 @@ export type ProjectTask = {
     id: string;
     email: string;
   } | null;
+  is_pending_sync?: boolean;
 };
 
 export type CreateTaskInput = {
@@ -32,13 +38,16 @@ export type CreateTaskInput = {
 };
 
 export async function listProjectTasks(companyId: string, projectId: string): Promise<ProjectTask[]> {
+  const cacheKey = `tasks_${companyId}_${projectId}`;
   try {
     const res = await authenticatedRequest<{ tasks: ProjectTask[] }>(
       `/companies/${companyId}/projects/${projectId}/tasks`
     );
+    await cacheOfflineData(cacheKey, res.tasks);
     return res.tasks;
   } catch {
-    return [];
+    const cached = await getCachedOfflineData<ProjectTask[]>(cacheKey);
+    return cached ?? [];
   }
 }
 
@@ -47,9 +56,10 @@ export async function createProjectTask(
   projectId: string,
   input: CreateTaskInput
 ): Promise<ProjectTask | null> {
+  const endpoint = `/companies/${companyId}/projects/${projectId}/tasks`;
   try {
     const res = await authenticatedRequest<{ task: ProjectTask }>(
-      `/companies/${companyId}/projects/${projectId}/tasks`,
+      endpoint,
       {
         method: "POST",
         body: JSON.stringify(input)
@@ -57,7 +67,34 @@ export async function createProjectTask(
     );
     return res.task;
   } catch {
-    return null;
+    await enqueueOfflineAction({
+      type: "CREATE_TASK",
+      endpoint,
+      method: "POST",
+      body: input as unknown as Record<string, unknown>
+    });
+
+    const optimisticTask: ProjectTask = {
+      id: `off_task_${Date.now()}`,
+      company_id: companyId,
+      project_id: projectId,
+      assigned_user_id: input.assignedUserId || null,
+      title: input.title,
+      description: input.description || null,
+      status: input.status || "todo",
+      priority: input.priority || "medium",
+      due_date: input.dueDate || null,
+      completed_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_pending_sync: true
+    };
+
+    const cacheKey = `tasks_${companyId}_${projectId}`;
+    const cached = (await getCachedOfflineData<ProjectTask[]>(cacheKey)) ?? [];
+    await cacheOfflineData(cacheKey, [...cached, optimisticTask]);
+
+    return optimisticTask;
   }
 }
 

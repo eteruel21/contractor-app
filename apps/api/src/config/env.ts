@@ -51,8 +51,10 @@ const environmentSchema = z.object({
   PGPASSWORD: z.string().min(1),
 
   PGSSL: z
-    .enum(["disable", "require"])
+    .enum(["disable", "require", "verify-full"])
     .default("disable"),
+
+  PGSSL_CA_FILE: z.string().trim().min(1).optional(),
 
   JWT_SECRET: z.string().min(43),
 
@@ -86,12 +88,12 @@ const parsedEnvironment =
 
 if (!parsedEnvironment.success) {
   console.error(
-    "Configuración inválida:",
+    "ConfiguraciÃ³n invÃ¡lida:",
     parsedEnvironment.error.flatten().fieldErrors
   );
 
   throw new Error(
-    "No se pudo cargar la configuración de la API."
+    "No se pudo cargar la configuraciÃ³n de la API."
   );
 }
 

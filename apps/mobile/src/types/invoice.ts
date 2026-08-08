@@ -19,7 +19,20 @@ export type InvoicePaymentMethod =
   | "bank_transfer"
   | "card"
   | "check"
+  | "yappy"
+  | "paguelofacil"
   | "other";
+
+export type OnlinePaymentProvider = "yappy" | "paguelofacil";
+
+export type OnlinePaymentCheckout = {
+  checkoutId: string;
+  provider: OnlinePaymentProvider;
+  amount: number;
+  status: "pending" | "completed" | "failed" | "expired";
+  gatewayReference: string;
+  checkoutUrl: string;
+};
 
 export type InvoiceSnapshot = {
   schemaVersion: 1;
@@ -258,6 +271,8 @@ export function getInvoicePaymentMethodLabel(
     bank_transfer: "Transferencia",
     card: "Tarjeta",
     check: "Cheque",
+    yappy: "Yappy Panamá",
+    paguelofacil: "PagueloFacil",
     other: "Otro",
   };
 

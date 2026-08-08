@@ -2,6 +2,7 @@ import pg from "pg";
 
 import {
   ensureHistoryTables,
+  postgresClientConfig,
   readSqlFiles,
   requireEnv,
   stripOuterTransaction,
@@ -10,7 +11,7 @@ import {
 } from "./db-utils.mjs";
 
 const { Client } = pg;
-const client = new Client({ connectionString: requireEnv("MIGRATOR_DATABASE_URL") });
+const client = new Client(postgresClientConfig(requireEnv("MIGRATOR_DATABASE_URL")));
 
 try {
   await client.connect();

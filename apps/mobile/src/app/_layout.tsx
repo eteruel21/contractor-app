@@ -19,6 +19,10 @@ import {
   useCompany,
 } from "@/contexts/CompanyContext";
 
+import { useEffect } from "react";
+import { registerForPushNotificationsAsync } from "@/services/push-notification-service";
+import { processOfflineSyncQueue } from "@/services/offline-sync-service";
+
 function RootNavigator() {
   const {
     session,
@@ -36,6 +40,13 @@ function RootNavigator() {
 
   const needsProfileSetup = isContractor && !profile?.primary_category;
   const isApproved = isAuthenticated && Boolean(profile?.active);
+
+  useEffect(() => {
+    if (isApproved) {
+      registerForPushNotificationsAsync();
+      processOfflineSyncQueue();
+    }
+  }, [isApproved]);
   const isPendingApproval = isAuthenticated && !profile?.active && !needsProfileSetup;
 
   const isClientAuthenticated = isApproved && profile?.role === "client";

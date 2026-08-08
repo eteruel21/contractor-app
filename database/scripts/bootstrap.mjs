@@ -4,11 +4,12 @@ import {
   quoteIdentifier,
   quoteLiteral,
   requireEnv,
+  validateLocalAdminUrl,
 } from "./db-utils.mjs";
 
 const { Client } = pg;
 
-const adminUrl = requireEnv("DATABASE_ADMIN_URL");
+const adminUrl = validateLocalAdminUrl(requireEnv("DATABASE_ADMIN_URL"));
 const databaseName = process.env.DATABASE_NAME?.trim() || "contractor_pro";
 const migratorPassword = requireEnv("CONTRACTOR_MIGRATOR_PASSWORD");
 const apiPassword = requireEnv("CONTRACTOR_API_PASSWORD");

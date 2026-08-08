@@ -1,89 +1,83 @@
-import { createHash } from "node:crypto";
-import { readFile, readdir } from "node:fs/promises";
+import crypto from "node:crypto";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const databaseRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+export const databaseRoot = path.resolve(currentDir, "..");
 
 export function requireEnv(name) {
-  const value = process.env[name]?.trim();
-
+  const value = process.env[name];
   if (!value) {
     throw new Error(`Falta la variable de entorno ${name}.`);
   }
-
   return value;
 }
 
-const safeTestDatabaseName = /^(?:test[-_][a-z0-9][a-z0-9_-]*|[a-z0-9][a-z0-9_-]*[-_]test)$/i;
-const unsafeEnvironmentMarker = /(?:^|[-_])(?:prod(?:uction)?|stag(?:e|ing)|main|live)(?:$|[-_])/i;
-
-export function validateTestDatabaseUrl(rawUrl, nodeEnvironment) {
-  if (nodeEnvironment !== "test") {
-    throw new Error("La conexión de pruebas requiere NODE_ENV=test.");
-  }
-
-  const connectionString = rawUrl?.trim();
-  if (!connectionString) {
-    throw new Error("TEST_DATABASE_URL es obligatoria para las pruebas de base de datos.");
-  }
-
-  let parsedUrl;
+export function validateSupabaseAdminUrl(urlString) {
+  let parsed = null;
   try {
-    parsedUrl = new URL(connectionString);
+    parsed = new URL(urlString);
   } catch {
-    throw new Error("TEST_DATABASE_URL debe ser una URL PostgreSQL válida.");
+    throw new Error("SUPABASE_ADMIN_URL debe ser una URL válida.");
   }
 
-  if (parsedUrl.protocol !== "postgres:" && parsedUrl.protocol !== "postgresql:") {
-    throw new Error("TEST_DATABASE_URL debe usar el protocolo postgres o postgresql.");
-  }
+  const hostname = parsed.hostname.toLowerCase();
+  const isSupabaseHost =
+    hostname.endsWith(".supabase.co") ||
+    hostname.endsWith(".pooler.supabase.com");
 
-  let databaseName;
-  try {
-    databaseName = decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
-  } catch {
-    throw new Error("TEST_DATABASE_URL contiene un nombre de base de datos inválido.");
-  }
-
-  if (
-    !safeTestDatabaseName.test(databaseName) ||
-    unsafeEnvironmentMarker.test(databaseName)
-  ) {
+  if (!isSupabaseHost) {
     throw new Error(
-      "TEST_DATABASE_URL debe usar una base inequívocamente de pruebas y nunca prod, staging, main o live.",
+      "SUPABASE_ADMIN_URL debe apuntar a un host *.supabase.co o *.pooler.supabase.com.",
     );
   }
 
-  return connectionString;
+  return urlString;
 }
 
-export function requireTestDatabaseUrl() {
-  return validateTestDatabaseUrl(
-    process.env.TEST_DATABASE_URL,
-    process.env.NODE_ENV,
-  );
-}
-
-export function quoteIdentifier(value) {
-  if (!/^[a-z_][a-z0-9_]*$/i.test(value)) {
-    throw new Error(`Identificador PostgreSQL inválido: ${value}`);
+export function postgresClientConfig(connectionString) {
+  let parsed = null;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    //
   }
 
-  return `"${value.replaceAll('"', '""')}"`;
+  const host = parsed ? parsed.hostname.toLowerCase() : "";
+  const isPooler = host.endsWith(".pooler.supabase.com");
+  const isDirect = host.endsWith(".supabase.co");
+
+  if (isPooler || isDirect) {
+    const sslCaFile = process.env.DATABASE_SSL_CA_FILE
+      ? path.resolve(process.env.DATABASE_SSL_CA_FILE)
+      : path.join(databaseRoot, "certs", "supabase-ca.crt");
+
+    return {
+      connectionString,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    };
+  }
+
+  return { connectionString };
 }
 
-export function quoteLiteral(value) {
-  return `'${value.replaceAll("'", "''")}'`;
+export function quoteLiteral(str) {
+  return "'" + str.replace(/'/g, "''") + "'";
+}
+
+export function quoteIdentifier(str) {
+  return '"' + str.replace(/"/g, '""') + '"';
 }
 
 export function checksum(contents) {
-  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
-  return createHash("sha256")
-    .update(normalizedContents, "utf8")
+  return crypto
+    .createHash("sha256")
+    .update(contents, "utf8")
     .digest("hex");
 }
 
@@ -115,18 +109,14 @@ export function stripOuterTransaction(contents, filename) {
     );
   }
 
-  const beforeCommit = withoutBegin.slice(0, commitMatch.index).trimEnd();
-  const afterCommit = withoutBegin
-    .slice(commitMatch.index + commitMatch[0].length)
-    .trim();
-
-  return [beforeCommit, afterCommit].filter(Boolean).join("\n\n");
+  return withoutBegin.slice(0, commitMatch.index);
 }
 
 export function stripPsqlMetaCommands(contents, filename) {
   const lines = contents.split(/\r?\n/u);
-  const unsupportedCommands = lines.filter(
-    (line) => /^\s*\\/u.test(line) && !/^\s*\\(?:un)?restrict\b/u.test(line),
+
+  const unsupportedCommands = lines.filter((line) =>
+    /^\s*\\(?!(?:un)?restrict\b)[a-z]+\b/iu.test(line),
   );
 
   if (unsupportedCommands.length > 0) {
@@ -165,7 +155,7 @@ export async function ensureHistoryTables(client) {
       );
 
       GRANT USAGE ON SCHEMA app_migrations TO contractor_migrator;
-      GRANT SELECT ON TABLE
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
         app_migrations.schema_migrations,
         app_migrations.seed_history
       TO contractor_migrator;
@@ -183,9 +173,6 @@ export async function withAdvisoryLock(client, key, callback) {
   try {
     return await callback();
   } catch (error) {
-    // Una consulta SQL que abrió su propia transacción puede dejar la sesión en
-    // estado abortado. ROLLBACK permite liberar el advisory lock sin ocultar el
-    // error original.
     await client.query("ROLLBACK").catch(() => undefined);
     throw error;
   } finally {

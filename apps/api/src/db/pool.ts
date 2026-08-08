@@ -1,8 +1,33 @@
+import { readFileSync } from "node:fs";
+
 import pg from "pg";
 
 import { env } from "../config/env.js";
 
 const { Pool } = pg;
+
+function databaseSsl() {
+  if (env.PGSSL === "disable") {
+    return false;
+  }
+
+  if (env.PGSSL === "require") {
+    return {
+      rejectUnauthorized: false
+    };
+  }
+
+  if (!env.PGSSL_CA_FILE) {
+    throw new Error(
+      "PGSSL_CA_FILE es obligatorio cuando PGSSL=verify-full."
+    );
+  }
+
+  return {
+    ca: readFileSync(env.PGSSL_CA_FILE, "utf8"),
+    rejectUnauthorized: true
+  };
+}
 
 export const pool = new Pool({
   host: env.PGHOST,
@@ -11,12 +36,7 @@ export const pool = new Pool({
   user: env.PGUSER,
   password: env.PGPASSWORD,
 
-  ssl:
-    env.PGSSL === "require"
-      ? {
-          rejectUnauthorized: false
-        }
-      : false,
+  ssl: databaseSsl(),
 
   max: 10,
   idleTimeoutMillis: 30_000,

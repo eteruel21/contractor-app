@@ -7,6 +7,8 @@ import {
   quoteLiteral,
   stripOuterTransaction,
   stripPsqlMetaCommands,
+  validateLocalAdminUrl,
+  validateSupabaseAdminUrl,
   validateTestDatabaseUrl,
 } from "./db-utils.mjs";
 
@@ -96,5 +98,49 @@ test("acepta únicamente URLs de bases marcadas como pruebas", () => {
   assert.throws(
     () => validateTestDatabaseUrl(safeUrl, "production"),
     /NODE_ENV=test/u,
+  );
+});
+
+test("separa conexiones administrativas locales y Supabase", () => {
+  const localUrl =
+    "postgresql://postgres:secret@127.0.0.1:5432/postgres";
+
+  const supabaseDirectUrl =
+    "postgresql://postgres:secret@db.abcdefghijklmnopqrst.supabase.co:5432/postgres";
+
+  const supabasePoolerUrl =
+    "postgresql://postgres.abcdefghijklmnopqrst:secret@aws-0-us-east-1.pooler.supabase.com:5432/postgres";
+
+  assert.equal(
+    validateLocalAdminUrl(localUrl),
+    localUrl,
+  );
+
+  assert.throws(
+    () => validateLocalAdminUrl(supabaseDirectUrl),
+    /solo puede ejecutarse contra PostgreSQL local/u,
+  );
+
+  assert.equal(
+    validateSupabaseAdminUrl(supabaseDirectUrl),
+    supabaseDirectUrl,
+  );
+
+  assert.equal(
+    validateSupabaseAdminUrl(supabasePoolerUrl),
+    supabasePoolerUrl,
+  );
+
+  assert.throws(
+    () => validateSupabaseAdminUrl(localUrl),
+    /host de Supabase/u,
+  );
+
+  assert.throws(
+    () =>
+      validateSupabaseAdminUrl(
+        "postgresql://contractor_api:secret@db.abcdefghijklmnopqrst.supabase.co:5432/postgres",
+      ),
+    /usuario administrativo postgres/u,
   );
 });

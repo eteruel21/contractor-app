@@ -6,6 +6,13 @@ export type CompanyRole =
   | "estimator"
   | "member";
 
+export type InvitableCompanyRole =
+  | "admin"
+  | "supervisor"
+  | "sales"
+  | "estimator"
+  | "member";
+
 export type Company = {
   id: string;
   name: string;
@@ -37,3 +44,37 @@ export type CompanyMembership = {
   active: boolean;
   company: Company;
 };
+
+export type CompanyMember = {
+  id: string;
+  company_id: string;
+  user_id: string;
+  role: CompanyRole;
+  active: boolean;
+  full_name: string | null;
+  email: string;
+  avatar_url: string | null;
+  joined_at: string;
+};
+
+export type CompanyInvitation = {
+  id: string;
+  company_id: string;
+  email: string;
+  role: InvitableCompanyRole;
+  status: "pending" | "accepted" | "revoked" | "expired";
+  token: string;
+  expires_at: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type AuditLogEntry = {
+  id: string;
+  company_id: string;
+  actor_id: string;
+  actor_email: string | null;
+  action: string;
+  details: Record<string, unknown>;
+  created_at: string;
+};
