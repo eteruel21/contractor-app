@@ -13,6 +13,7 @@
     "db:status:supabase": "node --env-file=database/.env.supabase database/scripts/migrate.mjs --status",
     "db:seed:supabase": "node --env-file=database/.env.supabase database/scripts/seed.mjs",
     "db:backup:local": "node --env-file=database/.env.supabase database/scripts/backup-supabase-to-local.mjs",
+    "db:bootstrap": "node --env-file-if-exists=database/.env database/scripts/bootstrap.mjs",
     "db:baseline": "node --env-file-if-exists=database/.env database/scripts/baseline.mjs",
     "db:repair-checksums": "node --env-file-if-exists=database/.env database/scripts/baseline.mjs --repair-checksums",
     "db:migrate": "node --env-file-if-exists=database/.env database/scripts/migrate.mjs",

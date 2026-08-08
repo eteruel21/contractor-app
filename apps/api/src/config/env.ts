@@ -88,12 +88,12 @@ const parsedEnvironment =
 
 if (!parsedEnvironment.success) {
   console.error(
-    "ConfiguraciÃ³n invÃ¡lida:",
+    "Configuración inválida:",
     parsedEnvironment.error.flatten().fieldErrors
   );
 
   throw new Error(
-    "No se pudo cargar la configuraciÃ³n de la API."
+    "No se pudo cargar la configuración de la API."
   );
 }
 
