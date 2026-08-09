@@ -62,19 +62,14 @@ export async function upsertPushTokenRepo(
   devicePlatform: string = "unknown"
 ) {
   return withUserTransaction(userId, async (client) => {
-    const result = await client.query(
+    await client.query(
       `
-        INSERT INTO public.user_push_tokens (user_id, expo_push_token, device_platform, updated_at)
-        VALUES (app.current_user_id(), $1, $2, now())
-        ON CONFLICT (user_id, expo_push_token)
-        DO UPDATE SET
-          device_platform = EXCLUDED.device_platform,
-          updated_at = now()
-        RETURNING *
+        SELECT private.register_push_token($1, $2)
       `,
       [expoPushToken, devicePlatform]
     );
-    return result.rows[0];
+
+    return true;
   });
 }
 
@@ -102,9 +97,8 @@ export async function findUserPushTokensRepo(userId: string) {
       `
         SELECT id, user_id, expo_push_token, device_platform
         FROM public.user_push_tokens
-        WHERE user_id = $1
-      `,
-      [userId]
+        WHERE user_id = app.current_user_id()
+      `
     );
     return result.rows;
   });

@@ -17,13 +17,34 @@ const notificationParamsSchema = z.object({
   notificationId: z.string().uuid()
 });
 
+const expoPushTokenSchema = z
+  .string()
+  .trim()
+  .min(20)
+  .max(500)
+  .refine(
+    (value) =>
+      (
+        value.startsWith("ExponentPushToken[") ||
+        value.startsWith("ExpoPushToken[")
+      ) &&
+      value.endsWith("]") &&
+      !/\s/u.test(value),
+    {
+      message: "Formato Expo Push Token inválido."
+    }
+  );
+
 const upsertPushTokenSchema = z.object({
-  expoPushToken: z.string().trim().min(5).max(500),
-  devicePlatform: z.string().trim().max(50).optional().default("unknown")
+  expoPushToken: expoPushTokenSchema,
+  devicePlatform: z
+    .enum(["ios", "android", "unknown"])
+    .optional()
+    .default("unknown")
 });
 
 const deletePushTokenSchema = z.object({
-  expoPushToken: z.string().trim().min(5).max(500)
+  expoPushToken: expoPushTokenSchema
 });
 
 function authenticatedUserId(request: FastifyRequest, reply: FastifyReply): string | null {
@@ -97,13 +118,15 @@ export async function registerNotificationRoutes(app: FastifyInstance): Promise<
         return reply.status(400).send({ message: "Los datos del token push no son válidos." });
       }
 
-      const tokenRecord = await upsertPushTokenRepo(
+      await upsertPushTokenRepo(
         userId,
         parsedBody.data.expoPushToken,
         parsedBody.data.devicePlatform
       );
 
-      return reply.status(201).send({ success: true, token: tokenRecord });
+      return reply.status(201).send({
+        success: true
+      });
     }
   );
 

@@ -24,6 +24,10 @@ import {
   updateOwnProfile
 } from "@/services/api";
 
+import {
+  unregisterCurrentPushTokenAsync
+} from "@/services/push-notification-service";
+
 export type {
   AppProfile,
   AppRole
@@ -328,6 +332,7 @@ export function AuthProvider({
   const signOut = useCallback(
     async (): Promise<AuthResult> => {
       try {
+        await unregisterCurrentPushTokenAsync();
         await logout();
         applySession(null);
 
