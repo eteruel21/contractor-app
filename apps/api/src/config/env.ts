@@ -81,7 +81,33 @@ const environmentSchema = z.object({
     .min(1)
     .max(90)
     .default(30)
-});
+}).superRefine(
+  (environment, context) => {
+    if (
+      environment.NODE_ENV === "production" &&
+      environment.PGSSL !== "verify-full"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["PGSSL"],
+        message:
+          "PGSSL=verify-full es obligatorio en producción."
+      });
+    }
+
+    if (
+      environment.PGSSL === "verify-full" &&
+      !environment.PGSSL_CA_FILE
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["PGSSL_CA_FILE"],
+        message:
+          "PGSSL_CA_FILE es obligatorio cuando PGSSL=verify-full."
+      });
+    }
+  }
+);
 
 const parsedEnvironment =
   environmentSchema.safeParse(process.env);
