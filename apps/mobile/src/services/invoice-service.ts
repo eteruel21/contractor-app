@@ -1,6 +1,6 @@
 import {
   authenticatedRequest
-} from "@/services/api";
+} from "./api";
 import type {
   Invoice,
   InvoiceCreditNote,
@@ -8,7 +8,7 @@ import type {
   InvoicePayment,
   InvoicePaymentMethod,
   InvoiceWithDetails
-} from "@/types/invoice";
+} from "../types/invoice";
 
 function errorMessage(
   error: unknown

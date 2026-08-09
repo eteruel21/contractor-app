@@ -4,11 +4,12 @@ import {
   quoteIdentifier,
   quoteLiteral,
   requireEnv,
+  validateLocalAdminUrl,
 } from "./db-utils.mjs";
 
 const { Client } = pg;
 
-const adminUrl = requireEnv("DATABASE_ADMIN_URL");
+const adminUrl = validateLocalAdminUrl(requireEnv("DATABASE_ADMIN_URL"));
 const databaseName = process.env.DATABASE_NAME?.trim() || "contractor_pro";
 const migratorPassword = requireEnv("CONTRACTOR_MIGRATOR_PASSWORD");
 const apiPassword = requireEnv("CONTRACTOR_API_PASSWORD");
@@ -25,6 +26,46 @@ try {
   await client.query(`
     DO $bootstrap$
     BEGIN
+      -- Roles de compatibilidad con Supabase.
+      -- Son NOLOGIN y existen únicamente para que las migraciones,
+      -- políticas RLS y respaldos de Supabase puedan validarse
+      -- también en PostgreSQL local.
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname = 'anon'
+      ) THEN
+        CREATE ROLE anon
+          NOLOGIN
+          NOSUPERUSER
+          NOCREATEDB
+          NOCREATEROLE
+          NOINHERIT
+          NOBYPASSRLS;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname = 'authenticated'
+      ) THEN
+        CREATE ROLE authenticated
+          NOLOGIN
+          NOSUPERUSER
+          NOCREATEDB
+          NOCREATEROLE
+          NOINHERIT
+          NOBYPASSRLS;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_roles WHERE rolname = 'service_role'
+      ) THEN
+        CREATE ROLE service_role
+          NOLOGIN
+          NOSUPERUSER
+          NOCREATEDB
+          NOCREATEROLE
+          NOINHERIT
+          NOBYPASSRLS;
+      END IF;
+
       IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'contractor_owner') THEN
         CREATE ROLE contractor_owner
           NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;

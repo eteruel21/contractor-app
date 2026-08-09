@@ -2,6 +2,7 @@ import pg from "pg";
 
 import {
   ensureHistoryTables,
+  postgresClientConfig,
   readSqlFiles,
   requireEnv,
   withAdvisoryLock,
@@ -10,7 +11,7 @@ import {
 const { Client } = pg;
 
 const expectedDatabase = requireEnv("BASELINE_CONFIRM_DATABASE");
-const client = new Client({ connectionString: requireEnv("MIGRATOR_DATABASE_URL") });
+const client = new Client(postgresClientConfig(requireEnv("MIGRATOR_DATABASE_URL")));
 const repairChecksums = process.argv.includes("--repair-checksums");
 
 const requiredRelations = [

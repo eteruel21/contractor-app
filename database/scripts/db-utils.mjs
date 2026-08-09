@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -68,6 +69,174 @@ export function requireTestDatabaseUrl() {
   );
 }
 
+
+function parsePostgresUrl(rawUrl, variableName) {
+  const connectionString = rawUrl?.trim();
+
+  if (!connectionString) {
+    throw new Error(`${variableName} es obligatoria.`);
+  }
+
+  let parsedUrl;
+
+  try {
+    parsedUrl = new URL(connectionString);
+  } catch {
+    throw new Error(
+      `${variableName} debe ser una URL PostgreSQL valida.`,
+    );
+  }
+
+  if (
+    parsedUrl.protocol !== "postgres:" &&
+    parsedUrl.protocol !== "postgresql:"
+  ) {
+    throw new Error(
+      `${variableName} debe usar postgres o postgresql.`,
+    );
+  }
+
+  return {
+    connectionString,
+    parsedUrl,
+  };
+}
+
+export function validateLocalAdminUrl(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "DATABASE_ADMIN_URL",
+  );
+
+  const hostname = parsedUrl.hostname
+    .replace(/^\[|\]$/gu, "")
+    .toLowerCase();
+
+  const localHosts = new Set([
+    "localhost",
+    "127.0.0.1",
+    "::1",
+  ]);
+
+  if (!localHosts.has(hostname)) {
+    throw new Error(
+      "DATABASE_ADMIN_URL solo puede ejecutarse contra PostgreSQL local.",
+    );
+  }
+
+  const username = decodeURIComponent(parsedUrl.username);
+
+  if (username !== "postgres") {
+    throw new Error(
+      "DATABASE_ADMIN_URL debe usar el usuario administrativo postgres.",
+    );
+  }
+
+  return connectionString;
+}
+
+export function validateSupabaseAdminUrl(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "SUPABASE_ADMIN_URL",
+  );
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  const isSupabaseHost =
+    hostname.endsWith(".supabase.co") ||
+    hostname.endsWith(".pooler.supabase.com");
+
+  if (!isSupabaseHost) {
+    throw new Error(
+      "SUPABASE_ADMIN_URL debe apuntar a un host de Supabase.",
+    );
+  }
+
+  const username = decodeURIComponent(parsedUrl.username);
+
+  if (
+    username !== "postgres" &&
+    !username.startsWith("postgres.")
+  ) {
+    throw new Error(
+      "SUPABASE_ADMIN_URL debe usar el usuario administrativo postgres.",
+    );
+  }
+
+  return connectionString;
+}
+
+
+const nodePostgresSslQueryParameters = [
+  "sslmode",
+  "sslcert",
+  "sslkey",
+  "sslrootcert",
+];
+
+function stripSupabaseSslQueryParameters(
+  connectionString,
+) {
+  const parsedUrl = new URL(connectionString);
+
+  for (
+    const parameter
+    of nodePostgresSslQueryParameters
+  ) {
+    parsedUrl.searchParams.delete(parameter);
+  }
+
+  return parsedUrl.toString();
+}
+
+export function postgresClientConfig(rawUrl) {
+  const { connectionString, parsedUrl } = parsePostgresUrl(
+    rawUrl,
+    "DATABASE_URL",
+  );
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  const isSupabase =
+    hostname.endsWith(".supabase.co") ||
+    hostname.endsWith(".pooler.supabase.com");
+
+  if (!isSupabase) {
+    return {
+      connectionString,
+    };
+  }
+
+  const caFilename =
+    process.env.DATABASE_SSL_CA_FILE?.trim();
+
+  if (!caFilename) {
+    throw new Error(
+      "DATABASE_SSL_CA_FILE es obligatorio para Supabase.",
+    );
+  }
+
+  const ca = readFileSync(caFilename, "utf8");
+
+  return {
+    /*
+     * node-postgres reemplaza el objeto ssl cuando la URL
+     * contiene sslmode/sslcert/sslkey/sslrootcert.
+     * Eliminamos únicamente esos parámetros y mantenemos
+     * nuestra CA verificada explícitamente.
+     */
+    connectionString:
+      stripSupabaseSslQueryParameters(
+        connectionString,
+      ),
+    ssl: {
+      ca,
+      rejectUnauthorized: true,
+    },
+  };
+}
+
 export function quoteIdentifier(value) {
   if (!/^[a-z_][a-z0-9_]*$/i.test(value)) {
     throw new Error(`Identificador PostgreSQL inválido: ${value}`);
@@ -80,11 +249,51 @@ export function quoteLiteral(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
-export function checksum(contents) {
-  const normalizedContents = contents.replace(/\r\n?/gu, "\n");
+function sha256Utf8(contents) {
   return createHash("sha256")
-    .update(normalizedContents, "utf8")
+    .update(contents, "utf8")
     .digest("hex");
+}
+
+export function checksum(contents) {
+  const normalizedContents =
+    contents.replace(/\r\n?/gu, "\n");
+
+  return sha256Utf8(
+    normalizedContents,
+  );
+}
+
+export function legacyCrLfChecksum(
+  contents,
+) {
+  const normalizedContents =
+    contents.replace(/\r\n?/gu, "\n");
+
+  const legacyContents =
+    normalizedContents.replace(
+      /\n/gu,
+      "\r\n",
+    );
+
+  return sha256Utf8(
+    legacyContents,
+  );
+}
+
+export function storedChecksumMatches(
+  contents,
+  storedChecksum,
+) {
+  if (!storedChecksum) {
+    return false;
+  }
+
+  return (
+    storedChecksum === checksum(contents) ||
+    storedChecksum ===
+      legacyCrLfChecksum(contents)
+  );
 }
 
 export async function readSqlFiles(directoryName) {
@@ -165,7 +374,7 @@ export async function ensureHistoryTables(client) {
       );
 
       GRANT USAGE ON SCHEMA app_migrations TO contractor_migrator;
-      GRANT SELECT ON TABLE
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
         app_migrations.schema_migrations,
         app_migrations.seed_history
       TO contractor_migrator;

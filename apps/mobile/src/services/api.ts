@@ -170,7 +170,7 @@ async function readResponse<T>(
   return body as T;
 }
 
-async function publicRequest<T>(
+export async function publicRequest<T>(
   path: string,
   init: RequestInit = {}
 ): Promise<T> {

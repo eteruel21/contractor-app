@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "contractor-app-prod"
+  },
+  "targets": {
+    "contractor-app-prod": {
+      "hosting": {
+        "admin": [
+          "contractor-admin-web"
+        ],
+        "mobile": [
+          "contractor-pro-web"
+        ]
+      }
+    }
+  }
+}
