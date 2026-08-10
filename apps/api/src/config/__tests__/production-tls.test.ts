@@ -120,3 +120,30 @@ test(
     );
   }
 );
+test(
+  "acepta Hyperdrive en producción sin variables PG locales",
+  async () => {
+    vi.stubEnv("DATABASE_MODE", "hyperdrive");
+
+    delete process.env.PGHOST;
+    delete process.env.PGPORT;
+    delete process.env.PGDATABASE;
+    delete process.env.PGUSER;
+    delete process.env.PGPASSWORD;
+    delete process.env.PGSSL;
+    delete process.env.PGSSL_CA_FILE;
+
+    const { env } =
+      await import("../env.js");
+
+    expect(env.NODE_ENV).toBe(
+      "production"
+    );
+
+    expect(env.DATABASE_MODE).toBe(
+      "hyperdrive"
+    );
+
+    expect(env.PGHOST).toBeUndefined();
+  }
+);
