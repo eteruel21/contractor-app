@@ -20,6 +20,12 @@
       "id": "7a329598e4b04653b28173862646054e"
     }
   ],
+  "routes": [
+    {
+      "pattern": "api.tctservices-pty.com/*",
+      "zone_name": "tctservices-pty.com"
+    }
+  ],
   "workers_dev": false,
   "preview_urls": true
 }

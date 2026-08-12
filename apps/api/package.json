@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run",
+    "test:worker-runtime": "node --disallow-code-generation-from-strings --import tsx scripts/worker-runtime-smoke.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
