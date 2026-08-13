@@ -59,6 +59,26 @@ describe("T-058: Suite de Pruebas de Numeración de Documentos (Concurrencia, Du
   });
 
   it("2. Concurrencia: Múltiples llamadas concurrentes generan números únicos sin duplicados", async () => {
+    await adminPool.query(
+      `
+        DELETE FROM public.document_sequences
+        WHERE company_id = $1
+          AND document_type = 'invoice'
+      `,
+      [companyId]
+    );
+
+    const sequenceBefore = await adminPool.query(
+      `
+        SELECT current_number
+        FROM public.document_sequences
+        WHERE company_id = $1
+          AND document_type = 'invoice'
+      `,
+      [companyId]
+    );
+    expect(sequenceBefore.rowCount).toBe(0);
+
     const promises = Array.from({ length: 10 }).map(async () => {
       const client = await adminPool.connect();
       try {
@@ -76,13 +96,105 @@ describe("T-058: Suite de Pruebas de Numeración de Documentos (Concurrencia, Du
     const uniqueNumbers = new Set(docNumbers);
     expect(uniqueNumbers.size).toBe(10);
 
+    expect([...docNumbers].sort()).toEqual(
+      Array.from(
+        { length: 10 },
+        (_, index) => `FAC-${String(index + 1).padStart(6, "0")}`
+      )
+    );
+
     // Verify format prefix FAC-
     for (const num of docNumbers) {
       expect(num).toMatch(/^FAC-\d{6}$/);
     }
+
+    const sequenceAfter = await adminPool.query(
+      `
+        SELECT current_number
+        FROM public.document_sequences
+        WHERE company_id = $1
+          AND document_type = 'invoice'
+      `,
+      [companyId]
+    );
+    expect(sequenceAfter.rowCount).toBe(1);
+    expect(Number(sequenceAfter.rows[0].current_number)).toBe(10);
   });
 
-  it("3. Reinicios de Transacción y Estabilidad tras Rollback", async () => {
+  it("3. Reinicio anual conserva formato y serializa llamadas concurrentes", async () => {
+    const yearResult = await adminPool.query(
+      "SELECT EXTRACT(YEAR FROM CURRENT_DATE)::integer AS current_year"
+    );
+    const currentYear = Number(yearResult.rows[0].current_year);
+
+    await adminPool.query(
+      `
+        INSERT INTO public.document_sequences (
+          company_id,
+          document_type,
+          prefix,
+          current_number,
+          padding,
+          yearly_reset,
+          last_reset_year
+        )
+        VALUES ($1, 'project', 'OBR', 41, 4, true, $2)
+        ON CONFLICT ON CONSTRAINT document_sequences_unique
+        DO UPDATE SET
+          prefix = EXCLUDED.prefix,
+          current_number = EXCLUDED.current_number,
+          padding = EXCLUDED.padding,
+          yearly_reset = EXCLUDED.yearly_reset,
+          last_reset_year = EXCLUDED.last_reset_year
+      `,
+      [companyId, currentYear - 1]
+    );
+
+    const projectNumbers = await Promise.all(
+      Array.from({ length: 5 }, async () => {
+        const client = await adminPool.connect();
+        try {
+          await client.query("SELECT set_config('app.user_id', $1, false)", [userId]);
+          const result = await client.query(
+            "SELECT public.next_document_number($1, 'project') AS num",
+            [companyId]
+          );
+          return result.rows[0].num;
+        } finally {
+          client.release();
+        }
+      })
+    );
+
+    expect([...projectNumbers].sort()).toEqual([
+      "OBR-0001",
+      "OBR-0002",
+      "OBR-0003",
+      "OBR-0004",
+      "OBR-0005"
+    ]);
+
+    const sequenceAfter = await adminPool.query(
+      `
+        SELECT prefix, current_number, padding, yearly_reset, last_reset_year
+        FROM public.document_sequences
+        WHERE company_id = $1
+          AND document_type = 'project'
+      `,
+      [companyId]
+    );
+
+    expect(sequenceAfter.rowCount).toBe(1);
+    expect(sequenceAfter.rows[0]).toMatchObject({
+      prefix: "OBR",
+      padding: 4,
+      yearly_reset: true,
+      last_reset_year: currentYear
+    });
+    expect(Number(sequenceAfter.rows[0].current_number)).toBe(5);
+  });
+
+  it("4. Reinicios de Transacción y Estabilidad tras Rollback", async () => {
     const client = await adminPool.connect();
     let numInRollback: string | null = null;
     try {
@@ -109,7 +221,6 @@ describe("T-058: Suite de Pruebas de Numeración de Documentos (Concurrencia, Du
       client2.release();
     }
 
-    expect(numAfter).toBeDefined();
-    expect(numAfter).toMatch(/^REC-\d{6}$/);
+    expect(numAfter).toBe("REC-000001");
   });
 });

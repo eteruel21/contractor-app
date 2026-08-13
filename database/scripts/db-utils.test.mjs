@@ -94,20 +94,37 @@ test("escapa literales y valida identificadores", () => {
 });
 
 test("acepta únicamente URLs de bases marcadas como pruebas", () => {
-  const safeUrl = "postgresql://localhost:5432/contractor_ci_test";
+  const safeUrl =
+    "postgresql://postgres:secret@localhost:5432/contractor_ci_test";
 
   assert.equal(validateTestDatabaseUrl(safeUrl, "test"), safeUrl);
   assert.throws(
-    () => validateTestDatabaseUrl("postgresql://localhost:5432/contractor_pro", "test"),
+    () => validateTestDatabaseUrl("postgresql://postgres:secret@localhost:5432/contractor_pro", "test"),
     /inequívocamente de pruebas/u,
   );
   assert.throws(
-    () => validateTestDatabaseUrl("postgresql://localhost:5432/staging_test", "test"),
+    () => validateTestDatabaseUrl("postgresql://postgres:secret@localhost:5432/staging_test", "test"),
     /nunca prod, staging, main o live/u,
   );
   assert.throws(
     () => validateTestDatabaseUrl(safeUrl, "production"),
     /NODE_ENV=test/u,
+  );
+  assert.throws(
+    () =>
+      validateTestDatabaseUrl(
+        `${safeUrl}?host=prod.example.test`,
+        "test",
+      ),
+    /no permite parámetros ni fragmentos/u,
+  );
+  assert.throws(
+    () =>
+      validateTestDatabaseUrl(
+        "postgresql://localhost:5432/contractor_ci_test",
+        "test",
+      ),
+    /host, usuario y contraseña/u,
   );
 });
 
@@ -129,6 +146,22 @@ test("separa conexiones administrativas locales y Supabase", () => {
   assert.throws(
     () => validateLocalAdminUrl(supabaseDirectUrl),
     /solo puede ejecutarse contra PostgreSQL local/u,
+  );
+
+  assert.throws(
+    () =>
+      validateLocalAdminUrl(
+        `${localUrl}?host=db.example.test`,
+      ),
+    /no permite parámetros ni fragmentos/u,
+  );
+
+  assert.throws(
+    () =>
+      validateLocalAdminUrl(
+        "postgresql://contractor_api:secret@127.0.0.1:5432/postgres",
+      ),
+    /usuario administrativo postgres/u,
   );
 
   assert.equal(
