@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "./worker-configuration.d.ts",
+      "node"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "worker-configuration.d.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    ".wrangler",
+    "src/server.ts",
+    "src/**/*.test.ts",
+    "src/**/__tests__/**"
+  ]
+}

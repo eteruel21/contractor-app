@@ -30,12 +30,12 @@ export async function buildApp() {
 
   app.decorateRequest("authenticatedUser", null);
 
-  await app.register(cors, {
+  app.register(cors, {
     origin: corsOrigins,
     credentials: true
   });
 
-  await app.register(fastifyCookie, {
+  app.register(fastifyCookie, {
     secret: env.JWT_SECRET,
     hook: "onRequest"
   });
@@ -50,27 +50,27 @@ export async function buildApp() {
     reply.header("X-XSS-Protection", "0");
   });
 
-  await app.register(rateLimit, {
+  app.register(rateLimit, {
     global: false
   });
 
-  await app.register(registerAuthRoutes);
-  await app.register(registerCatalogRoutes);
-  await app.register(registerProfileRoutes);
-  await app.register(registerCompanyRoutes);
-  await app.register(registerClientRoutes);
-  await app.register(registerProjectRoutes);
-  await app.register(registerBudgetRoutes);
-  await app.register(registerCalculationRoutes);
-  await app.register(registerOperationRoutes);
-  await app.register(registerInvoiceRoutes);
-  await app.register(registerAdminRoutes);
-  await app.register(registerActivityRoutes);
-  await app.register(registerProjectTaskRoutes);
-  await app.register(registerProjectProgressRoutes);
-  await app.register(registerStorageRoutes);
-  await app.register(registerNotificationRoutes);
-  await app.register(registerAccountLegalRoutes);
+  app.register(registerAuthRoutes);
+  app.register(registerCatalogRoutes);
+  app.register(registerProfileRoutes);
+  app.register(registerCompanyRoutes);
+  app.register(registerClientRoutes);
+  app.register(registerProjectRoutes);
+  app.register(registerBudgetRoutes);
+  app.register(registerCalculationRoutes);
+  app.register(registerOperationRoutes);
+  app.register(registerInvoiceRoutes);
+  app.register(registerAdminRoutes);
+  app.register(registerActivityRoutes);
+  app.register(registerProjectTaskRoutes);
+  app.register(registerProjectProgressRoutes);
+  app.register(registerStorageRoutes);
+  app.register(registerNotificationRoutes);
+  app.register(registerAccountLegalRoutes);
 
   app.get("/health", async () => {
     return {

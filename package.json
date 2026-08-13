@@ -26,23 +26,28 @@
     "build:api": "npm run build -w apps/api",
     "build:admin": "npm run build -w apps/admin-web",
     "build:mobile": "npm run build:web -w apps/mobile",
+    "deploy:api": "npm run build:api && npx wrangler deploy --config apps/api/wrangler.worker.jsonc",
     "deploy:admin": "npm run build:admin && npx wrangler pages deploy apps/admin-web/dist --project-name contractor-admin-web --branch main",
     "deploy:mobile": "npm run build:mobile && npx wrangler pages deploy apps/mobile/dist --project-name contractor-pro-web --branch main",
+    "deploy:all": "npm run deploy:api && npm run deploy:admin && npm run deploy:mobile",
     "deploy:firebase:admin": "npm run build:admin && npx firebase-tools deploy --only hosting:admin",
     "deploy:firebase:mobile": "npm run build:mobile && npx firebase-tools deploy --only hosting:mobile",
     "deploy:firebase": "npm run build:admin && npm run build:mobile && npx firebase-tools deploy --only hosting",
     "deploy:safe": "node database/scripts/deploy-safe.mjs",
     "install-hooks": "node scripts/install-git-hooks.mjs",
+    "postinstall": "patch-package",
     "validate": "npm run typecheck && npm run build:api && npm run build:admin && npm run build:mobile"
   },
   "devDependencies": {
+    "patch-package": "8.0.1",
     "pg": "^8.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native-screens": "4.25.2",
     "react-native-gesture-handler": "2.32.0",
     "react-native-reanimated": "4.5.0",
-    "react-native-worklets": "0.10.0"
+    "react-native-screens": "4.25.2",
+    "react-native-worklets": "0.10.0",
+    "wrangler": "4.122.0"
   },
   "overrides": {
     "react": "19.2.3",

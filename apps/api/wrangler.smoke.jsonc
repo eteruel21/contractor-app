@@ -1,0 +1,14 @@
+﻿{
+    "name":  "contractor-api-worker-smoke",
+    "main":  "src/worker-smoke.ts",
+    "compatibility_date":  "2026-08-09",
+    "compatibility_flags":  [
+                                "nodejs_compat"
+                            ],
+    "hyperdrive":  [
+                       {
+                           "binding":  "HYPERDRIVE",
+                           "id":  "7a329598e4b04653b28173862646054e"
+                       }
+                   ]
+}

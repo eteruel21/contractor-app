@@ -1,0 +1,66 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloudflare
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v7
+
+      - name: 2. Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 3. Install dependencies
+        run: |
+          npm ci || npm install
+          npm install @rollup/rollup-linux-x64-gnu -w apps/admin-web --no-save
+
+      - name: 4. Typecheck all workspaces
+        run: npm run typecheck
+
+      - name: 5. Typecheck API Worker
+        run: npx tsc -p apps/api/tsconfig.worker.json --noEmit
+
+      - name: 6. Smoke test API Worker runtime
+        run: npm run test:worker-runtime -w apps/api
+
+      - name: 7. Build API Backend Worker
+        run: npm run build:api
+
+      - name: 8. Build Admin Web Application
+        run: npm run build:admin
+
+      - name: 9. Build Mobile User Web Application
+        run: npm run build:mobile
+
+      - name: 10. Deploy API Worker to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy --config apps/api/wrangler.worker.jsonc
+
+      - name: 11. Deploy Admin Web to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy apps/admin-web/dist --project-name contractor-admin-web --branch main
+
+      - name: 12. Deploy Mobile User Web to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy apps/mobile/dist --project-name contractor-pro-web --branch main
