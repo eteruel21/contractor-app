@@ -5,7 +5,11 @@ import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 
-import { quoteIdentifier, requireEnv } from "./db-utils.mjs";
+import {
+  quoteIdentifier,
+  requireEnv,
+  validateLocalAdminUrl,
+} from "./db-utils.mjs";
 
 const { Client } = pg;
 const testDbName = `test_contractor_scratch_${Math.floor(Math.random() * 1000000)}`;
@@ -14,14 +18,12 @@ if (process.env.NODE_ENV !== "test") {
   throw new Error("Las pruebas destructivas de migraciones requieren NODE_ENV=test.");
 }
 
-const adminUrl = requireEnv("DATABASE_ADMIN_URL");
+const adminUrl = validateLocalAdminUrl(
+  requireEnv("DATABASE_ADMIN_URL"),
+);
 const migratorPassword = requireEnv("CONTRACTOR_MIGRATOR_PASSWORD");
 const migratorUrl = new URL(adminUrl);
 const validationUrl = new URL(adminUrl);
-
-if (migratorUrl.protocol !== "postgres:" && migratorUrl.protocol !== "postgresql:") {
-  throw new Error("DATABASE_ADMIN_URL debe usar el protocolo postgres o postgresql.");
-}
 
 migratorUrl.username = "contractor_migrator";
 migratorUrl.password = migratorPassword;

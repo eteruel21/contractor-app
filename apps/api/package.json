@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:worker-runtime": "node --disallow-code-generation-from-strings --import tsx scripts/worker-runtime-smoke.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck:node": "tsc --noEmit -p tsconfig.json",
+    "typecheck:worker": "tsc --noEmit -p tsconfig.worker.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:worker"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

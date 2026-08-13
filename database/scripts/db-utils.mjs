@@ -43,6 +43,18 @@ export function validateTestDatabaseUrl(rawUrl, nodeEnvironment) {
     throw new Error("TEST_DATABASE_URL debe usar el protocolo postgres o postgresql.");
   }
 
+  if (parsedUrl.search || parsedUrl.hash) {
+    throw new Error(
+      "TEST_DATABASE_URL no permite parámetros ni fragmentos que alteren la conexión.",
+    );
+  }
+
+  if (!parsedUrl.hostname || !parsedUrl.username || !parsedUrl.password) {
+    throw new Error(
+      "TEST_DATABASE_URL debe incluir host, usuario y contraseña explícitos.",
+    );
+  }
+
   let databaseName;
   try {
     databaseName = decodeURIComponent(parsedUrl.pathname.replace(/^\/+/, ""));
@@ -107,6 +119,12 @@ export function validateLocalAdminUrl(rawUrl) {
     rawUrl,
     "DATABASE_ADMIN_URL",
   );
+
+  if (parsedUrl.search || parsedUrl.hash) {
+    throw new Error(
+      "DATABASE_ADMIN_URL local no permite parámetros ni fragmentos de conexión.",
+    );
+  }
 
   const hostname = parsedUrl.hostname
     .replace(/^\[|\]$/gu, "")

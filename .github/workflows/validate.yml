@@ -63,38 +63,35 @@ jobs:
       - name: 4. Typecheck all workspaces
         run: npm run typecheck
 
-      - name: 5. Typecheck API Worker
-        run: npx tsc -p apps/api/tsconfig.worker.json --noEmit
-
-      - name: 6. Smoke test API Worker runtime
+      - name: 5. Smoke test API Worker runtime
         run: npm run test:worker-runtime -w apps/api
 
-      - name: 7. Create roles & database (db:bootstrap)
+      - name: 6. Create roles & database (db:bootstrap)
         run: npm run db:bootstrap
 
-      - name: 8. Apply database migrations (db:migrate)
+      - name: 7. Apply database migrations (db:migrate)
         run: npm run db:migrate
 
-      - name: 9. Seed test catalog data (db:seed)
+      - name: 8. Seed test catalog data (db:seed)
         run: npm run db:seed
 
-      - name: 10. Execute API, RLS and auth tests
+      - name: 9. Execute API, RLS and auth tests
         run: npm run test:api
 
-      - name: 11. Execute database tooling tests
+      - name: 10. Execute database tooling tests
         run: npm run test:database-tools
 
-      - name: 12. Execute invoice financial lifecycle tests
+      - name: 11. Execute invoice financial lifecycle tests
         run: npm run test:invoice-db
 
-      - name: 13. Build API backend
+      - name: 12. Build API backend
         run: npm run build:api
 
-      - name: 14. Test mobile app
+      - name: 13. Test mobile app
         run: npm run test -w apps/mobile
 
-      - name: 15. Build admin web application
+      - name: 14. Build admin web application
         run: npm run build:admin
 
-      - name: 16. Build mobile web application
+      - name: 15. Build mobile web application
         run: npm run build:mobile
