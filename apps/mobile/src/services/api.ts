@@ -37,20 +37,27 @@ async function deleteSecureItem(key: string): Promise<void> {
 
 function getMobileApiUrl(): string {
   const rawUrl = process.env.EXPO_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
-  const isLocalHost = typeof window !== "undefined" && (
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1" ||
-    window.location.hostname.endsWith(".local")
+  const browserHostname = typeof window !== "undefined"
+    ? window.location?.hostname
+    : undefined;
+  const isLocalHost = !!browserHostname && (
+    browserHostname === "localhost" ||
+    browserHostname === "127.0.0.1" ||
+    browserHostname.endsWith(".local")
   );
 
-  if (!rawUrl || (!isLocalHost && typeof window !== "undefined" && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost")))) {
-    return "https://api.contractor.com.pa";
+  if (!rawUrl) {
+    throw new Error("EXPO_PUBLIC_API_URL es obligatoria.");
   }
 
-  return rawUrl || "https://api.contractor.com.pa";
+  if (browserHostname && !isLocalHost && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost"))) {
+    throw new Error("EXPO_PUBLIC_API_URL no puede apuntar a localhost fuera del desarrollo local.");
+  }
+
+  return rawUrl;
 }
 
-const API_URL = getMobileApiUrl();
+export const API_URL = getMobileApiUrl();
 
 const SESSION_STORAGE_KEY =
   "contractor-pro.local-session.v1";

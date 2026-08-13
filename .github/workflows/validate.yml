@@ -44,6 +44,8 @@ jobs:
       CONTRACTOR_API_PASSWORD: api_ci_password
       MIGRATOR_DATABASE_URL: postgresql://contractor_migrator:migrator_ci_password@127.0.0.1:5432/contractor_ci_test
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/contractor_ci_test
+      VITE_API_URL: https://api.tctservices-pty.com
+      EXPO_PUBLIC_API_URL: https://api.tctservices-pty.com
 
     steps:
       - name: 1. Checkout repository
@@ -95,3 +97,14 @@ jobs:
 
       - name: 15. Build mobile web application
         run: npm run build:mobile
+
+      - name: 16. Verify client API configuration
+        run: |
+          test -n "$VITE_API_URL"
+          test -n "$EXPO_PUBLIC_API_URL"
+          grep -R -F "$VITE_API_URL" apps/admin-web/dist > /dev/null
+          grep -R -F "$EXPO_PUBLIC_API_URL" apps/mobile/dist > /dev/null
+          if grep -R -F "https://api.contractor.com.pa" apps/admin-web/dist apps/mobile/dist; then
+            echo "Legacy production API fallback found in client bundles."
+            exit 1
+          fi

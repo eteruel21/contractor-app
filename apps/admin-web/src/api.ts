@@ -6,8 +6,12 @@ function getApiUrl(): string {
     window.location.hostname.endsWith(".local")
   );
 
-  if (!rawUrl || (!isLocalHost && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost")))) {
-    return "https://api.contractor.com.pa";
+  if (!rawUrl) {
+    throw new Error("VITE_API_URL es obligatoria.");
+  }
+
+  if (!isLocalHost && (rawUrl.includes("127.0.0.1") || rawUrl.includes("localhost"))) {
+    throw new Error("VITE_API_URL no puede apuntar a localhost fuera del desarrollo local.");
   }
 
   return rawUrl;

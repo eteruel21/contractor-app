@@ -13,6 +13,9 @@ jobs:
   deploy:
     name: Build & Deploy to Cloudflare
     runs-on: ubuntu-latest
+    env:
+      VITE_API_URL: https://api.tctservices-pty.com
+      EXPO_PUBLIC_API_URL: https://api.tctservices-pty.com
 
     steps:
       - name: 1. Checkout repository
@@ -44,19 +47,30 @@ jobs:
       - name: 8. Build Mobile User Web Application
         run: npm run build:mobile
 
-      - name: 9. Deploy API Worker to Cloudflare Workers
+      - name: 9. Verify Client API Configuration
+        run: |
+          test -n "$VITE_API_URL"
+          test -n "$EXPO_PUBLIC_API_URL"
+          grep -R -F "$VITE_API_URL" apps/admin-web/dist > /dev/null
+          grep -R -F "$EXPO_PUBLIC_API_URL" apps/mobile/dist > /dev/null
+          if grep -R -F "https://api.contractor.com.pa" apps/admin-web/dist apps/mobile/dist; then
+            echo "Legacy production API fallback found in client bundles."
+            exit 1
+          fi
+
+      - name: 10. Deploy API Worker to Cloudflare Workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy --config apps/api/wrangler.worker.jsonc
 
-      - name: 10. Deploy Admin Web to Cloudflare Pages
+      - name: 11. Deploy Admin Web to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler pages deploy apps/admin-web/dist --project-name contractor-admin-web --branch main
 
-      - name: 11. Deploy Mobile User Web to Cloudflare Pages
+      - name: 12. Deploy Mobile User Web to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
