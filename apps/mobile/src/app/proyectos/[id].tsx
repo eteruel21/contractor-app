@@ -75,6 +75,7 @@ import {
 import {
   fetchCompanyActivities
 } from "@/services/activity-service";
+import { API_URL } from "@/services/api";
 import type { Appointment } from "@/utils/appointment-storage";
 
 export default function ProjectDetailScreen() {
@@ -612,7 +613,7 @@ export default function ProjectDetailScreen() {
               {photos.map((photo) => {
                 const fullImageUrl = photo.signedUrl.startsWith("http")
                   ? photo.signedUrl
-                  : `${(process.env.EXPO_PUBLIC_API_URL || "").replace(/\/+$/, "")}${photo.signedUrl}`;
+                  : `${API_URL}${photo.signedUrl}`;
                 return (
                   <View key={photo.id} style={styles.photoCard}>
                     <Image
