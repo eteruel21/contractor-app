@@ -22,6 +22,7 @@ import { registerProjectProgressRoutes } from "./projects/progress/routes.js";
 import { registerStorageRoutes } from "./storage/routes.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerAccountLegalRoutes } from "./account/routes.js";
+import { safeErrorDetails } from "./security/redaction.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -29,6 +30,31 @@ export async function buildApp() {
   });
 
   app.decorateRequest("authenticatedUser", null);
+
+  app.setErrorHandler((error, request, reply) => {
+    request.log.error(
+      safeErrorDetails(error),
+      "Error no controlado en la API."
+    );
+    const errorStatusCode =
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error
+        ? error.statusCode
+        : undefined;
+    const statusCode =
+      typeof errorStatusCode === "number" &&
+      errorStatusCode >= 400 &&
+      errorStatusCode < 500
+        ? errorStatusCode
+        : 500;
+    return reply.status(statusCode).send({
+      message:
+        statusCode < 500
+          ? "La solicitud no pudo ser procesada."
+          : "Ocurrió un error interno."
+    });
+  });
 
   app.register(cors, {
     origin: corsOrigins,
@@ -103,7 +129,7 @@ export async function buildApp() {
         database: row
       };
     } catch (error) {
-      app.log.error(error);
+      app.log.error(safeErrorDetails(error), "Falló la comprobación de PostgreSQL.");
       return reply.status(503).send({
         status: "error",
         message: "No se pudo conectar con PostgreSQL."

@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import pg from "pg";
 import { databaseRoot } from "./db-utils.mjs";
+import { safeErrorDetails } from "./redact-sensitive.mjs";
 
 const execFileAsync = promisify(execFile);
 const { Client } = pg;
@@ -83,7 +84,7 @@ export async function runRestoreTest(options = {}) {
 
 if (process.argv[1]?.endsWith("restore-test.mjs")) {
   runRestoreTest().catch((error) => {
-    console.error("Fallo la verificación de restauración del backup:", error);
+    console.error("Fallo la verificación de restauración del backup:", safeErrorDetails(error));
     process.exit(1);
   });
 }

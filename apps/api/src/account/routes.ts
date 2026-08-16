@@ -5,6 +5,7 @@ import path from "node:path";
 import { authenticateRequest } from "../auth/authenticate.js";
 import { env } from "../config/env.js";
 import { withUserTransaction } from "../db/with-user-transaction.js";
+import { safeErrorDetails } from "../security/redaction.js";
 
 type ProfileStorageReferences = {
   id: string;
@@ -127,7 +128,7 @@ export async function registerAccountLegalRoutes(
         content
       };
     } catch (error) {
-      app.log.error(error);
+      app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
       return reply.status(500).send({
         message: "No se pudieron cargar los términos de uso."
       });
@@ -148,7 +149,7 @@ export async function registerAccountLegalRoutes(
         content
       };
     } catch (error) {
-      app.log.error(error);
+      app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
       return reply.status(500).send({
         message: "No se pudo cargar la política de privacidad."
       });
@@ -579,7 +580,7 @@ export async function registerAccountLegalRoutes(
         reply.header("Cache-Control", "no-store");
         return exportData;
       } catch (error) {
-        app.log.error(error);
+        app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
         return reply.status(500).send({
           message: "Error al exportar los datos de la cuenta."
         });
@@ -745,7 +746,7 @@ export async function registerAccountLegalRoutes(
           }
         };
       } catch (error) {
-        app.log.error(error);
+        app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
         return reply.status(500).send({
           message: "Error al procesar la eliminación de la cuenta."
         });

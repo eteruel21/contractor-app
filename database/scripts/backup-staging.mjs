@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import { databaseRoot } from "./db-utils.mjs";
+import { safeErrorDetails } from "./redact-sensitive.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -60,14 +61,14 @@ export async function runBackup(options = {}) {
     console.log(`[Backup Staging] Respaldo completado exitosamente: ${backupPath}`);
     return { success: true, backupPath, dryRun: false };
   } catch (error) {
-    console.error("[Backup Staging] Error al generar el respaldo pg_dump:", error.message);
+    console.error("[Backup Staging] Error al generar el respaldo pg_dump:", safeErrorDetails(error));
     throw error;
   }
 }
 
 if (process.argv[1]?.endsWith("backup-staging.mjs")) {
   runBackup().catch((error) => {
-    console.error("Fallo el respaldo de la base de datos:", error);
+    console.error("Fallo el respaldo de la base de datos:", safeErrorDetails(error));
     process.exit(1);
   });
 }

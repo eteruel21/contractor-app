@@ -12,6 +12,7 @@ import {
   validateLocalAdminUrl,
   validateSupabaseAdminUrl,
 } from "./db-utils.mjs";
+import { safeErrorDetails } from "./redact-sensitive.mjs";
 
 const { Client } = pg;
 const execFileAsync = promisify(execFile);
@@ -409,7 +410,7 @@ if (
     (error) => {
       console.error(
         "Fallo la sincronizacion de respaldo:",
-        error,
+        safeErrorDetails(error),
       );
 
       process.exit(1);

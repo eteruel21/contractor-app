@@ -4,6 +4,7 @@ import type {
 } from "fastify";
 
 import { pool } from "../db/pool.js";
+import { safeErrorDetails } from "../security/redaction.js";
 import {
   verifyAccessToken
 } from "./tokens.js";
@@ -156,7 +157,7 @@ export async function requireActiveUser(
       return;
     }
   } catch (error) {
-    request.log.error(error);
+    request.log.error(safeErrorDetails(error), "Falló una comprobación de autorización.");
     reply.status(500).send({
       message: "Error interno al verificar el estado del usuario."
     });
@@ -216,7 +217,7 @@ export function requireCompanyRole(allowedRoles: ("owner" | "admin" | "estimator
         return;
       }
     } catch (error) {
-      request.log.error(error);
+      request.log.error(safeErrorDetails(error), "Falló una comprobación de autorización.");
       reply.status(500).send({ message: "Error interno al verificar los permisos del rol." });
     } finally {
       client.release();
