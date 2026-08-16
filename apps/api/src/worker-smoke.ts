@@ -1,4 +1,5 @@
-﻿import { Client } from "pg";
+import { Client } from "pg";
+import { safeErrorDetails } from "./security/redaction.js";
 
 type Env = {
   HYPERDRIVE: {
@@ -28,7 +29,7 @@ export default {
         database: result.rows[0]
       });
     } catch (error) {
-      console.error(error);
+      console.error(safeErrorDetails(error));
 
       return Response.json(
         {

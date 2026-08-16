@@ -1,4 +1,5 @@
 import { findUserPushTokensRepo } from "./repository.js";
+import { safeErrorDetails } from "../security/redaction.js";
 
 export type PushPayload = {
   title: string;
@@ -43,7 +44,7 @@ export async function sendPushNotificationToUser(
 
     return { sent: messages.length, failed: 0 };
   } catch (error) {
-    console.error("Error al despachar notificación push:", error);
+    console.error("Error al despachar notificación push:", safeErrorDetails(error));
     return { sent: 0, failed: 1 };
   }
 }

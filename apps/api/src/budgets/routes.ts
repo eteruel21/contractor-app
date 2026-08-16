@@ -9,6 +9,7 @@ import {
   requireActiveUser,
   requireCompanyRole
 } from "../auth/authenticate.js";
+import { safeErrorDetails } from "../security/redaction.js";
 
 import {
   budgetParamsSchema,
@@ -203,8 +204,9 @@ export async function registerBudgetRoutes(
           return reply.status(500).send({ message: "No se pudo crear la partida." });
         }
         return reply.status(201).send({ item });
-      } catch (err: any) {
-        return reply.status(400).send({ message: err.message || "Error al añadir la partida." });
+      } catch (error) {
+        request.log.error(safeErrorDetails(error), "No se pudo añadir la partida.");
+        return reply.status(400).send({ message: "Error al añadir la partida." });
       }
     }
   );
@@ -235,8 +237,9 @@ export async function registerBudgetRoutes(
           parsedQuery.data.companyId
         );
         return { success: true };
-      } catch (err: any) {
-        return reply.status(400).send({ message: err.message || "Error al eliminar la partida." });
+      } catch (error) {
+        request.log.error(safeErrorDetails(error), "No se pudo eliminar la partida.");
+        return reply.status(400).send({ message: "Error al eliminar la partida." });
       }
     }
   );
@@ -260,8 +263,9 @@ export async function registerBudgetRoutes(
       try {
         const budget = await approveBudgetService(userId, parsedParams.data.budgetId, parsedBody.data.companyId);
         return { budget };
-      } catch (err: any) {
-        return reply.status(400).send({ message: err.message || "Error al aprobar el presupuesto." });
+      } catch (error) {
+        request.log.error(safeErrorDetails(error), "No se pudo aprobar el presupuesto.");
+        return reply.status(400).send({ message: "Error al aprobar el presupuesto." });
       }
     }
   );
@@ -293,8 +297,9 @@ export async function registerBudgetRoutes(
           parsedBody.data.companyId
         );
         return { budget };
-      } catch (err: any) {
-        return reply.status(400).send({ message: err.message || "Error al rechazar el presupuesto." });
+      } catch (error) {
+        request.log.error(safeErrorDetails(error), "No se pudo rechazar el presupuesto.");
+        return reply.status(400).send({ message: "Error al rechazar el presupuesto." });
       }
     }
   );

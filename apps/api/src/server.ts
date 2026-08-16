@@ -1,6 +1,7 @@
 import { buildApp } from "./app.js";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
+import { safeErrorDetails } from "./security/redaction.js";
 
 const app = await buildApp();
 
@@ -25,7 +26,7 @@ try {
     port: env.API_PORT
   });
 } catch (error) {
-  app.log.error(error);
+  app.log.error(safeErrorDetails(error), "No se pudo iniciar la API.");
   await pool.end();
   process.exit(1);
 }

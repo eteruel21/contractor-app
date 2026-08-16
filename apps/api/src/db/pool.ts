@@ -1,4 +1,4 @@
-﻿import { readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 
 import pg from "pg";
 import type {
@@ -8,6 +8,7 @@ import type {
 } from "pg";
 
 import { env } from "../config/env.js";
+import { safeErrorDetails } from "../security/redaction.js";
 
 const { Client, Pool } = pg;
 
@@ -82,7 +83,7 @@ if (localPool) {
   localPool.on("error", (error) => {
     console.error(
       "Error inesperado en el pool PostgreSQL:",
-      error
+      safeErrorDetails(error)
     );
   });
 }

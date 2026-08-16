@@ -1,4 +1,4 @@
-﻿import "dotenv/config";
+import "dotenv/config";
 
 import { z } from "zod";
 
@@ -138,10 +138,8 @@ const parsedEnvironment =
   environmentSchema.safeParse(process.env);
 
 if (!parsedEnvironment.success) {
-  console.error(
-    "Configuración inválida:",
-    parsedEnvironment.error.flatten().fieldErrors
-  );
+  const invalidFields = Object.keys(parsedEnvironment.error.flatten().fieldErrors);
+  console.error("Configuración inválida.", { invalidFields });
 
   throw new Error(
     "No se pudo cargar la configuración de la API."
