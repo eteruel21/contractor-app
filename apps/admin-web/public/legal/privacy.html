@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Política de Privacidad vigente de Contractor Pro."
+    />
+    <meta name="theme-color" content="#10251d" />
+    <link rel="canonical" href="https://contractor-admin-web.pages.dev/legal/privacy" />
+    <link rel="stylesheet" href="/legal/legal.css" />
+    <title>Política de Privacidad | Contractor Pro</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <a class="brand" href="/legal" aria-label="Contractor Pro, información legal">
+          <span class="brand__mark" aria-hidden="true">C</span>
+          <span>CONTRACTOR PRO</span>
+        </a>
+        <nav class="site-nav" aria-label="Documentos legales">
+          <a href="/">Ir a la plataforma</a>
+          <a href="/legal/terms">Términos</a>
+          <a href="/legal/privacy" aria-current="page">Privacidad</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">Documento legal</p>
+        <h1>Política de Privacidad</h1>
+        <p class="hero__lead">
+          Esta política describe qué información trata Contractor App, para qué la usa,
+          cómo la protege y qué opciones tienen sus usuarios.
+        </p>
+        <p class="document-meta">Última actualización: 21 de julio de 2026</p>
+      </section>
+
+      <article class="legal-document">
+        <p>
+          En <strong>Contractor App</strong>, valoramos y respetamos la privacidad de
+          nuestros usuarios. Esta Política de Privacidad describe cómo recopilamos,
+          utilizamos, almacenamos, compartimos y protegemos su información personal, de
+          conformidad con las normativas internacionales de protección de datos,
+          incluidos los principios RGPD y ARCO.
+        </p>
+
+        <section>
+          <h2>1. Información que recopilamos</h2>
+          <h3>1.1 Información proporcionada directamente</h3>
+          <ul>
+            <li>
+              <strong>Datos de identificación y contacto:</strong> nombre completo,
+              dirección de correo electrónico, número de teléfono, documento de identidad
+              (Cédula/RUC) y dirección.
+            </li>
+            <li>
+              <strong>Información profesional y comercial:</strong> nombre comercial,
+              razón social, especialidades, años de experiencia, certificado de aviso de
+              operación, tarifas y certificaciones.
+            </li>
+            <li>
+              <strong>Datos operativos:</strong> proyectos, presupuestos, facturas,
+              clientes registrados, tareas e historial de avance con fotos.
+            </li>
+          </ul>
+
+          <h3>1.2 Información recopilada automáticamente</h3>
+          <ul>
+            <li>
+              <strong>Registros de sistema:</strong> dirección IP, tipo de navegador,
+              sistema operativo, identificadores de dispositivo, cookies de sesión y
+              registros de auditoría de actividad.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>2. Finalidad del tratamiento de datos</h2>
+          <p>Utilizamos su información para:</p>
+          <ol>
+            <li>Prestar, mantener y optimizar los servicios de la Plataforma.</li>
+            <li>Autenticar usuarios, gestionar roles (RBAC) y asegurar la Cuenta.</li>
+            <li>
+              Facilitar la comunicación y contratación entre Contratistas, Empresas y
+              Clientes.
+            </li>
+            <li>
+              Generar documentos operativos, incluidos presupuestos, facturas y órdenes
+              de trabajo.
+            </li>
+            <li>
+              Cumplir obligaciones legales, contables, fiscales y de auditoría de
+              seguridad.
+            </li>
+          </ol>
+        </section>
+
+        <section>
+          <h2>3. Almacenamiento y seguridad de la información</h2>
+          <ul>
+            <li>
+              <strong>Cifrado en tránsito y reposo:</strong> todos los canales de
+              comunicación utilizan TLS 1.3/HTTPS. Los datos de la base de datos se
+              almacenan en infraestructura PostgreSQL segura con aislamiento por usuario
+              (RLS).
+            </li>
+            <li>
+              <strong>Control de acceso:</strong> acceso restringido mediante JSON Web
+              Tokens (JWT) y cookies HTTP-only con atributos <code>SameSite</code> y
+              <code>Secure</code>.
+            </li>
+            <li>
+              <strong>Archivos y fotografías:</strong> almacenados en contenedores
+              privados con URLs firmadas y tiempo de expiración limitado.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>4. Retención y supresión de datos</h2>
+          <p>De acuerdo con nuestra Política de Retención de Documentos:</p>
+          <ul>
+            <li>
+              <strong>Cuentas activas:</strong> mantendremos su información mientras su
+              Cuenta permanezca activa.
+            </li>
+            <li>
+              <strong>Cuentas eliminadas:</strong> al solicitar la eliminación de la
+              Cuenta, iniciamos un proceso de anonimización y borrado dentro de los 30
+              días posteriores.
+            </li>
+            <li>
+              <strong>Registros fiscales y contables:</strong> la información relativa a
+              facturas emitidas y transacciones fiscales se conserva durante 5 a 7 años
+              por requerimiento legal, de forma anonimizada e inalterable.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>5. Derechos de los usuarios (ARCO / RGPD)</h2>
+          <p>Usted posee los siguientes derechos sobre su información personal:</p>
+          <ul>
+            <li>
+              <strong>Acceso y rectificación:</strong> puede consultar y actualizar sus
+              datos en cualquier momento desde su perfil.
+            </li>
+            <li>
+              <strong>Exportación (portabilidad):</strong> puede descargar una copia
+              íntegra de sus datos en formato JSON mediante <code>GET /account/export</code>.
+            </li>
+            <li>
+              <strong>Eliminación (supresión):</strong> puede solicitar el borrado
+              definitivo de su Cuenta mediante <code>DELETE /account</code>.
+            </li>
+            <li>
+              <strong>Oposición y revocación:</strong> puede solicitar la revocación del
+              consentimiento para el tratamiento de datos opcionales.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>6. Transferencias y terceros</h2>
+          <p>
+            No vendemos ni alquilamos sus datos personales a terceros. Compartimos
+            información únicamente con proveedores de infraestructura esenciales bajo
+            estrictos acuerdos de confidencialidad:
+          </p>
+          <ul>
+            <li>
+              <strong>Hosting y base de datos:</strong> PostgreSQL, Render y Cloudflare
+              Pages.
+            </li>
+            <li>
+              <strong>Servicios de almacenamiento cifrado:</strong> Cloudflare R2 o
+              almacenamiento compatible con S3.
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>7. Contacto de privacidad</h2>
+          <p>
+            Si desea ejercer sus derechos o tiene consultas sobre esta Política, puede
+            comunicarse mediante:
+          </p>
+          <ul>
+            <li>
+              <strong>Delegado de Protección de Datos (DPO):</strong>
+              <a href="mailto:privacidad@contractorapp.com">privacidad@contractorapp.com</a>
+            </li>
+            <li>
+              <strong>Dirección postal:</strong> Departamento Legal, Contractor App Inc.
+            </li>
+          </ul>
+        </section>
+      </article>
+
+      <nav class="document-actions" aria-label="Acciones del documento">
+        <a href="/legal/terms">Ver Términos y Condiciones</a>
+        <a href="/legal">Volver al centro legal</a>
+      </nav>
+    </main>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p>© 2026 Contractor Pro. Todos los derechos reservados.</p>
+        <nav aria-label="Enlaces del pie de página">
+          <a href="/legal/terms">Términos</a>
+          <a href="/legal/privacy" aria-current="page">Privacidad</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

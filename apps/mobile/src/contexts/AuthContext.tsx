@@ -43,6 +43,7 @@ type SignUpInput = {
   phone?: string;
   email: string;
   password: string;
+  captchaToken: string;
   role?: PublicAppRole;
   province: string;
   district: string;
@@ -111,7 +112,8 @@ type AuthContextValue = {
 
   signIn: (
     email: string,
-    password: string
+    password: string,
+    captchaToken: string
   ) => Promise<AuthResult>;
 
   signUp: (
@@ -121,7 +123,8 @@ type AuthContextValue = {
   signOut: () => Promise<AuthResult>;
 
   resetPassword: (
-    email: string
+    email: string,
+    captchaToken: string
   ) => Promise<AuthResult>;
 
   updateContractorProfile: (
@@ -254,12 +257,14 @@ export function AuthProvider({
   const signIn = useCallback(
     async (
       email: string,
-      password: string
+      password: string,
+      captchaToken: string
     ): Promise<AuthResult> => {
       try {
         const nextSession = await login(
           email.trim().toLowerCase(),
-          password
+          password,
+          captchaToken
         );
 
         applySession(nextSession);
@@ -298,6 +303,7 @@ export function AuthProvider({
                 .trim()
                 .toLowerCase(),
             password: input.password,
+            captchaToken: input.captchaToken,
             role: input.role,
             province: input.province,
             district: input.district,
@@ -409,11 +415,13 @@ export function AuthProvider({
 
   const resetPassword = useCallback(
     async (
-      email: string
+      email: string,
+      captchaToken: string
     ): Promise<AuthResult> => {
       try {
         await requestPasswordReset(
-          email.trim().toLowerCase()
+          email.trim().toLowerCase(),
+          captchaToken
         );
 
         return { error: null };

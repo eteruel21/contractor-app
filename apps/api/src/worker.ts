@@ -1,3 +1,5 @@
+/// <reference path="../worker-configuration.d.ts" />
+
 import { httpServerHandler } from "cloudflare:node";
 
 import { buildApp } from "./app.js";

@@ -16,6 +16,10 @@ jobs:
     env:
       VITE_API_URL: https://api.tctservices-pty.com
       EXPO_PUBLIC_API_URL: https://api.tctservices-pty.com
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      VITE_TURNSTILE_CHALLENGE_URL: /turnstile.html
+      EXPO_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
+      EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL: https://contractor-pro-web.pages.dev/turnstile.html
 
     steps:
       - name: 1. Checkout repository
@@ -51,8 +55,17 @@ jobs:
         run: |
           test -n "$VITE_API_URL"
           test -n "$EXPO_PUBLIC_API_URL"
+          test -n "$VITE_TURNSTILE_SITE_KEY"
+          test -n "$EXPO_PUBLIC_TURNSTILE_SITE_KEY"
+          test -n "$EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL"
           grep -R -F "$VITE_API_URL" apps/admin-web/dist > /dev/null
           grep -R -F "$EXPO_PUBLIC_API_URL" apps/mobile/dist > /dev/null
+          grep -R -F "$VITE_TURNSTILE_SITE_KEY" apps/admin-web/dist > /dev/null
+          grep -R -F "$EXPO_PUBLIC_TURNSTILE_SITE_KEY" apps/mobile/dist > /dev/null
+          if [ "$VITE_TURNSTILE_SITE_KEY" = "1x00000000000000000000AA" ]; then
+            echo "Production Turnstile sitekey must not be a test key."
+            exit 1
+          fi
           if grep -R -F "https://api.contractor.com.pa" apps/admin-web/dist apps/mobile/dist; then
             echo "Legacy production API fallback found in client bundles."
             exit 1

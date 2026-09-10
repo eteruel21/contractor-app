@@ -15,14 +15,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import TurnstileChallenge from "@/components/TurnstileChallenge";
 import { colors, radius, shadows } from "@/constants/theme";
-import { confirmEmailApi } from "@/services/api";
+import { confirmEmailApi, resendVerificationEmail } from "@/services/api";
 
 export default function ConfirmEmailScreen() {
-  const params = useLocalSearchParams<{ token?: string }>();
+  const params = useLocalSearchParams<{ token?: string; email?: string }>();
   const [tokenInput, setTokenInput] = useState(params.token || "");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState(params.email || "");
+  const [resending, setResending] = useState(false);
+  const [resendCaptchaToken, setResendCaptchaToken] = useState<string | null>(null);
+  const [resendCaptchaResetKey, setResendCaptchaResetKey] = useState(0);
 
   useEffect(() => {
     if (params.token) {
@@ -31,6 +36,12 @@ export default function ConfirmEmailScreen() {
       setTokenInput(params.token);
     }
   }, [params.token]);
+
+  useEffect(() => {
+    if (params.email) {
+      setEmail(params.email);
+    }
+  }, [params.email]);
 
   async function handleConfirm() {
     const cleanToken = tokenInput.trim();
@@ -55,6 +66,34 @@ export default function ConfirmEmailScreen() {
       Alert.alert("Error de verificación", err.message || "El token es inválido o ha expirado.");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleResend() {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      Alert.alert("Correo requerido", "Ingresa el correo asociado a tu cuenta.");
+      return;
+    }
+
+    if (!resendCaptchaToken) {
+      Alert.alert("Verificación requerida", "Completa la verificación de seguridad antes de reenviar el correo.");
+      return;
+    }
+
+    const captchaToken = resendCaptchaToken;
+    setResendCaptchaToken(null);
+    setResendCaptchaResetKey((current) => current + 1);
+
+    try {
+      setResending(true);
+      const response = await resendVerificationEmail(cleanEmail, captchaToken);
+      Alert.alert("Solicitud recibida", response.message || "Si la cuenta existe y aún necesita verificación, enviaremos un nuevo correo.");
+    } catch (error) {
+      const err = error as { message?: string };
+      Alert.alert("No fue posible reenviar", err.message || "Inténtalo nuevamente más tarde.");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -99,6 +138,35 @@ export default function ConfirmEmailScreen() {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.primaryButtonText}>Confirmar Cuenta</Text>
+              )}
+            </Pressable>
+
+            <Text style={[styles.label, { marginTop: 20 }]}>Reenviar correo de verificación</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="correo@empresa.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TurnstileChallenge
+              action="resend_verification"
+              onToken={setResendCaptchaToken}
+              resetKey={resendCaptchaResetKey}
+            />
+
+            <Pressable
+              style={[styles.secondaryButton, (resending || !resendCaptchaToken) && styles.buttonDisabled]}
+              onPress={handleResend}
+              disabled={resending || !resendCaptchaToken}
+            >
+              {resending ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={styles.secondaryButtonText}>Reenviar correo</Text>
               )}
             </Pressable>
           </View>
@@ -182,6 +250,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center"
+  },
+  secondaryButton: {
+    minHeight: 48,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12
+  },
+  secondaryButtonText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: "600"
   },
   buttonDisabled: {
     opacity: 0.6

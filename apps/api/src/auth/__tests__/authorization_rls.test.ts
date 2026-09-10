@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildApp } from "../../app.js";
 import { adminPool } from "../../db/test-db.js";
 import type { FastifyInstance } from "fastify";
+import { installTurnstileTestMock } from "./turnstile-test-helper.js";
 
 describe("T-054: Suite de Pruebas de Autorización y RLS", () => {
   let app: FastifyInstance;
@@ -22,6 +23,7 @@ describe("T-054: Suite de Pruebas de Autorización y RLS", () => {
   let clientAId: string;
 
   beforeAll(async () => {
+    installTurnstileTestMock();
     app = await buildApp();
     await app.ready();
 
@@ -41,7 +43,8 @@ describe("T-054: Suite de Pruebas de Autorización y RLS", () => {
           province: "Panamá",
           district: "Panamá",
           corregimiento: "Bella Vista",
-          termsAccepted: true
+          termsAccepted: true,
+          captchaToken: "register-turnstile-token"
         }
       });
     }
@@ -75,7 +78,7 @@ describe("T-054: Suite de Pruebas de Autorización y RLS", () => {
       const loginRes = await app.inject({
         method: "POST",
         url: "/auth/login",
-        payload: { email, password: "Password123!" }
+        payload: { email, password: "Password123!", captchaToken: "login-turnstile-token" }
       });
       if (loginRes.statusCode === 200) {
         const body = JSON.parse(loginRes.body);

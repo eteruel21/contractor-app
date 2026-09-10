@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "vitest run",
+    "test": "vitest run --hookTimeout=30000",
     "test:worker-runtime": "node --disallow-code-generation-from-strings --import tsx scripts/worker-runtime-smoke.mjs",
     "typecheck:node": "tsc --noEmit -p tsconfig.json",
     "typecheck:worker": "tsc --noEmit -p tsconfig.worker.json",

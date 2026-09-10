@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Verificación de seguridad</title>
+  <style>
+    html,body{margin:0;padding:0;background:transparent;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{display:flex;align-items:center;justify-content:center;min-height:78px}
+    #widget{width:100%;display:flex;justify-content:center}
+    #error{display:none;color:#991b1b;font-size:13px;padding:10px;text-align:center}
+  </style>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+</head>
+<body>
+  <div id="widget"></div>
+  <div id="error">No fue posible cargar la verificación de seguridad.</div>
+  <script>
+    (() => {
+      const params = new URLSearchParams(window.location.search);
+      const sitekey = (params.get("sitekey") || "").trim();
+      const action = (params.get("action") || "").trim();
+      const allowedActions = new Set(["register", "login", "recover_password", "resend_verification"]);
+
+      function emit(type, extra = {}) {
+        const payload = { source: "contractor-turnstile", type, action, ...extra };
+        const serialized = JSON.stringify(payload);
+
+        if (window.ReactNativeWebView && typeof window.ReactNativeWebView.postMessage === "function") {
+          window.ReactNativeWebView.postMessage(serialized);
+        }
+
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage(payload, window.location.origin);
+        }
+      }
+
+      function fail(message) {
+        const error = document.getElementById("error");
+        error.textContent = message;
+        error.style.display = "block";
+        emit("error");
+      }
+
+      function render() {
+        if (!sitekey || !allowedActions.has(action)) {
+          fail("La verificación de seguridad no está configurada.");
+          return;
+        }
+
+        if (!window.turnstile) {
+          window.setTimeout(render, 50);
+          return;
+        }
+
+        window.turnstile.render("#widget", {
+          sitekey,
+          action,
+          theme: "auto",
+          size: "flexible",
+          "response-field": false,
+          callback(token) {
+            emit("success", { token });
+          },
+          "expired-callback"() {
+            emit("expired");
+          },
+          "timeout-callback"() {
+            emit("timeout");
+          },
+          "error-callback"() {
+            emit("error");
+          }
+        });
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", render, { once: true });
+      } else {
+        render();
+      }
+    })();
+  </script>
+</body>
+</html>

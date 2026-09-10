@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
   register,
+  resendVerificationEmail,
   requestPasswordReset,
   resetPasswordApi
 } from "../api";
@@ -41,13 +42,26 @@ afterEach(() => {
 });
 
 test("requestPasswordReset: envía el correo al endpoint de recuperación", async () => {
-  await requestPasswordReset("user@example.test");
+  await requestPasswordReset("user@example.test", "test-captcha-token");
 
   expect(fetchMock.mock.calls).toHaveLength(1);
   const [url, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
   expect(url.endsWith("/auth/recover-password")).toBe(true);
   expect(JSON.parse(requestInit.body as string)).toEqual({
-    email: "user@example.test"
+    email: "user@example.test",
+    captchaToken: "test-captcha-token"
+  });
+});
+
+test("resendVerificationEmail: envia correo al endpoint de reenvio con CAPTCHA", async () => {
+  await resendVerificationEmail("user@example.test", "test-resend-captcha-token");
+
+  expect(fetchMock.mock.calls).toHaveLength(1);
+  const [url, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+  expect(url.endsWith("/auth/resend-verification")).toBe(true);
+  expect(JSON.parse(requestInit.body as string)).toEqual({
+    email: "user@example.test",
+    captchaToken: "test-resend-captcha-token"
   });
 });
 
@@ -79,6 +93,7 @@ test("register: no presenta como enviado un correo cuya entrega falló", async (
       lastName: "Prueba",
       email: "user@example.test",
       password: "Password123!",
+      captchaToken: "test-captcha-token",
       province: "Panamá",
       district: "Panamá",
       corregimiento: "Bella Vista",

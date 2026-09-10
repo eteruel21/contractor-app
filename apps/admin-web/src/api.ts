@@ -289,7 +289,8 @@ function ensureSuperAdmin(
 
 export async function loginAdmin(
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<AdminSession> {
   const response =
     await publicRequest<AuthResponse>(
@@ -300,6 +301,7 @@ export async function loginAdmin(
           email:
             email.trim().toLowerCase(),
           password,
+          captchaToken,
           clientType: "web"
         })
       }

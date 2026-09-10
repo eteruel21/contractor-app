@@ -23,6 +23,7 @@ import { registerStorageRoutes } from "./storage/routes.js";
 import { registerNotificationRoutes } from "./notifications/routes.js";
 import { registerAccountLegalRoutes } from "./account/routes.js";
 import { safeErrorDetails } from "./security/redaction.js";
+import { getClientIp } from "./security/client-ip.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -77,7 +78,13 @@ export async function buildApp() {
   });
 
   app.register(rateLimit, {
-    global: false
+    global: false,
+    keyGenerator: (request) => getClientIp(request),
+    errorResponseBuilder: () => ({
+      statusCode: 429,
+      error: "Too Many Requests",
+      message: "Demasiados intentos. Inténtalo nuevamente más tarde."
+    })
   });
 
   app.register(registerAuthRoutes);

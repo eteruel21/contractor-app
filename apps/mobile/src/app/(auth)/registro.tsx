@@ -24,6 +24,7 @@ import {
   type PublicAppRole,
   useAuth,
 } from "@/contexts/AuthContext";
+import TurnstileChallenge from "@/components/TurnstileChallenge";
 import { showAlert } from "@/utils/alert";
 
 
@@ -82,7 +83,8 @@ export default function RegisterScreen() {
   
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [notificationsOptIn, setNotificationsOptIn] = useState(false);
-  const [isRobotChecked, setIsRobotChecked] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -146,10 +148,14 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (!isRobotChecked) {
-      showAlert("Protección contra robots", "Por favor marca la casilla 'No soy un robot' para continuar.");
+    if (!captchaToken) {
+      showAlert("Protección contra robots", "Completa la verificación de seguridad para continuar.");
       return;
     }
+
+    const currentCaptchaToken = captchaToken;
+    setCaptchaToken(null);
+    setCaptchaResetKey((current) => current + 1);
 
     try {
       setSubmitting(true);
@@ -164,6 +170,7 @@ export default function RegisterScreen() {
         phone,
         email,
         password,
+        captchaToken: currentCaptchaToken,
         role: accountRole,
         province,
         district,
@@ -187,8 +194,8 @@ export default function RegisterScreen() {
           "Revisa tu correo para confirmar la cuenta. Después, los contratistas deberán completar su perfil profesional antes de esperar la aprobación del administrador.",
           [
             {
-              text: "Ir a iniciar sesión",
-              onPress: () => router.replace("/login"),
+              text: "Confirmar correo",
+              onPress: () => router.replace({ pathname: "/confirm-email", params: { email: email.trim().toLowerCase() } } ),
             },
           ]
         );
@@ -413,7 +420,7 @@ export default function RegisterScreen() {
               onRightIconPress={() => setShowConfirmPassword(!showConfirmPassword)}
             />
 
-            {/* Aceptaciones y Recaptcha */}
+            {/* Aceptaciones y verificación de seguridad */}
             <Pressable
               onPress={() => setTermsAccepted(!termsAccepted)}
               style={styles.checkboxRow}
@@ -442,21 +449,11 @@ export default function RegisterScreen() {
               </Text>
             </Pressable>
 
-            <Pressable
-              onPress={() => setIsRobotChecked(!isRobotChecked)}
-              style={[styles.checkboxRow, styles.robotRow]}
-            >
-              <Ionicons
-                name={isRobotChecked ? "checkmark-circle" : "ellipse-outline"}
-                size={22}
-                color={isRobotChecked ? "#10B981" : colors.textSecondary}
-              />
-              <View style={styles.robotLabelContainer}>
-                <Text style={styles.robotLabelText}>No soy un robot</Text>
-                <Text style={styles.robotLabelSub}>Protección de registro automatizado</Text>
-              </View>
-              <Ionicons name="shield-outline" size={20} color="#10B981" style={{ marginLeft: "auto" }} />
-            </Pressable>
+            <TurnstileChallenge
+              action="register"
+              onToken={setCaptchaToken}
+              resetKey={captchaResetKey}
+            />
 
             <View style={styles.approvalNotice}>
               <Ionicons
