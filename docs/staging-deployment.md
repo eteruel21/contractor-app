@@ -48,8 +48,8 @@ Este documento define la arquitectura de hosting, configuración de seguridad y 
 | `SMTP_USER` | `resend` |
 | `SMTP_PASS` | `<secret_smtp_key>` |
 | `EMAIL_FROM` | `no-reply-staging@contractor.app` |
-| `CAPTCHA_SECRET` | Secret de Cloudflare Turnstile / hCaptcha de Staging |
-| `CAPTCHA_ENABLED` | `true` |
+| `TURNSTILE_SECRET_KEY` | Secret privado de Cloudflare Turnstile de Staging |
+| `TURNSTILE_ALLOWED_HOSTNAMES` | `<hostname_staging>` |
 
 ---
 

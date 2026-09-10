@@ -7,7 +7,8 @@
   ],
   "vars": {
     "NODE_ENV": "production",
-    "DATABASE_MODE": "hyperdrive"
+    "DATABASE_MODE": "hyperdrive",
+    "TURNSTILE_ALLOWED_HOSTNAMES": "contractor-pro-web.pages.dev,contractor-admin-web.pages.dev,app.contractor.com.pa,admin.contractor.com.pa"
   },
   "secrets": {
     "required": [

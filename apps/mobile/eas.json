@@ -32,7 +32,9 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://contractor-api.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://api.tctservices-pty.com",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAESG10HX8vzKwIUe",
+        "EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL": "https://contractor-pro-web.pages.dev/turnstile.html"
       }
     }
   },

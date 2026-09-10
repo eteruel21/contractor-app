@@ -266,7 +266,8 @@ Promise<void> {
 
 export async function login(
   email: string,
-  password: string
+  password: string,
+  captchaToken: string
 ): Promise<StoredSession> {
   const response =
     await publicRequest<AuthResponse>(
@@ -275,7 +276,8 @@ export async function login(
         method: "POST",
         body: JSON.stringify({
           email,
-          password
+          password,
+          captchaToken
         })
       }
     );
@@ -293,6 +295,7 @@ export type RegisterInput = {
   phone?: string;
   email: string;
   password: string;
+  captchaToken: string;
   role?: "contractor" | "client";
   province: string;
   district: string;
@@ -502,10 +505,17 @@ export async function confirmEmailApi(token: string): Promise<{ message?: string
   });
 }
 
-export async function requestPasswordReset(email: string): Promise<{ message?: string }> {
+export async function resendVerificationEmail(email: string, captchaToken: string): Promise<{ message?: string }> {
+  return publicRequest<{ message?: string }>("/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email, captchaToken })
+  });
+}
+
+export async function requestPasswordReset(email: string, captchaToken: string): Promise<{ message?: string }> {
   return publicRequest<{ message?: string }>("/auth/recover-password", {
     method: "POST",
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, captchaToken })
   });
 }
 

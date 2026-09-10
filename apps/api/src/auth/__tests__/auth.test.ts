@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildApp } from "../../app.js";
 import { adminPool } from "../../db/test-db.js";
 import type { FastifyInstance } from "fastify";
+import { installTurnstileTestMock } from "./turnstile-test-helper.js";
 
 describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
   let app: FastifyInstance;
@@ -13,6 +14,7 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
   let refreshToken: string;
 
   beforeAll(async () => {
+    installTurnstileTestMock();
     app = await buildApp();
     await app.ready();
   });
@@ -44,7 +46,7 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
         district: "Panamá",
         corregimiento: "Bella Vista",
         termsAccepted: true,
-        captchaToken: "dev-bypass-token"
+        captchaToken: "register-turnstile-token"
       }
     });
 
@@ -63,7 +65,8 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
       url: "/auth/login",
       payload: {
         email: testEmail,
-        password: testPassword
+        password: testPassword,
+        captchaToken: "login-turnstile-token"
       }
     });
 
@@ -81,7 +84,8 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
       url: "/auth/login",
       payload: {
         email: testEmail,
-        password: testPassword
+        password: testPassword,
+        captchaToken: "login-turnstile-token"
       }
     });
 
@@ -141,7 +145,8 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
       url: "/auth/login",
       payload: {
         email: testEmail,
-        password: testPassword
+        password: testPassword,
+        captchaToken: "login-turnstile-token"
       }
     });
     expect(loginRes.statusCode).toBe(200);
@@ -159,12 +164,12 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
     const existingAccount = await app.inject({
       method: "POST",
       url: "/auth/recover-password",
-      payload: { email: testEmail }
+      payload: { email: testEmail, captchaToken: "recover-turnstile-token" }
     });
     const unknownAccount = await app.inject({
       method: "POST",
       url: "/auth/recover-password",
-      payload: { email: `missing_${testSuffix}@example.com` }
+      payload: { email: `missing_${testSuffix}@example.com`, captchaToken: "recover-turnstile-token" }
     });
 
     expect(existingAccount.statusCode).toBe(200);
@@ -176,12 +181,12 @@ describe("T-053: Suite de Pruebas de Autenticación (Auth)", () => {
     const confirmedAccount = await app.inject({
       method: "POST",
       url: "/auth/resend-verification",
-      payload: { email: testEmail }
+      payload: { email: testEmail, captchaToken: "resend-turnstile-token" }
     });
     const unknownAccount = await app.inject({
       method: "POST",
       url: "/auth/resend-verification",
-      payload: { email: `unknown_${testSuffix}@example.com` }
+      payload: { email: `unknown_${testSuffix}@example.com`, captchaToken: "resend-turnstile-token" }
     });
 
     expect(confirmedAccount.statusCode).toBe(200);

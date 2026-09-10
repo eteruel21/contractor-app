@@ -10,6 +10,8 @@ function configureRequiredEnvironment() {
   vi.stubEnv("NODE_ENV", "production");
   vi.stubEnv("API_HOST", "127.0.0.1");
   vi.stubEnv("API_PORT", "3001");
+  vi.stubEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA");
+  vi.stubEnv("TURNSTILE_ALLOWED_HOSTNAMES", "localhost");
 
   vi.stubEnv(
     "PGHOST",

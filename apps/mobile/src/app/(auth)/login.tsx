@@ -21,6 +21,7 @@ import {
   radius,
   shadows,
 } from "@/constants/theme";
+import TurnstileChallenge from "@/components/TurnstileChallenge";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginScreen() {
@@ -33,6 +34,10 @@ export default function LoginScreen() {
     useState(false);
   const [submitting, setSubmitting] =
     useState(false);
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
+  const [loginCaptchaResetKey, setLoginCaptchaResetKey] = useState(0);
+  const [recoveryCaptchaToken, setRecoveryCaptchaToken] = useState<string | null>(null);
+  const [recoveryCaptchaResetKey, setRecoveryCaptchaResetKey] = useState(0);
 
   async function handleSignIn() {
     const cleanEmail = email.trim();
@@ -45,12 +50,22 @@ export default function LoginScreen() {
       return;
     }
 
+    if (!loginCaptchaToken) {
+      Alert.alert("Verificación requerida", "Completa la verificación de seguridad antes de iniciar sesión.");
+      return;
+    }
+
+    const captchaToken = loginCaptchaToken;
+    setLoginCaptchaToken(null);
+    setLoginCaptchaResetKey((current) => current + 1);
+
     try {
       setSubmitting(true);
 
       const { error } = await signIn(
         cleanEmail,
         password,
+        captchaToken,
       );
 
       if (error) {
@@ -75,8 +90,17 @@ export default function LoginScreen() {
       return;
     }
 
+    if (!recoveryCaptchaToken) {
+      Alert.alert("Verificación requerida", "Completa la verificación de seguridad para recuperar tu contraseña.");
+      return;
+    }
+
+    const captchaToken = recoveryCaptchaToken;
+    setRecoveryCaptchaToken(null);
+    setRecoveryCaptchaResetKey((current) => current + 1);
+
     const { error } =
-      await resetPassword(cleanEmail);
+      await resetPassword(cleanEmail, captchaToken);
 
     if (error) {
       Alert.alert(
@@ -237,6 +261,12 @@ export default function LoginScreen() {
               </View>
             </View>
 
+            <TurnstileChallenge
+              action="login"
+              onToken={setLoginCaptchaToken}
+              resetKey={loginCaptchaResetKey}
+            />
+
             <Pressable
               onPress={() =>
                 void handleResetPassword()
@@ -247,6 +277,17 @@ export default function LoginScreen() {
                 ¿Olvidaste tu contraseña?
               </Text>
             </Pressable>
+
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, textAlign: "center" }}>
+                Verificación para recuperación de contraseña
+              </Text>
+              <TurnstileChallenge
+                action="recover_password"
+                onToken={setRecoveryCaptchaToken}
+                resetKey={recoveryCaptchaResetKey}
+              />
+            </View>
 
             <Pressable
               onPress={() => void handleSignIn()}

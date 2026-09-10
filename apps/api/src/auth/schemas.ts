@@ -10,6 +10,7 @@ export const loginSchema = z.object({
     .transform((value) => value.toLowerCase()),
 
   password: z.string().min(1).max(128),
+  captchaToken: z.string().trim().min(1).max(2048),
   clientType: z.string().optional()
 });
 
@@ -58,7 +59,7 @@ export const registerSchema = z.object({
     .string()
     .trim()
     .min(1)
-    .optional()
+    .max(2048)
 });
 
 export const refreshSchema = z.object({
@@ -75,7 +76,8 @@ export const resendVerificationSchema = z.object({
     .string()
     .trim()
     .email()
-    .transform((value) => value.toLowerCase())
+    .transform((value) => value.toLowerCase()),
+  captchaToken: z.string().trim().min(1).max(2048)
 });
 
 export const recoverPasswordSchema = z.object({
@@ -83,7 +85,8 @@ export const recoverPasswordSchema = z.object({
     .string()
     .trim()
     .email()
-    .transform((value) => value.toLowerCase())
+    .transform((value) => value.toLowerCase()),
+  captchaToken: z.string().trim().min(1).max(2048)
 });
 
 export const resetPasswordSchema = z.object({

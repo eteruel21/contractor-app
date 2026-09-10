@@ -11,8 +11,8 @@ const environmentSchema = z.object({
     .enum(["postgres", "hyperdrive"])
     .default("postgres"),
 
-  CAPTCHA_SECRET: z.string().optional(),
-  CAPTCHA_ENABLED: z.coerce.boolean().default(false),
+  TURNSTILE_SECRET_KEY: z.string().trim().min(1).optional(),
+  TURNSTILE_ALLOWED_HOSTNAMES: z.string().trim().min(1).optional(),
 
   SMTP_HOST: z.string().trim().min(1).optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
@@ -88,6 +88,15 @@ const environmentSchema = z.object({
     .default(30)
 }).superRefine(
   (environment, context) => {
+    const requiresTurnstile = environment.NODE_ENV === "production" || environment.NODE_ENV === "staging";
+
+    if (requiresTurnstile && !environment.TURNSTILE_SECRET_KEY) {
+      context.addIssue({ code: "custom", path: ["TURNSTILE_SECRET_KEY"], message: "TURNSTILE_SECRET_KEY es obligatorio en staging y producción." });
+    }
+
+    if (requiresTurnstile && !environment.TURNSTILE_ALLOWED_HOSTNAMES) {
+      context.addIssue({ code: "custom", path: ["TURNSTILE_ALLOWED_HOSTNAMES"], message: "TURNSTILE_ALLOWED_HOSTNAMES es obligatorio en staging y producción." });
+    }
     if (environment.DATABASE_MODE === "postgres") {
       const requiredPostgresFields = [
         ["PGHOST", environment.PGHOST],

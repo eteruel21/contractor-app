@@ -35,6 +35,7 @@ import {
   logoutAdmin,
   restoreAdminSession,
 } from "./api";
+import TurnstileChallenge from "./TurnstileChallenge";
 import { errorMessage } from "./utils/helpers";
 import {
   FullScreenLoader,
@@ -150,6 +151,8 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaResetKey, setCaptchaResetKey] = useState(0);
 
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const saved = localStorage.getItem("admin_active_tab");
@@ -246,12 +249,19 @@ export default function App() {
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
 
+    if (!captchaToken) {
+      setAuthError("Completa la verificación de seguridad antes de iniciar sesión.");
+      return;
+    }
+
+    const currentCaptchaToken = captchaToken;
+    setCaptchaToken(null);
+    setCaptchaResetKey((current) => current + 1);
     setAuthLoading(true);
     setAuthError(null);
 
     try {
-      const nextSession = await loginAdmin(email, password);
-
+      const nextSession = await loginAdmin(email, password, currentCaptchaToken);
       setSession(nextSession);
       setPassword("");
     } catch (error) {
@@ -466,7 +476,8 @@ export default function App() {
               />
             </div>
           </Field>
-          <button className="button button-primary button-block" disabled={authLoading}>
+          <TurnstileChallenge onToken={setCaptchaToken} resetKey={captchaResetKey} />
+          <button className="button button-primary button-block" disabled={authLoading || !captchaToken}>
             {authLoading ? <Loader2 className="spin" size={18} /> : <Lock size={18} />}
             Ingresar
           </button>

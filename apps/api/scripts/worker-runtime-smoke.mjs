@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 process.env.NODE_ENV = "production";
 process.env.DATABASE_MODE = "hyperdrive";
 process.env.JWT_SECRET = "worker_runtime_smoke_secret_that_is_long_enough_for_validation";
+process.env.TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA";
+process.env.TURNSTILE_ALLOWED_HOSTNAMES = "localhost";
 
 const { buildApp } = await import("../src/app.ts");
 const app = await buildApp();

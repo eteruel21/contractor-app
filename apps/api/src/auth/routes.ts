@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { env } from "../config/env.js";
+import { getClientIp } from "../security/client-ip.js";
 import { pool } from "../db/pool.js";
 import { withUserTransaction } from "../db/with-user-transaction.js";
 import { authenticateRequest } from "./authenticate.js";
@@ -125,7 +126,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       const input = parsedBody.data;
 
       // CAPTCHA check
-      const isCaptchaValid = await verifyCaptcha(input.captchaToken || "", request.ip);
+      const isCaptchaValid = await verifyCaptcha(input.captchaToken, getClientIp(request), "register");
       if (!isCaptchaValid) {
         return reply.status(400).send({
           message: "Protección contra robots inválida. Inténtalo de nuevo."
@@ -217,7 +218,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
-      const { email, password, clientType } = parsedBody.data;
+      const { email, password, clientType, captchaToken } = parsedBody.data;
+      const isCaptchaValid = await verifyCaptcha(captchaToken, getClientIp(request), "login");
+      if (!isCaptchaValid) {
+        return reply.status(400).send({ message: "No pudimos validar la verificación de seguridad. Inténtalo de nuevo." });
+      }
+
       const user = await findUserByEmail(email);
 
       const passwordMatches = user?.password_hash
@@ -524,7 +530,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ message: "Correo inválido." });
       }
 
-      const { email } = parsedBody.data;
+      const { email, captchaToken } = parsedBody.data;
+      const isCaptchaValid = await verifyCaptcha(captchaToken, getClientIp(request), "resend_verification");
+      if (!isCaptchaValid) {
+        return reply.status(400).send({ message: "No pudimos validar la verificación de seguridad. Inténtalo de nuevo." });
+      }
+
       const user = await findUserByEmail(email);
       if (!user || user.email_confirmed_at) {
         return genericVerificationResponse;
@@ -608,7 +619,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         return reply.status(400).send({ message: "Correo inválido." });
       }
 
-      const { email } = parsedBody.data;
+      const { email, captchaToken } = parsedBody.data;
+      const isCaptchaValid = await verifyCaptcha(captchaToken, getClientIp(request), "recover_password");
+      if (!isCaptchaValid) {
+        return reply.status(400).send({ message: "No pudimos validar la verificación de seguridad. Inténtalo de nuevo." });
+      }
+
       const user = await findUserByEmail(email);
       if (!user) {
         return genericPasswordRecoveryResponse;

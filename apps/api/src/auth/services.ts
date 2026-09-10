@@ -2,26 +2,67 @@ import bcrypt from "bcryptjs";
 import type { FastifyRequest } from "fastify";
 import { env } from "../config/env.js";
 
-export async function verifyCaptcha(token: string, ip: string): Promise<boolean> {
-  if (env.NODE_ENV === "test") {
-    return true;
-  }
+const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
-  const secret = env.CAPTCHA_SECRET;
-  if (!secret) return true;
+type TurnstileResponse = {
+  success: boolean;
+  hostname?: string;
+  action?: string;
+  "error-codes"?: string[];
+};
+
+function allowedTurnstileHostnames(): string[] {
+  return (env.TURNSTILE_ALLOWED_HOSTNAMES ?? "")
+    .split(",")
+    .map((hostname) => hostname.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export async function verifyCaptcha(token: string, ip: string, expectedAction: string): Promise<boolean> {
+
+const secret = env.TURNSTILE_SECRET_KEY;
+  const allowedHostnames = allowedTurnstileHostnames();
+
+  if (!secret || allowedHostnames.length === 0) {
+    return false;
+  }
 
   if (!token || token === "mock-captcha-token") {
     return false;
   }
 
   try {
-    const response = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+    const body = new URLSearchParams();
+    body.set("secret", secret);
+    body.set("response", token);
+    body.set("remoteip", ip);
+
+    const response = await fetch(TURNSTILE_VERIFY_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}&remoteip=${encodeURIComponent(ip)}`
+      body: body.toString()
     });
-    const data = (await response.json()) as { success: boolean };
-    return !!data.success;
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = (await response.json()) as TurnstileResponse;
+
+    if (!data.success) {
+      return false;
+    }
+
+    const hostname = data.hostname?.trim().toLowerCase();
+    if (!hostname || !allowedHostnames.includes(hostname)) {
+      return false;
+    }
+
+    if (data.action !== expectedAction) {
+      return false;
+    }
+
+    return true;
   } catch {
     return false;
   }
