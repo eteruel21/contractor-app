@@ -12,7 +12,8 @@
   },
   "secrets": {
     "required": [
-      "JWT_SECRET"
+      "JWT_SECRET",
+      "TURNSTILE_SECRET_KEY"
     ]
   },
   "hyperdrive": [
