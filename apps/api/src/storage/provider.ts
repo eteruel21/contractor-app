@@ -38,6 +38,10 @@ function createS3Client(): S3Client | null {
 const s3Client = createS3Client();
 const uploadsLocalDir = path.join(process.cwd(), "storage", "uploads");
 
+export function isObjectStorageConfigured(): boolean {
+  return s3Client !== null;
+}
+
 export function sanitizeExtension(fileName: string): string {
   const ext = path.extname(fileName).toLowerCase();
   const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"];

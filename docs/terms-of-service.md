@@ -1,8 +1,8 @@
 # Términos y Condiciones de Uso — Contractor App
 
-**Fecha de última actualización:** 21 de julio de 2026
+**Fecha de última actualización:** 14 de septiembre de 2026
 
-Bienvenido a **Contractor App** ("Plataforma" o "Servicio"), una solución integral de gestión para contratistas, profesionales de la construcción, clientes y empresas. Al acceder o utilizar nuestro sitio web, aplicaciones móviles o servicios asociados, usted acepta estar sujeto a los presentes Términos y Condiciones de Uso.
+Bienvenido a **Contractor App** ("Plataforma" o "Servicio"), una solución integral de gestión para contratistas, profesionales de la construcción, clientes y empresas. La Plataforma es operada en la República de Panamá bajo el nombre comercial **LEURET TECH** ("Operador"). Al acceder o utilizar nuestro sitio web, aplicaciones móviles o servicios asociados, usted acepta estar sujeto a los presentes Términos y Condiciones de Uso.
 
 ---
 
@@ -37,7 +37,7 @@ Queda estrictamente prohibido:
 
 ## 4. Propiedad Intelectual
 
-1. **Plataforma:** Todos los derechos de propiedad intelectual sobre la Plataforma (código fuente, diseño, marcas, logotipos, algoritmos de cálculo) pertenecen en su totalidad a Contractor App.
+1. **Plataforma:** Los derechos de propiedad intelectual sobre la Plataforma (incluidos código fuente, diseño, marcas, logotipos y algoritmos de cálculo) pertenecen al Operador o a sus respectivos titulares/licenciantes, según corresponda.
 2. **Contenido del Usuario:** Los usuarios conservan la propiedad sobre los datos, documentos y fotografías cargados a la Plataforma. Al cargarlos, otorgan a Contractor App una licencia no exclusiva e ilimitada para alojar, procesar y mostrar dicho contenido con el único fin de prestar el Servicio.
 
 ---
@@ -72,5 +72,5 @@ Contractor App se reserva el derecho de modificar estos Términos en cualquier m
 ## 9. Contacto y Soporte
 
 Para dudas, soporte o ejercicio de derechos legales relacionados con estos Términos, puede contactarnos a través de:
-- **Correo Electrónico:** legal@contractorapp.com
-- **Soporte Técnico:** soporte@contractorapp.com
+- **Correo Electrónico:** legal@leurettech.com
+- **Soporte Técnico:** soporte@leurettech.com

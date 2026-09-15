@@ -212,7 +212,7 @@ describe("Legal and Account Data End-to-End Tests (T-141)", () => {
     await app.close();
   });
 
-  test("DELETE /account revokes credentials, anonymizes all profile PII and reports pending storage cleanup", async () => {
+  test("DELETE /account revokes credentials, anonymizes profile PII and completes storage cleanup", async () => {
     accountMocks.authenticated = true;
     accountMocks.queryHandler = async (sql) => {
       if (/SELECT[\s\S]+profile\.avatar_url[\s\S]+FROM public\.profiles AS profile/i.test(sql)) {
@@ -281,32 +281,12 @@ describe("Legal and Account Data End-to-End Tests (T-141)", () => {
       profilePersonalDataAnonymized: true,
       sessionsRevoked: true,
       storageCleanup: {
-        status: "pending",
-        objectCount: 4
+        status: "completed",
+        objectCount: 4,
+        failedObjectCount: 0
       }
     });
-    expect(body.storageCleanup.objects).toEqual([
-      {
-        source: "profile",
-        recordId: USER_ID,
-        objectReference: "https://storage.example/avatar.jpg"
-      },
-      {
-        source: "profile",
-        recordId: USER_ID,
-        objectReference: "documents/id.pdf"
-      },
-      {
-        source: "profile",
-        recordId: USER_ID,
-        objectReference: "portfolio/work-one.jpg"
-      },
-      {
-        source: "project_photo",
-        recordId: "33333333-3333-4333-8333-333333333333",
-        objectReference: "projects/photo.jpg"
-      }
-    ]);
+    expect(body.storageCleanup).not.toHaveProperty("objects");
 
     const setCookie = String(response.headers["set-cookie"]);
     expect(setCookie).toContain("refreshToken=");

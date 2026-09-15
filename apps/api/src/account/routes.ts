@@ -6,6 +6,10 @@ import { authenticateRequest } from "../auth/authenticate.js";
 import { env } from "../config/env.js";
 import { withUserTransaction } from "../db/with-user-transaction.js";
 import { safeErrorDetails } from "../security/redaction.js";
+import {
+  deleteStorageFile,
+  isObjectStorageConfigured
+} from "../storage/provider.js";
 
 type ProfileStorageReferences = {
   id: string;
@@ -54,7 +58,22 @@ function getRefreshTokenClearOptions() {
 }
 
 function sanitizeStorageReference(value: string): string {
-  return value.trim().split(/[?#]/, 1)[0] ?? "";
+  const sanitized = value.trim().split(/[?#]/, 1)[0] ?? "";
+  if (!sanitized) {
+    return "";
+  }
+
+  try {
+    const url = new URL(sanitized);
+    const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+    const bucketPrefix = `${env.S3_BUCKET}/`;
+
+    return pathname.startsWith(bucketPrefix)
+      ? pathname.slice(bucketPrefix.length)
+      : pathname;
+  } catch {
+    return sanitized.replace(/^\/+/, "");
+  }
 }
 
 function buildStorageCleanupItems(
@@ -124,7 +143,7 @@ export async function registerAccountLegalRoutes(
 
       return {
         title: "Términos y Condiciones de Uso",
-        updatedAt: "2026-07-21",
+        updatedAt: "2026-09-14",
         content
       };
     } catch (error) {
@@ -145,7 +164,7 @@ export async function registerAccountLegalRoutes(
 
       return {
         title: "Política de Privacidad",
-        updatedAt: "2026-07-21",
+        updatedAt: "2026-09-14",
         content
       };
     } catch (error) {
@@ -634,6 +653,19 @@ export async function registerAccountLegalRoutes(
               photoStorageRes.rows
             );
 
+            const requiresExternalStorage =
+              env.NODE_ENV === "production" || env.NODE_ENV === "staging";
+
+            if (
+              requiresExternalStorage &&
+              storageCleanupItems.length > 0 &&
+              !isObjectStorageConfigured()
+            ) {
+              throw new Error(
+                "El almacenamiento de objetos no está configurado; la cuenta no puede eliminarse de forma segura."
+              );
+            }
+
             await client.query(
               `UPDATE public.profiles
                SET full_name = NULL,
@@ -721,6 +753,26 @@ export async function registerAccountLegalRoutes(
           }
         );
 
+        const storageCleanupResults = await Promise.allSettled(
+          deletionResult.storageCleanupItems.map(async (item) => {
+            await deleteStorageFile(item.objectReference);
+          })
+        );
+
+        const failedStorageItems = deletionResult.storageCleanupItems.filter(
+          (_item, index) => storageCleanupResults[index]?.status === "rejected"
+        );
+
+        if (failedStorageItems.length > 0) {
+          app.log.error(
+            {
+              userId,
+              failedStorageObjectCount: failedStorageItems.length
+            },
+            "La cuenta fue anonimizada, pero falló la eliminación de algunos objetos."
+          );
+        }
+
         reply.clearCookie(
           "refreshToken",
           getRefreshTokenClearOptions()
@@ -734,15 +786,19 @@ export async function registerAccountLegalRoutes(
           sessionsRevoked: true,
           storageCleanup: {
             status:
-              deletionResult.storageCleanupItems.length > 0
-                ? "pending"
-                : "not_required",
+              deletionResult.storageCleanupItems.length === 0
+                ? "not_required"
+                : failedStorageItems.length === 0
+                  ? "completed"
+                  : "failed",
             objectCount: deletionResult.storageCleanupItems.length,
-            objects: deletionResult.storageCleanupItems,
+            failedObjectCount: failedStorageItems.length,
             note:
-              deletionResult.storageCleanupItems.length > 0
-                ? "Estos objetos requieren eliminación posterior en el proveedor de almacenamiento."
-                : "No se encontraron objetos externos asociados a la cuenta."
+              deletionResult.storageCleanupItems.length === 0
+                ? "No se encontraron objetos externos asociados a la cuenta."
+                : failedStorageItems.length === 0
+                  ? "Los objetos externos asociados a la cuenta fueron eliminados."
+                  : "La cuenta fue anonimizada, pero algunos objetos externos requieren revisión técnica."
           }
         };
       } catch (error) {
