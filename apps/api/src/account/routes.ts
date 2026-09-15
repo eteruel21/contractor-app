@@ -1,6 +1,4 @@
 import type { FastifyInstance } from "fastify";
-import fs from "node:fs";
-import path from "node:path";
 
 import { authenticateRequest } from "../auth/authenticate.js";
 import { env } from "../config/env.js";
@@ -10,6 +8,10 @@ import {
   deleteStorageFile,
   isObjectStorageConfigured
 } from "../storage/provider.js";
+import {
+  PRIVACY_POLICY_CONTENT,
+  TERMS_OF_SERVICE_CONTENT
+} from "./legal-content.js";
 
 type ProfileStorageReferences = {
   id: string;
@@ -133,47 +135,21 @@ function buildStorageCleanupItems(
 export async function registerAccountLegalRoutes(
   app: FastifyInstance
 ): Promise<void> {
-  // T-132: Public endpoint for Terms of Service
-  app.get("/legal/terms", async (_request, reply) => {
-    try {
-      const filePath = path.join(process.cwd(), "docs", "terms-of-service.md");
-      const content = fs.existsSync(filePath)
-        ? fs.readFileSync(filePath, "utf-8")
-        : "# Términos de Uso\n\nDocumentación en actualización.";
+  // T-132: Public endpoint for Terms of Service.
+  // Legal content is bundled with the Worker so it is available at runtime.
+  app.get("/legal/terms", async () => ({
+    title: "Términos y Condiciones de Uso",
+    updatedAt: "2026-09-14",
+    content: TERMS_OF_SERVICE_CONTENT
+  }));
 
-      return {
-        title: "Términos y Condiciones de Uso",
-        updatedAt: "2026-09-14",
-        content
-      };
-    } catch (error) {
-      app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
-      return reply.status(500).send({
-        message: "No se pudieron cargar los términos de uso."
-      });
-    }
-  });
-
-  // T-133: Public endpoint for Privacy Policy
-  app.get("/legal/privacy", async (_request, reply) => {
-    try {
-      const filePath = path.join(process.cwd(), "docs", "privacy-policy.md");
-      const content = fs.existsSync(filePath)
-        ? fs.readFileSync(filePath, "utf-8")
-        : "# Política de Privacidad\n\nDocumentación en actualización.";
-
-      return {
-        title: "Política de Privacidad",
-        updatedAt: "2026-09-14",
-        content
-      };
-    } catch (error) {
-      app.log.error(safeErrorDetails(error), "Falló una operación de cuenta.");
-      return reply.status(500).send({
-        message: "No se pudo cargar la política de privacidad."
-      });
-    }
-  });
+  // T-133: Public endpoint for Privacy Policy.
+  // Legal content is bundled with the Worker so it is available at runtime.
+  app.get("/legal/privacy", async () => ({
+    title: "Política de Privacidad",
+    updatedAt: "2026-09-14",
+    content: PRIVACY_POLICY_CONTENT
+  }));
 
   // T-135: Data Export Endpoint
   app.get(
