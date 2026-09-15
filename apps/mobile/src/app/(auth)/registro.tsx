@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -27,6 +28,17 @@ import {
 import TurnstileChallenge from "@/components/TurnstileChallenge";
 import { showAlert } from "@/utils/alert";
 
+const TERMS_URL = "https://contractor-admin-web.pages.dev/legal/terms";
+const PRIVACY_URL = "https://contractor-admin-web.pages.dev/legal/privacy";
+
+function openLegalUrl(url: string) {
+  void Linking.openURL(url).catch(() => {
+    showAlert(
+      "No se pudo abrir el documento",
+      "Verifica tu conexión e intenta nuevamente."
+    );
+  });
+}
 
 function getPasswordStrength(pass: string) {
   if (!pass) return { score: 0, label: "Falta contraseña", color: "#94A3B8" };
@@ -421,19 +433,31 @@ export default function RegisterScreen() {
             />
 
             {/* Aceptaciones y verificación de seguridad */}
-            <Pressable
-              onPress={() => setTermsAccepted(!termsAccepted)}
-              style={styles.checkboxRow}
-            >
-              <Ionicons
-                name={termsAccepted ? "checkbox" : "square-outline"}
-                size={22}
-                color={termsAccepted ? colors.primary : colors.textSecondary}
-              />
+            <View style={styles.checkboxRow}>
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: termsAccepted }}
+                hitSlop={10}
+                onPress={() => setTermsAccepted(!termsAccepted)}
+              >
+                <Ionicons
+                  name={termsAccepted ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={termsAccepted ? colors.primary : colors.textSecondary}
+                />
+              </Pressable>
               <Text style={styles.checkboxLabel}>
-                Acepto los términos y condiciones de servicio y la política de privacidad.
+                Acepto los{" "}
+                <Text style={styles.legalLink} onPress={() => openLegalUrl(TERMS_URL)}>
+                  términos y condiciones de servicio
+                </Text>
+                {" "}y la{" "}
+                <Text style={styles.legalLink} onPress={() => openLegalUrl(PRIVACY_URL)}>
+                  política de privacidad
+                </Text>
+                .
               </Text>
-            </Pressable>
+            </View>
 
             <Pressable
               onPress={() => setNotificationsOptIn(!notificationsOptIn)}
@@ -889,6 +913,12 @@ const styles = StyleSheet.create({
   robotLabelSub: {
     color: colors.textSecondary,
     fontSize: 11,
+  },
+
+  legalLink: {
+    color: colors.primary,
+    fontWeight: "900",
+    textDecorationLine: "underline",
   },
 
   approvalNotice: {

@@ -5,9 +5,11 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -17,12 +19,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, layout, radius, shadows } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  deleteOwnAccount,
+  exportAccountData,
+} from "@/services/api";
+
+const TERMS_URL = "https://contractor-admin-web.pages.dev/legal/terms";
+const PRIVACY_URL = "https://contractor-admin-web.pages.dev/legal/privacy";
 
 export default function ProfileScreen() {
-  const { profile, user, updateProfile } = useAuth();
+  const { profile, user, updateProfile, signOut } = useAuth();
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saving, setSaving] = useState(false);
+  const [accountAction, setAccountAction] = useState<"export" | "delete" | null>(null);
 
   const initial = useMemo(
     () => (fullName.trim().charAt(0) || "P").toUpperCase(),
@@ -48,6 +58,110 @@ export default function ProfileScreen() {
     Alert.alert("Perfil actualizado", "Tus datos se guardaron correctamente.");
   };
 
+  const openLegalDocument = async (url: string, title: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        throw new Error("El dispositivo no puede abrir este enlace.");
+      }
+      await Linking.openURL(url);
+    } catch (error) {
+      Alert.alert(
+        `No se pudo abrir ${title}`,
+        error instanceof Error ? error.message : "Intenta nuevamente."
+      );
+    }
+  };
+
+  const handleExportData = async () => {
+    if (accountAction) return;
+
+    setAccountAction("export");
+    try {
+      const data = await exportAccountData();
+      const json = JSON.stringify(data, null, 2);
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = `contractor-pro-data-export-${date}.json`;
+
+      if (Platform.OS === "web") {
+        const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+        const objectUrl = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        await Share.share({
+          title: "Exportación de datos de Contractor Pro",
+          message: json,
+        });
+      }
+
+      Alert.alert(
+        "Exportación lista",
+        Platform.OS === "web"
+          ? "Se descargó una copia JSON de tus datos."
+          : "Se generó la copia JSON de tus datos para que puedas guardarla o compartirla."
+      );
+    } catch (error) {
+      Alert.alert(
+        "No se pudieron exportar los datos",
+        error instanceof Error ? error.message : "Intenta nuevamente."
+      );
+    } finally {
+      setAccountAction(null);
+    }
+  };
+
+  const performDeleteAccount = async () => {
+    if (accountAction) return;
+
+    setAccountAction("delete");
+    try {
+      const result = await deleteOwnAccount();
+      await signOut();
+      router.replace("/login");
+
+      if (result.storageCleanup.status === "failed") {
+        Alert.alert(
+          "Cuenta eliminada",
+          "Tu acceso y tus datos personales fueron eliminados, pero algunos archivos externos requieren revisión técnica."
+        );
+      } else {
+        Alert.alert(
+          "Cuenta eliminada",
+          "Tu cuenta fue deshabilitada y tus datos personales fueron anonimizados correctamente."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "No se pudo eliminar la cuenta",
+        error instanceof Error ? error.message : "Intenta nuevamente."
+      );
+    } finally {
+      setAccountAction(null);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Eliminar mi cuenta",
+      "Esta acción deshabilitará tu acceso, anonimizará tus datos personales y eliminará los archivos asociados que no deban conservarse por obligación legal. No se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar definitivamente",
+          style: "destructive",
+          onPress: () => {
+            void performDeleteAccount();
+          },
+        },
+      ]
+    );
+  };
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
@@ -147,7 +261,10 @@ export default function ProfileScreen() {
             </Text>
             
             <Pressable
-              onPress={() => Alert.alert("Exportar Datos", "Visite https://contractor-admin-web.pages.dev o realice la solicitud a soporte para recibir su archivo de exportación JSON.")}
+              disabled={accountAction !== null}
+              onPress={() => {
+                void handleExportData();
+              }}
               style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
             >
               <Ionicons name="download-outline" size={20} color={colors.primary} />
@@ -155,7 +272,9 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Alert.alert("Términos de Uso", "Los Términos y Condiciones vigentes están disponibles en https://contractor-admin-web.pages.dev/legal/terms.")}
+              onPress={() => {
+                void openLegalDocument(TERMS_URL, "los Términos de Uso");
+              }}
               style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
             >
               <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
@@ -163,7 +282,9 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Alert.alert("Política de Privacidad", "La Política de Privacidad vigente está disponible en https://contractor-admin-web.pages.dev/legal/privacy.")}
+              onPress={() => {
+                void openLegalDocument(PRIVACY_URL, "la Política de Privacidad");
+              }}
               style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
             >
               <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
@@ -171,16 +292,8 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => {
-                Alert.alert(
-                  "Eliminar mi cuenta",
-                  "¿Está seguro de que desea solicitar la eliminación de su cuenta? Sus datos personales serán anonimizados de acuerdo a la política de retención.",
-                  [
-                    { text: "Cancelar", style: "cancel" },
-                    { text: "Eliminar", style: "destructive", onPress: () => Alert.alert("Solicitud procesada", "Su cuenta entrará en proceso de depuración.") }
-                  ]
-                );
-              }}
+              disabled={accountAction !== null}
+              onPress={handleDeleteAccount}
               style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingTop: 12 }}
             >
               <Ionicons name="trash-outline" size={20} color={colors.danger} />

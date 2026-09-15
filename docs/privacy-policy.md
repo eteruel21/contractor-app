@@ -1,8 +1,8 @@
 # Política de Privacidad — Contractor App
 
-**Fecha de última actualización:** 21 de julio de 2026
+**Fecha de última actualización:** 14 de septiembre de 2026
 
-En **Contractor App**, valoramos y respetamos la privacidad de nuestros usuarios. Esta Política de Privacidad describe cómo recopilamos, utilizamos, almacenamos, compartimos y protegemos su información personal, de conformidad con las normativas internacionales de protección de datos (incluyendo principios RGPD / ARCO).
+**Contractor App**, operado en la República de Panamá bajo el nombre comercial **LEURET TECH**, respeta la privacidad de sus usuarios. Esta Política de Privacidad describe cómo recopilamos, utilizamos, almacenamos, compartimos, protegemos y eliminamos información personal de conformidad con la Ley 81 de 26 de marzo de 2019 sobre Protección de Datos Personales y demás normativa panameña aplicable.
 
 ---
 
@@ -41,8 +41,8 @@ Utilizamos su información para:
 
 De acuerdo con nuestra **Política de Retención de Documentos**:
 - **Cuentas Activas:** Mantendremos su información mientras su cuenta permanezca activa.
-- **Cuentas Eliminadas:** Al solicitar la eliminación de cuenta, iniciamos un proceso de anonimización y borrado dentro de los 30 días posteriores.
-- **Registros Fiscales/Contables:** La información relativa a facturas emitidas y transacciones fiscales se conserva durante 5 a 7 años por requerimiento legal, de forma anonimizada e inalterable.
+- **Cuentas Eliminadas:** Al confirmar la eliminación de la cuenta, se deshabilita el acceso y se anonimizan los datos personales asociados al perfil. Los archivos externos asociados se eliminan como parte del mismo flujo, salvo aquellos que deban conservarse por una obligación legal.
+- **Registros Fiscales/Contables:** Los registros necesarios para cumplir obligaciones comerciales, contables o fiscales se conservarán durante el plazo legal aplicable. Cuando sea posible, se mantendrán separados o anonimizados respecto de la identidad del usuario eliminado.
 
 ---
 
@@ -67,5 +67,5 @@ No vendemos ni alquilamos sus datos personales a terceros. Compartimos informaci
 ## 7. Contacto de Privacidad
 
 Si desea ejercer sus derechos o tiene consultas sobre esta política:
-- **Delegado de Protección de Datos (DPO):** privacidad@contractorapp.com
-- **Dirección Postal:** Departamento Legal, Contractor App Inc.
+- **Delegado de Protección de Datos (DPO):** privacidad@leurettech.com
+- **Dirección Postal:** LEURET TECH, República de Panamá

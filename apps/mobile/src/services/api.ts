@@ -519,6 +519,38 @@ export async function requestPasswordReset(email: string, captchaToken: string):
   });
 }
 
+export type AccountDeletionResponse = {
+  success: boolean;
+  accountStatus: "deleted";
+  authenticationDisabled: boolean;
+  profilePersonalDataAnonymized: boolean;
+  sessionsRevoked: boolean;
+  storageCleanup: {
+    status: "completed" | "not_required" | "failed";
+    objectCount: number;
+    failedObjectCount: number;
+    note: string;
+  };
+};
+
+export async function exportAccountData(): Promise<Record<string, unknown>> {
+  return authenticatedRequest<Record<string, unknown>>(
+    "/account/export"
+  );
+}
+
+export async function deleteOwnAccount(): Promise<AccountDeletionResponse> {
+  const result = await authenticatedRequest<AccountDeletionResponse>(
+    "/account",
+    {
+      method: "DELETE"
+    }
+  );
+
+  await clearStoredSession();
+  return result;
+}
+
 export async function resetPasswordApi(token: string, newPassword: string): Promise<{ message?: string }> {
   return publicRequest<{ message?: string }>("/auth/reset-password", {
     method: "POST",
