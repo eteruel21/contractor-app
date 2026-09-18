@@ -23,7 +23,7 @@ services:
       - key: JWT_AUDIENCE
         value: contractor-app
       - key: CORS_ORIGINS
-        value: https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev,https://admin.contractor.com.pa,https://app.contractor.com.pa
+        value: https://admin.leurettech.com,https://app.leurettech.com
       - key: PGHOST
         sync: false
       - key: PGPORT
@@ -63,7 +63,7 @@ services:
       - key: JWT_AUDIENCE
         value: contractor-app-staging
       - key: CORS_ORIGINS
-        value: https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev,https://staging-admin.contractor.app,https://staging-app.contractor.app
+        value: https://admin.leurettech.com,https://app.leurettech.com,https://staging-admin.contractor.app,https://staging-app.contractor.app
       - key: PGHOST
         sync: false
       - key: PGPORT

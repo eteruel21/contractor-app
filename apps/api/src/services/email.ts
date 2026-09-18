@@ -64,13 +64,13 @@ async function deliverWithResend({
 
 export function buildVerificationLinks(token: string) {
   const deepLink = `contractorpro://confirm-email?token=${encodeURIComponent(token)}`;
-  const webLink = `https://contractor-pro-web.pages.dev/confirm-email?token=${encodeURIComponent(token)}`;
+  const webLink = `https://app.leurettech.com/confirm-email?token=${encodeURIComponent(token)}`;
   return { deepLink, webLink };
 }
 
 export function buildPasswordResetLinks(token: string) {
   const deepLink = `contractorpro://reset-password?token=${encodeURIComponent(token)}`;
-  const webLink = `https://contractor-pro-web.pages.dev/reset-password?token=${encodeURIComponent(token)}`;
+  const webLink = `https://app.leurettech.com/reset-password?token=${encodeURIComponent(token)}`;
   return { deepLink, webLink };
 }
 

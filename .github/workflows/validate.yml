@@ -44,12 +44,12 @@ jobs:
       CONTRACTOR_API_PASSWORD: api_ci_password
       MIGRATOR_DATABASE_URL: postgresql://contractor_migrator:migrator_ci_password@127.0.0.1:5432/contractor_ci_test
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/contractor_ci_test
-      VITE_API_URL: https://api.tctservices-pty.com
-      EXPO_PUBLIC_API_URL: https://api.tctservices-pty.com
+      VITE_API_URL: https://api.leurettech.com
+      EXPO_PUBLIC_API_URL: https://api.leurettech.com
       VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
       VITE_TURNSTILE_CHALLENGE_URL: /turnstile.html
       EXPO_PUBLIC_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
-      EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL: https://contractor-pro-web.pages.dev/turnstile.html
+      EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL: https://app.leurettech.com/turnstile
 
     steps:
       - name: 1. Checkout repository

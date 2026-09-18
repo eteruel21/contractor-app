@@ -11,7 +11,7 @@ export type TurnstileChallengeProps = {
 };
 
 const DEFAULT_CHALLENGE_URL =
-  "https://contractor-pro-web.pages.dev/turnstile.html";
+  "https://app.leurettech.com/turnstile";
 
 export function buildTurnstileChallengeUrl(
   action: TurnstileAction,

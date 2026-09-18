@@ -24,7 +24,7 @@ Este documento detalla la lista de verificación y parámetros requeridos para l
 | `PORT` | Puerto de escucha | `10000` |
 | `DATABASE_URL` | URI de PostgreSQL con credenciales RLS | `postgresql://contractor_api:SECRET@host:5432/contractor_pro?sslmode=require` |
 | `JWT_SECRET` | Clave secreta para tokens JWT | Mínimo 64 caracteres alfanuméricos aleatorios |
-| `CORS_ORIGINS` | Lista blanca de orígenes | `https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev` |
+| `CORS_ORIGINS` | Lista blanca de orígenes | `https://admin.leurettech.com,https://app.leurettech.com` |
 | `STORAGE_DRIVER` | Driver de almacenamiento | `r2` |
 | `R2_ACCOUNT_ID` | Account ID de Cloudflare | Credencial cifrada |
 | `R2_ACCESS_KEY_ID` | Clave de acceso R2 | Credencial cifrada |

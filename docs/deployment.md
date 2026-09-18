@@ -55,7 +55,7 @@ HOST=0.0.0.0
 PORT=10000
 DATABASE_URL=postgresql://contractor_api:PASSWORD@db-host:5432/contractor_pro?sslmode=require
 JWT_SECRET=SECRETO_CRIPTOGRAFICO_DE_ALTA_ENTROPIA
-CORS_ORIGINS=https://contractor-admin-web.pages.dev,https://contractor-pro-web.pages.dev
+CORS_ORIGINS=https://admin.leurettech.com,https://app.leurettech.com
 STORAGE_DRIVER=r2
 ```
 

@@ -16,8 +16,8 @@
 ## 2. Verificación de Despliegue de API y Frontends (T-145)
 
 - [x] **API Fastify:** Desplegada y respondiendo HTTP 200 en endpoint `/health`.
-- [x] **Admin Web:** Desplegada en Cloudflare Pages (`contractor-admin-web.pages.dev`).
-- [x] **Mobile Web:** Desplegada en Cloudflare Pages (`contractor-pro-web.pages.dev`).
+- [x] **Admin Web:** Desplegada en Cloudflare Pages (`admin.leurettech.com`).
+- [x] **Mobile Web:** Desplegada en Cloudflare Pages (`app.leurettech.com`).
 
 ---
 

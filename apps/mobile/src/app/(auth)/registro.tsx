@@ -28,8 +28,8 @@ import {
 import TurnstileChallenge from "@/components/TurnstileChallenge";
 import { showAlert } from "@/utils/alert";
 
-const TERMS_URL = "https://contractor-admin-web.pages.dev/legal/terms";
-const PRIVACY_URL = "https://contractor-admin-web.pages.dev/legal/privacy";
+const TERMS_URL = "https://admin.leurettech.com/legal/terms";
+const PRIVACY_URL = "https://admin.leurettech.com/legal/privacy";
 
 function openLegalUrl(url: string) {
   void Linking.openURL(url).catch(() => {
