@@ -17,7 +17,7 @@ jobs:
       VITE_API_URL: https://api.leurettech.com
       EXPO_PUBLIC_API_URL: https://api.leurettech.com
       VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
-      VITE_TURNSTILE_CHALLENGE_URL: /turnstile.html
+      VITE_TURNSTILE_CHALLENGE_URL: /turnstile
       EXPO_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
       EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL: https://app.leurettech.com/turnstile
 
