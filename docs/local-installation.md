@@ -93,16 +93,24 @@ cp apps/api/.env.example apps/api/.env
 
 Configuración requerida:
 ```env
-HOST=0.0.0.0
-PORT=3001
-DATABASE_URL=postgresql://contractor_api:password_seguro_api@127.0.0.1:5432/contractor_pro
-JWT_SECRET=tu_secreto_super_seguro_jwt_local
+NODE_ENV=development
+API_HOST=127.0.0.1
+API_PORT=3001
+PGHOST=127.0.0.1
+PGPORT=5432
+PGDATABASE=contractor_pro
+PGUSER=contractor_api
+PGPASSWORD=password_seguro_api
+PGSSL=disable
+JWT_SECRET=tu_secreto_local_de_al_menos_43_caracteres
 JWT_ISSUER=contractor-api
 JWT_AUDIENCE=contractor-app
-CORS_ORIGINS=http://localhost:3000,http://localhost:8081,http://127.0.0.1:3001
-STORAGE_DRIVER=local
-LOCAL_STORAGE_PATH=./storage
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8081,http://127.0.0.1:8081
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+TURNSTILE_ALLOWED_HOSTNAMES=localhost,127.0.0.1,contractor-pro-web.pages.dev
 ```
+
+El comando `npm run dev -w apps/api` carga además `apps/api/.env.development`, que fija las credenciales públicas de prueba de Turnstile para evitar usar secretos de producción en local.
 
 ### 4.2 Aplicación Móvil / Web (`apps/mobile/.env`)
 Crea el archivo `apps/mobile/.env`:
@@ -113,6 +121,8 @@ cp apps/mobile/.env.example apps/mobile/.env
 Configuración requerida:
 ```env
 EXPO_PUBLIC_API_URL=http://127.0.0.1:3001
+EXPO_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL=https://contractor-pro-web.pages.dev/turnstile.html
 ```
 
 ### 4.3 Panel Administrativo (`apps/admin-web/.env`)
@@ -124,7 +134,11 @@ cp apps/admin-web/.env.example apps/admin-web/.env
 Configuración requerida:
 ```env
 VITE_API_URL=http://127.0.0.1:3001
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+VITE_TURNSTILE_CHALLENGE_URL=/turnstile.html
 ```
+
+Los archivos `.env.development` versionados mantienen emparejadas la clave pública y la clave secreta de prueba durante el desarrollo. Los despliegues de staging y producción deben inyectar su propio par real y conservar sus hostnames restringidos.
 
 ---
 

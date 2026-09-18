@@ -38,6 +38,7 @@ export default function LoginScreen() {
   const [loginCaptchaResetKey, setLoginCaptchaResetKey] = useState(0);
   const [recoveryCaptchaToken, setRecoveryCaptchaToken] = useState<string | null>(null);
   const [recoveryCaptchaResetKey, setRecoveryCaptchaResetKey] = useState(0);
+  const [showRecovery, setShowRecovery] = useState(false);
 
   async function handleSignIn() {
     const cleanEmail = email.trim();
@@ -114,6 +115,7 @@ export default function LoginScreen() {
       "Correo enviado",
       "Revisa tu bandeja de entrada para restablecer la contraseña.",
     );
+    setShowRecovery(false);
   }
 
   return (
@@ -182,159 +184,228 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.formEyebrow}>BIENVENIDO DE NUEVO</Text>
-            <Text style={styles.title}>
-              Iniciar sesión
-            </Text>
+            {showRecovery ? (
+              <>
+                <Text style={styles.formEyebrow}>RECUPERAR ACCESO</Text>
+                <Text style={styles.title}>
+                  ¿Olvidaste tu contraseña?
+                </Text>
 
-            <Text style={styles.subtitle}>
-              Accede a tu empresa y continúa trabajando.
-            </Text>
+                <Text style={styles.subtitle}>
+                  Ingresa tu correo y completa la verificación para recibir el enlace de recuperación.
+                </Text>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Correo electrónico
-              </Text>
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Correo electrónico
+                  </Text>
 
-              <View style={styles.inputContainer}>
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={colors.textSecondary}
-                />
+                  <View style={styles.inputContainer}>
+                    <Ionicons
+                      name="mail-outline"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
 
-                <TextInput
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="correo@empresa.com"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="email-address"
-                  textContentType="emailAddress"
-                  style={styles.input}
-                />
-              </View>
-            </View>
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="correo@empresa.com"
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      style={styles.input}
+                    />
+                  </View>
+                </View>
 
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Contraseña
-              </Text>
-
-              <View style={styles.inputContainer}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-
-                <TextInput
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Tu contraseña"
-                  placeholderTextColor="#94A3B8"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  textContentType="password"
-                  style={styles.input}
+                <TurnstileChallenge
+                  action="recover_password"
+                  onToken={setRecoveryCaptchaToken}
+                  resetKey={recoveryCaptchaResetKey}
                 />
 
                 <Pressable
-                  onPress={() =>
-                    setShowPassword(
-                      (current) => !current,
-                    )
-                  }
-                  hitSlop={10}
+                  onPress={() => void handleResetPassword()}
+                  disabled={submitting || !recoveryCaptchaToken}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    { marginTop: 14 },
+                    (submitting || !recoveryCaptchaToken) && styles.primaryButtonDisabled,
+                    pressed && styles.pressed,
+                  ]}
                 >
-                  <Ionicons
-                    name={
-                      showPassword
-                        ? "eye-off-outline"
-                        : "eye-outline"
-                    }
-                    size={21}
-                    color={colors.textSecondary}
-                  />
+                  {submitting ? (
+                    <ActivityIndicator color={colors.textLight} />
+                  ) : (
+                    <>
+                      <Text style={styles.primaryButtonText}>
+                        Enviar enlace de recuperación
+                      </Text>
+                      <Ionicons
+                        name="send-outline"
+                        size={18}
+                        color={colors.textLight}
+                      />
+                    </>
+                  )}
                 </Pressable>
-              </View>
-            </View>
 
-            <TurnstileChallenge
-              action="login"
-              onToken={setLoginCaptchaToken}
-              resetKey={loginCaptchaResetKey}
-            />
+                <Pressable
+                  onPress={() => setShowRecovery(false)}
+                  style={styles.forgotButton}
+                >
+                  <Text style={[styles.forgotText, { color: colors.textSecondary }]}>
+                    ← Volver al inicio de sesión
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.formEyebrow}>BIENVENIDO DE NUEVO</Text>
+                <Text style={styles.title}>
+                  Iniciar sesión
+                </Text>
 
-            <Pressable
-              onPress={() =>
-                void handleResetPassword()
-              }
-              style={styles.forgotButton}
-            >
-              <Text style={styles.forgotText}>
-                ¿Olvidaste tu contraseña?
-              </Text>
-            </Pressable>
+                <Text style={styles.subtitle}>
+                  Accede a tu empresa y continúa trabajando.
+                </Text>
 
-            <View style={{ marginBottom: 12 }}>
-              <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 6, textAlign: "center" }}>
-                Verificación para recuperación de contraseña
-              </Text>
-              <TurnstileChallenge
-                action="recover_password"
-                onToken={setRecoveryCaptchaToken}
-                resetKey={recoveryCaptchaResetKey}
-              />
-            </View>
-
-            <Pressable
-              onPress={() => void handleSignIn()}
-              disabled={submitting}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                submitting &&
-                  styles.primaryButtonDisabled,
-                pressed && styles.pressed,
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator
-                  color={colors.textLight}
-                />
-              ) : (
-                <>
-                  <Text
-                    style={styles.primaryButtonText}
-                  >
-                    Iniciar sesión
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Correo electrónico
                   </Text>
 
-                  <Ionicons
-                    name="arrow-forward-outline"
-                    size={20}
-                    color={colors.textLight}
-                  />
-                </>
-              )}
-            </Pressable>
+                  <View style={styles.inputContainer}>
+                    <Ionicons
+                      name="mail-outline"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
 
-            <View style={styles.registerRow}>
-              <Text style={styles.registerLabel}>
-                ¿No tienes una cuenta?
-              </Text>
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="correo@empresa.com"
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      style={styles.input}
+                    />
+                  </View>
+                </View>
 
-              <Pressable
-                onPress={() =>
-                  router.push("/registro")
-                }
-              >
-                <Text style={styles.registerLink}>
-                  Crear cuenta
-                </Text>
-              </Pressable>
-            </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Contraseña
+                  </Text>
+
+                  <View style={styles.inputContainer}>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={20}
+                      color={colors.textSecondary}
+                    />
+
+                    <TextInput
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Tu contraseña"
+                      placeholderTextColor="#94A3B8"
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      textContentType="password"
+                      style={styles.input}
+                    />
+
+                    <Pressable
+                      onPress={() =>
+                        setShowPassword(
+                          (current) => !current,
+                        )
+                      }
+                      hitSlop={10}
+                    >
+                      <Ionicons
+                        name={
+                          showPassword
+                            ? "eye-off-outline"
+                            : "eye-outline"
+                        }
+                        size={21}
+                        color={colors.textSecondary}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <TurnstileChallenge
+                  action="login"
+                  onToken={setLoginCaptchaToken}
+                  resetKey={loginCaptchaResetKey}
+                />
+
+                <Pressable
+                  onPress={() => setShowRecovery(true)}
+                  style={styles.forgotButton}
+                >
+                  <Text style={styles.forgotText}>
+                    ¿Olvidaste tu contraseña?
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => void handleSignIn()}
+                  disabled={submitting || !loginCaptchaToken}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    (submitting || !loginCaptchaToken) &&
+                      styles.primaryButtonDisabled,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  {submitting ? (
+                    <ActivityIndicator
+                      color={colors.textLight}
+                    />
+                  ) : (
+                    <>
+                      <Text
+                        style={styles.primaryButtonText}
+                      >
+                        Iniciar sesión
+                      </Text>
+
+                      <Ionicons
+                        name="arrow-forward-outline"
+                        size={20}
+                        color={colors.textLight}
+                      />
+                    </>
+                  )}
+                </Pressable>
+
+                <View style={styles.registerRow}>
+                  <Text style={styles.registerLabel}>
+                    ¿No tienes una cuenta?
+                  </Text>
+
+                  <Pressable
+                    onPress={() =>
+                      router.push("/registro")
+                    }
+                  >
+                    <Text style={styles.registerLink}>
+                      Crear cuenta
+                    </Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

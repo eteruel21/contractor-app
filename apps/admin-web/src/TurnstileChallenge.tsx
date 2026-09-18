@@ -39,5 +39,5 @@ export default function TurnstileChallenge({ onToken, resetKey = 0 }: Props) {
 
   if (!src) return <p style={{ color: "#991B1B", fontSize: 13, textAlign: "center" }}>La verificación de seguridad no está configurada.</p>;
 
-  return <iframe ref={frameRef} key={resetKey} src={src} title="Verificación de seguridad" referrerPolicy="no-referrer" sandbox="allow-scripts allow-same-origin" style={{ border: 0, width: "100%", height: 92, display: "block", background: "transparent" }} />;
+  return <iframe ref={frameRef} key={resetKey} src={src} title="Verificación de seguridad" referrerPolicy="no-referrer" style={{ border: 0, width: "100%", height: 92, display: "block", background: "transparent" }} />;
 }

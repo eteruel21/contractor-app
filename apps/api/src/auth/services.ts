@@ -3,6 +3,8 @@ import type { FastifyRequest } from "fastify";
 import { env } from "../config/env.js";
 
 const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const TURNSTILE_ALWAYS_PASS_TEST_SECRET = "1x0000000000000000000000000000000AA";
+const TURNSTILE_DUMMY_TOKEN = "XXXX.DUMMY.TOKEN.XXXX";
 
 type TurnstileResponse = {
   success: boolean;
@@ -19,8 +21,7 @@ function allowedTurnstileHostnames(): string[] {
 }
 
 export async function verifyCaptcha(token: string, ip: string, expectedAction: string): Promise<boolean> {
-
-const secret = env.TURNSTILE_SECRET_KEY;
+  const secret = env.TURNSTILE_SECRET_KEY;
   const allowedHostnames = allowedTurnstileHostnames();
 
   if (!secret || allowedHostnames.length === 0) {
@@ -51,6 +52,14 @@ const secret = env.TURNSTILE_SECRET_KEY;
 
     if (!data.success) {
       return false;
+    }
+
+    if (
+      env.NODE_ENV === "development" &&
+      secret === TURNSTILE_ALWAYS_PASS_TEST_SECRET &&
+      token === TURNSTILE_DUMMY_TOKEN
+    ) {
+      return true;
     }
 
     const hostname = data.hostname?.trim().toLowerCase();

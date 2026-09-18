@@ -459,6 +459,8 @@ export default function App() {
               <Mail size={18} />
               <input
                 type="email"
+                name="email"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -470,6 +472,8 @@ export default function App() {
               <Lock size={18} />
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
