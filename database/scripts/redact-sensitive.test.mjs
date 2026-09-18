@@ -78,12 +78,14 @@ test("T-041 does not serialize arbitrary non-Error values", () => {
   assert.equal(result.message, "Error no estándar.");
 });
 
-test("T-041 redacts SMTP and S3 credential assignments", () => {
-  const smtp = "smtp-secret-value";
+test("T-041 redacts Resend and S3 credential assignments", () => {
+  const resend = "re_secret_resend_value";
   const s3 = "s3-secret-value";
-  const result = redactSensitiveText("SMTP_PASS=" + smtp + " S3_SECRET_ACCESS_KEY=" + s3);
+  const result = redactSensitiveText(
+    "RESEND_API_KEY=" + resend + " S3_SECRET_ACCESS_KEY=" + s3
+  );
 
-  assert.equal(result.includes(smtp), false);
+  assert.equal(result.includes(resend), false);
   assert.equal(result.includes(s3), false);
   assert.equal(result.includes(REDACTED), true);
 });

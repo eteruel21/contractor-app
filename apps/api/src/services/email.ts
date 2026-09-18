@@ -1,4 +1,3 @@
-import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
 type VerificationEmailInput = {
@@ -20,19 +19,47 @@ export type EmailDeliveryResult =
       reason: "not_configured" | "delivery_failed";
     };
 
-function createTransporter() {
-  if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.EMAIL_FROM) {
-    return nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS
-      }
-    });
+type ResendMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+};
+
+async function deliverWithResend({
+  to,
+  subject,
+  text,
+  html
+}: ResendMessage): Promise<EmailDeliveryResult> {
+  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
+    return { sent: false, reason: "not_configured" };
   }
-  return null;
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM,
+        to: [to],
+        subject,
+        text,
+        html
+      })
+    });
+
+    if (!response.ok) {
+      return { sent: false, reason: "delivery_failed" };
+    }
+
+    return { sent: true };
+  } catch {
+    return { sent: false, reason: "delivery_failed" };
+  }
 }
 
 export function buildVerificationLinks(token: string) {
@@ -50,7 +77,6 @@ export function buildPasswordResetLinks(token: string) {
 export async function sendVerificationEmail({ to, fullName, token }: VerificationEmailInput): Promise<EmailDeliveryResult> {
   const name = fullName?.trim() || "Usuario";
   const { deepLink, webLink } = buildVerificationLinks(token);
-  const sender = env.EMAIL_FROM;
 
   const html = `
     <!DOCTYPE html>
@@ -108,29 +134,17 @@ ${webLink}
 Token de Verificación: ${token}
   `.trim();
 
-  try {
-    const transporter = createTransporter();
-    if (!transporter) {
-      return { sent: false, reason: "not_configured" };
-    }
-
-    await transporter.sendMail({
-      from: sender,
-      to,
-      subject: "Verifica tu cuenta - Contractor Pro",
-      text,
-      html
-    });
-    return { sent: true };
-  } catch {
-    return { sent: false, reason: "delivery_failed" };
-  }
+  return deliverWithResend({
+    to,
+    subject: "Verifica tu cuenta - Contractor Pro",
+    text,
+    html
+  });
 }
 
 export async function sendPasswordResetEmail({ to, fullName, token }: PasswordResetEmailInput): Promise<EmailDeliveryResult> {
   const name = fullName?.trim() || "Usuario";
   const { deepLink, webLink } = buildPasswordResetLinks(token);
-  const sender = env.EMAIL_FROM;
 
   const html = `
     <!DOCTYPE html>
@@ -188,21 +202,10 @@ ${webLink}
 Token de Recuperación: ${token}
   `.trim();
 
-  try {
-    const transporter = createTransporter();
-    if (!transporter) {
-      return { sent: false, reason: "not_configured" };
-    }
-
-    await transporter.sendMail({
-      from: sender,
-      to,
-      subject: "Restablecimiento de Contraseña - Contractor Pro",
-      text,
-      html
-    });
-    return { sent: true };
-  } catch {
-    return { sent: false, reason: "delivery_failed" };
-  }
+  return deliverWithResend({
+    to,
+    subject: "Restablecimiento de Contraseña - Contractor Pro",
+    text,
+    html
+  });
 }

@@ -12,6 +12,8 @@ function configureRequiredEnvironment() {
   vi.stubEnv("API_PORT", "3001");
   vi.stubEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA");
   vi.stubEnv("TURNSTILE_ALLOWED_HOSTNAMES", "localhost");
+  vi.stubEnv("RESEND_API_KEY", "re_production_config_test");
+  vi.stubEnv("EMAIL_FROM", "Contractor Pro <noreply@example.test>");
 
   vi.stubEnv(
     "PGHOST",

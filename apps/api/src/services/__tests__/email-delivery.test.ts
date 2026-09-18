@@ -1,17 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test, vi } from "vitest";
 
-const mailMocks = vi.hoisted(() => ({
-  sendMail: vi.fn(),
-  createTransport: vi.fn()
-}));
-
-vi.mock("nodemailer", () => ({
-  default: {
-    createTransport: mailMocks.createTransport
-  }
-}));
-
 import { env } from "../../config/env.js";
 import {
   buildVerificationLinks,
@@ -22,31 +11,25 @@ import {
 
 type MutableEmailEnvironment = {
   NODE_ENV: string;
-  SMTP_HOST: string | undefined;
-  SMTP_PORT: number;
-  SMTP_USER: string | undefined;
-  SMTP_PASS: string | undefined;
+  RESEND_API_KEY: string | undefined;
   EMAIL_FROM: string | undefined;
 };
 
 const mutableEnv = env as MutableEmailEnvironment;
+
 const originalEmailEnvironment = {
   NODE_ENV: mutableEnv.NODE_ENV,
-  SMTP_HOST: mutableEnv.SMTP_HOST,
-  SMTP_PORT: mutableEnv.SMTP_PORT,
-  SMTP_USER: mutableEnv.SMTP_USER,
-  SMTP_PASS: mutableEnv.SMTP_PASS,
+  RESEND_API_KEY: mutableEnv.RESEND_API_KEY,
   EMAIL_FROM: mutableEnv.EMAIL_FROM
 };
 
-function configureSmtp(): void {
+const fetchMock = vi.fn();
+
+function configureResend(): void {
   Object.assign(mutableEnv, {
     NODE_ENV: "production",
-    SMTP_HOST: "smtp.example.test",
-    SMTP_PORT: 587,
-    SMTP_USER: "smtp-user",
-    SMTP_PASS: "smtp-password",
-    EMAIL_FROM: "Contractor Pro <no-reply@example.test>"
+    RESEND_API_KEY: "re_test_api_key",
+    EMAIL_FROM: "Contractor Pro <noreply@example.test>"
   });
 }
 
@@ -61,21 +44,17 @@ function captureConsole() {
 beforeEach(() => {
   Object.assign(mutableEnv, {
     NODE_ENV: "production",
-    SMTP_HOST: undefined,
-    SMTP_PORT: 587,
-    SMTP_USER: undefined,
-    SMTP_PASS: undefined,
+    RESEND_API_KEY: undefined,
     EMAIL_FROM: undefined
   });
-  mailMocks.sendMail.mockReset();
-  mailMocks.createTransport.mockReset();
-  mailMocks.createTransport.mockImplementation(() => ({
-    sendMail: mailMocks.sendMail
-  }));
+
+  fetchMock.mockReset();
+  vi.stubGlobal("fetch", fetchMock);
 });
 
 afterEach(() => {
   Object.assign(mutableEnv, originalEmailEnvironment);
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -83,46 +62,53 @@ test("buildVerificationLinks: genera enlaces profundos y web correctos", () => {
   const token = "tok_test_verification_123";
   const { deepLink, webLink } = buildVerificationLinks(token);
 
-  assert.equal(deepLink, "contractorpro://confirm-email?token=tok_test_verification_123");
-  assert.equal(webLink, "https://contractor-pro-web.pages.dev/confirm-email?token=tok_test_verification_123");
+  assert.equal(
+    deepLink,
+    "contractorpro://confirm-email?token=tok_test_verification_123"
+  );
+
+  assert.equal(
+    webLink,
+    "https://contractor-pro-web.pages.dev/confirm-email?token=tok_test_verification_123"
+  );
 });
 
 test("buildPasswordResetLinks: genera enlaces profundos y web de recuperación correctos", () => {
   const token = "tok_test_reset_456";
   const { deepLink, webLink } = buildPasswordResetLinks(token);
 
-  assert.equal(deepLink, "contractorpro://reset-password?token=tok_test_reset_456");
-  assert.equal(webLink, "https://contractor-pro-web.pages.dev/reset-password?token=tok_test_reset_456");
+  assert.equal(
+    deepLink,
+    "contractorpro://reset-password?token=tok_test_reset_456"
+  );
+
+  assert.equal(
+    webLink,
+    "https://contractor-pro-web.pages.dev/reset-password?token=tok_test_reset_456"
+  );
 });
 
-test("email: producción sin SMTP falla de forma segura y no registra destinatario ni token", async () => {
-  const recipient = "sensitive-user@example.test";
-  const token = "sensitive-token-value";
-  const consoleSpies = captureConsole();
-
-  const verification = await sendVerificationEmail({
-    to: recipient,
+test("email: producción sin Resend falla de forma segura", async () => {
+  const result = await sendVerificationEmail({
+    to: "sensitive-user@example.test",
     fullName: "Usuario Prueba",
-    token
-  });
-  const recovery = await sendPasswordResetEmail({
-    to: recipient,
-    fullName: "Usuario Prueba",
-    token
+    token: "sensitive-token-value"
   });
 
-  assert.deepEqual(verification, { sent: false, reason: "not_configured" });
-  assert.deepEqual(recovery, { sent: false, reason: "not_configured" });
-  assert.equal(mailMocks.createTransport.mock.calls.length, 0);
+  assert.deepEqual(result, {
+    sent: false,
+    reason: "not_configured"
+  });
 
-  const loggedOutput = JSON.stringify(consoleSpies.flatMap((spy) => spy.mock.calls));
-  assert.equal(loggedOutput.includes(recipient), false);
-  assert.equal(loggedOutput.includes(token), false);
+  assert.equal(fetchMock.mock.calls.length, 0);
 });
 
-test("email: una entrega SMTP exitosa informa sent true", async () => {
-  configureSmtp();
-  mailMocks.sendMail.mockResolvedValueOnce({ messageId: "verification-message" });
+test("email: una entrega Resend exitosa informa sent true", async () => {
+  configureResend();
+
+  fetchMock.mockResolvedValueOnce({
+    ok: true
+  });
 
   const result = await sendVerificationEmail({
     to: "testuser@example.test",
@@ -131,16 +117,75 @@ test("email: una entrega SMTP exitosa informa sent true", async () => {
   });
 
   assert.deepEqual(result, { sent: true });
-  assert.equal(mailMocks.sendMail.mock.calls.length, 1);
+  assert.equal(fetchMock.mock.calls.length, 1);
+
+  const [url, options] = fetchMock.mock.calls[0] as [
+    string,
+    RequestInit
+  ];
+
+  assert.equal(url, "https://api.resend.com/emails");
+  assert.equal(options.method, "POST");
+
+  const headers = options.headers as Record<string, string>;
+
+  assert.equal(
+    headers.Authorization,
+    "Bearer re_test_api_key"
+  );
+
+  assert.equal(
+    headers["Content-Type"],
+    "application/json"
+  );
+
+  const body = JSON.parse(String(options.body));
+
+  assert.equal(
+    body.from,
+    "Contractor Pro <noreply@example.test>"
+  );
+
+  assert.deepEqual(
+    body.to,
+    ["testuser@example.test"]
+  );
+
+  assert.equal(
+    body.subject,
+    "Verifica tu cuenta - Contractor Pro"
+  );
 });
 
-test("email: un error SMTP no filtra destinatario ni token en consola", async () => {
-  configureSmtp();
+test("email: Resend responde con error y se informa delivery_failed", async () => {
+  configureResend();
+
+  fetchMock.mockResolvedValueOnce({
+    ok: false
+  });
+
+  const result = await sendPasswordResetEmail({
+    to: "testuser@example.test",
+    fullName: "Usuario Prueba",
+    token: "reset-token"
+  });
+
+  assert.deepEqual(result, {
+    sent: false,
+    reason: "delivery_failed"
+  });
+});
+
+test("email: un error de red no filtra destinatario ni token", async () => {
+  configureResend();
+
   const recipient = "private-user@example.test";
   const token = "private-reset-token";
-  mailMocks.sendMail.mockRejectedValueOnce(
-    new Error(`SMTP rechazó ${recipient} con ${token}`)
+
+  fetchMock.mockRejectedValueOnce(
+    new Error(`Falló envío a ${recipient} usando ${token}`)
   );
+
   const consoleSpies = captureConsole();
 
   const result = await sendPasswordResetEmail({
@@ -149,8 +194,15 @@ test("email: un error SMTP no filtra destinatario ni token en consola", async ()
     token
   });
 
-  assert.deepEqual(result, { sent: false, reason: "delivery_failed" });
-  const loggedOutput = JSON.stringify(consoleSpies.flatMap((spy) => spy.mock.calls));
+  assert.deepEqual(result, {
+    sent: false,
+    reason: "delivery_failed"
+  });
+
+  const loggedOutput = JSON.stringify(
+    consoleSpies.flatMap((spy) => spy.mock.calls)
+  );
+
   assert.equal(loggedOutput.includes(recipient), false);
   assert.equal(loggedOutput.includes(token), false);
 });

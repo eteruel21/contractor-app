@@ -17,6 +17,7 @@ const sensitiveKeys = new Set([
   "jwt",
   "jwtsecret",
   "apikey",
+  "resendapikey",
   "xapikey",
   "pgpassword",
   "databaseurl",
@@ -66,7 +67,7 @@ export function redactSensitiveText(value: string): string {
       REDACTED
     )
     .replace(
-      /\b(password|passwd|secret|token|access[_-]?token|refresh[_-]?token|session[_-]?(?:token|id)|jwt(?:[_-]?secret)?|api[_-]?key|smtp[_-]?(?:pass|password)|s3[_-]?(?:access[_-]?key[_-]?id|secret[_-]?access[_-]?key)|pgpassword|database_url|pg_connection_string|migrator_database_url|supabase_admin_url)\b(\s*[=:]\s*)(["']?)[^&;\s,"']+\3/gi,
+      /\b(password|passwd|secret|token|access[_-]?token|refresh[_-]?token|session[_-]?(?:token|id)|jwt(?:[_-]?secret)?|api[_-]?key|resend[_-]?api[_-]?key|smtp[_-]?(?:pass|password)|s3[_-]?(?:access[_-]?key[_-]?id|secret[_-]?access[_-]?key)|pgpassword|database_url|pg_connection_string|migrator_database_url|supabase_admin_url)\b(\s*[=:]\s*)(["']?)[^&;\s,"']+\3/gi,
       (_match, key: string, separator: string, quote: string) =>
         `${key}${separator}${quote}${REDACTED}${quote}`
     );
