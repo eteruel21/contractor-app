@@ -35,8 +35,5 @@ database/reference/*.log
 **/.env.*
 !**/.env.example
 !**/.env.*.example
-!apps/admin-web/.env.development
-!apps/api/.env.development
-!apps/mobile/.env.development
 
 database/certs/
