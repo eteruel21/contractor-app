@@ -24,8 +24,8 @@ import {
   exportAccountData,
 } from "@/services/api";
 
-const TERMS_URL = "https://contractor-admin-web.pages.dev/legal/terms";
-const PRIVACY_URL = "https://contractor-admin-web.pages.dev/legal/privacy";
+const TERMS_URL = "https://admin.leurettech.com/legal/terms";
+const PRIVACY_URL = "https://admin.leurettech.com/legal/privacy";
 
 export default function ProfileScreen() {
   const { profile, user, updateProfile, signOut } = useAuth();

@@ -8,7 +8,7 @@
   "vars": {
     "NODE_ENV": "production",
     "DATABASE_MODE": "hyperdrive",
-    "TURNSTILE_ALLOWED_HOSTNAMES": "contractor-pro-web.pages.dev,contractor-admin-web.pages.dev,app.contractor.com.pa,admin.contractor.com.pa"
+    "TURNSTILE_ALLOWED_HOSTNAMES": "app.leurettech.com,admin.leurettech.com"
   },
   "secrets": {
     "required": [
@@ -26,8 +26,8 @@
   ],
   "routes": [
     {
-      "pattern": "api.tctservices-pty.com/*",
-      "zone_name": "tctservices-pty.com"
+      "pattern": "api.leurettech.com",
+      "custom_domain": true
     }
   ],
   "workers_dev": false,

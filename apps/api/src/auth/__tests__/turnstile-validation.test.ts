@@ -29,7 +29,7 @@ describe("Cloudflare Turnstile server-side validation", () => {
   beforeEach(() => {
     mutableEnv.NODE_ENV = "production";
     mutableEnv.TURNSTILE_SECRET_KEY = "test-secret";
-    mutableEnv.TURNSTILE_ALLOWED_HOSTNAMES = "contractor-pro-web.pages.dev,contractor-admin-web.pages.dev";
+    mutableEnv.TURNSTILE_ALLOWED_HOSTNAMES = "app.leurettech.com,admin.leurettech.com";
   });
 
   afterEach(() => {
@@ -43,7 +43,7 @@ describe("Cloudflare Turnstile server-side validation", () => {
   it("acepta token válido con action y hostname esperados", async () => {
     const fetchMock = mockSiteverify({
       success: true,
-      hostname: "contractor-pro-web.pages.dev",
+      hostname: "app.leurettech.com",
       action: "login"
     });
 
@@ -88,7 +88,7 @@ describe("Cloudflare Turnstile server-side validation", () => {
   it("rechaza action distinta", async () => {
     mockSiteverify({
       success: true,
-      hostname: "contractor-pro-web.pages.dev",
+      hostname: "app.leurettech.com",
       action: "register"
     });
 

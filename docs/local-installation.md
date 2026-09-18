@@ -107,7 +107,7 @@ JWT_ISSUER=contractor-api
 JWT_AUDIENCE=contractor-app
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:8081,http://127.0.0.1:8081
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
-TURNSTILE_ALLOWED_HOSTNAMES=localhost,127.0.0.1,contractor-pro-web.pages.dev
+TURNSTILE_ALLOWED_HOSTNAMES=localhost,127.0.0.1,app.leurettech.com
 ```
 
 El comando `npm run dev -w apps/api` carga además `apps/api/.env.development`, que fija las credenciales públicas de prueba de Turnstile para evitar usar secretos de producción en local.
@@ -122,7 +122,7 @@ Configuración requerida:
 ```env
 EXPO_PUBLIC_API_URL=http://127.0.0.1:3001
 EXPO_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
-EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL=https://contractor-pro-web.pages.dev/turnstile.html
+EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL=https://app.leurettech.com/turnstile
 ```
 
 ### 4.3 Panel Administrativo (`apps/admin-web/.env`)
@@ -135,7 +135,7 @@ Configuración requerida:
 ```env
 VITE_API_URL=http://127.0.0.1:3001
 VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA
-VITE_TURNSTILE_CHALLENGE_URL=/turnstile.html
+VITE_TURNSTILE_CHALLENGE_URL=/turnstile
 ```
 
 Los archivos `.env.development` versionados mantienen emparejadas la clave pública y la clave secreta de prueba durante el desarrollo. Los despliegues de staging y producción deben inyectar su propio par real y conservar sus hostnames restringidos.

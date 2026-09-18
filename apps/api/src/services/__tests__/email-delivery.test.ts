@@ -69,7 +69,7 @@ test("buildVerificationLinks: genera enlaces profundos y web correctos", () => {
 
   assert.equal(
     webLink,
-    "https://contractor-pro-web.pages.dev/confirm-email?token=tok_test_verification_123"
+    "https://app.leurettech.com/confirm-email?token=tok_test_verification_123"
   );
 });
 
@@ -84,7 +84,7 @@ test("buildPasswordResetLinks: genera enlaces profundos y web de recuperación c
 
   assert.equal(
     webLink,
-    "https://contractor-pro-web.pages.dev/reset-password?token=tok_test_reset_456"
+    "https://app.leurettech.com/reset-password?token=tok_test_reset_456"
   );
 });
 
