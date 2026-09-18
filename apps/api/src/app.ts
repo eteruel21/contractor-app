@@ -59,7 +59,16 @@ export async function buildApp() {
 
   app.register(cors, {
     origin: corsOrigins,
-    credentials: true
+    credentials: true,
+    methods: [
+      "GET",
+      "HEAD",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS"
+    ]
   });
 
   app.register(fastifyCookie, {
