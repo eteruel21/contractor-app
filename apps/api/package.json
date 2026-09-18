@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx --env-file-if-exists=.env --env-file=.env.development watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run --hookTimeout=30000",

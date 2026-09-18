@@ -57,6 +57,34 @@ describe("Cloudflare Turnstile server-side validation", () => {
     expect(body.get("remoteip")).toBe("203.0.113.10");
   });
 
+  it("acepta el token dummy oficial solo con la configuración local emparejada", async () => {
+    mutableEnv.NODE_ENV = "development";
+    mutableEnv.TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA";
+    mutableEnv.TURNSTILE_ALLOWED_HOSTNAMES = "localhost,127.0.0.1";
+    mockSiteverify({
+      success: true,
+      hostname: "example.com"
+    });
+
+    await expect(
+      verifyCaptcha("XXXX.DUMMY.TOKEN.XXXX", "127.0.0.1", "login")
+    ).resolves.toBe(true);
+  });
+
+  it("no relaja action ni hostname para otros tokens en desarrollo", async () => {
+    mutableEnv.NODE_ENV = "development";
+    mutableEnv.TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA";
+    mutableEnv.TURNSTILE_ALLOWED_HOSTNAMES = "localhost,127.0.0.1";
+    mockSiteverify({
+      success: true,
+      hostname: "example.com"
+    });
+
+    await expect(
+      verifyCaptcha("otro-token", "127.0.0.1", "login")
+    ).resolves.toBe(false);
+  });
+
   it("rechaza action distinta", async () => {
     mockSiteverify({
       success: true,
