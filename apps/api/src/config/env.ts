@@ -14,10 +14,9 @@ const environmentSchema = z.object({
   TURNSTILE_SECRET_KEY: z.string().trim().min(1).optional(),
   TURNSTILE_ALLOWED_HOSTNAMES: z.string().trim().min(1).optional(),
 
-  SMTP_HOST: z.string().trim().min(1).optional(),
-  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
-  SMTP_USER: z.string().trim().min(1).optional(),
-  SMTP_PASS: z.string().min(1).optional(),
+  RESEND_API_KEY: z.string().trim().min(1).optional(),
+
+
   EMAIL_FROM: z.string().trim().min(1).optional(),
 
   S3_ENDPOINT: z.string().optional(),
@@ -97,6 +96,15 @@ const environmentSchema = z.object({
     if (requiresTurnstile && !environment.TURNSTILE_ALLOWED_HOSTNAMES) {
       context.addIssue({ code: "custom", path: ["TURNSTILE_ALLOWED_HOSTNAMES"], message: "TURNSTILE_ALLOWED_HOSTNAMES es obligatorio en staging y producción." });
     }
+
+    if (requiresTurnstile && !environment.RESEND_API_KEY) {
+      context.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "RESEND_API_KEY es obligatorio en staging y producción." });
+    }
+
+    if (requiresTurnstile && !environment.EMAIL_FROM) {
+      context.addIssue({ code: "custom", path: ["EMAIL_FROM"], message: "EMAIL_FROM es obligatorio en staging y producción." });
+    }
+
     if (environment.DATABASE_MODE === "postgres") {
       const requiredPostgresFields = [
         ["PGHOST", environment.PGHOST],

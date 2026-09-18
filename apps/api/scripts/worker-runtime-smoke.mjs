@@ -5,6 +5,8 @@ process.env.DATABASE_MODE = "hyperdrive";
 process.env.JWT_SECRET = "worker_runtime_smoke_secret_that_is_long_enough_for_validation";
 process.env.TURNSTILE_SECRET_KEY = "1x0000000000000000000000000000000AA";
 process.env.TURNSTILE_ALLOWED_HOSTNAMES = "localhost";
+process.env.RESEND_API_KEY = "re_worker_runtime_smoke_test";
+process.env.EMAIL_FROM = "Contractor Pro <noreply@example.test>";
 
 const { buildApp } = await import("../src/app.ts");
 const app = await buildApp();

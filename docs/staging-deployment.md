@@ -43,11 +43,8 @@ Este documento define la arquitectura de hosting, configuración de seguridad y 
 | `JWT_ISSUER` | `contractor-api-staging` |
 | `JWT_AUDIENCE` | `contractor-app-staging` |
 | `CORS_ORIGINS` | Dominios exactos de staging (ver T-068) |
-| `SMTP_HOST` | `smtp.resend.com` (o servidor SMTP de staging) |
-| `SMTP_PORT` | `587` |
-| `SMTP_USER` | `resend` |
-| `SMTP_PASS` | `<secret_smtp_key>` |
-| `EMAIL_FROM` | `no-reply-staging@contractor.app` |
+| `RESEND_API_KEY` | API key privada de Resend para staging |
+| `EMAIL_FROM` | `Contractor Pro Staging <noreply@leurettech.com>` |
 | `TURNSTILE_SECRET_KEY` | Secret privado de Cloudflare Turnstile de Staging |
 | `TURNSTILE_ALLOWED_HOSTNAMES` | `<hostname_staging>` |
 

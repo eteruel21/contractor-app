@@ -30,6 +30,7 @@ describe("T-041 redacción de información sensible", () => {
     expect(isSensitiveKey("Set-Cookie")).toBe(true);
     expect(isSensitiveKey("PGPASSWORD")).toBe(true);
     expect(isSensitiveKey("DATABASE_URL")).toBe(true);
+    expect(isSensitiveKey("RESEND_API_KEY")).toBe(true);
     expect(isSensitiveKey("SMTP_PASS")).toBe(true);
     expect(isSensitiveKey("S3_SECRET_ACCESS_KEY")).toBe(true);
     expect(isSensitiveKey("displayName")).toBe(false);

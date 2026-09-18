@@ -13,7 +13,9 @@
   "secrets": {
     "required": [
       "JWT_SECRET",
-      "TURNSTILE_SECRET_KEY"
+      "TURNSTILE_SECRET_KEY",
+      "RESEND_API_KEY",
+      "EMAIL_FROM"
     ]
   },
   "hyperdrive": [

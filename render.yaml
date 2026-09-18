@@ -36,13 +36,7 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
+      - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
@@ -82,13 +76,7 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
+      - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
         sync: false
