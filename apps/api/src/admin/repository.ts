@@ -331,12 +331,18 @@ export async function updateAdminUserRepo(userId: string, targetUserId: string, 
         SET
           full_name = $1,
           phone = $2,
-          role = $3::public.user_role,
+          role = $3::public.global_user_role,
           active = $4,
-          approved_at = $5,
-          approved_by = $6,
+          approved_at = CASE
+            WHEN $4 THEN COALESCE(approved_at, now())
+            ELSE approved_at
+          END,
+          approved_by = CASE
+            WHEN $4 THEN COALESCE(approved_by, $5::uuid)
+            ELSE approved_by
+          END,
           updated_at = now()
-        WHERE id = $7
+        WHERE id = $6
         RETURNING id
       `,
       [
@@ -344,8 +350,7 @@ export async function updateAdminUserRepo(userId: string, targetUserId: string, 
         input.phone,
         input.role,
         input.active,
-        input.approvedAt ? new Date(input.approvedAt) : null,
-        input.approvedBy || null,
+        userId,
         targetUserId
       ]
     );
