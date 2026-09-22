@@ -7,6 +7,8 @@ import {
   configureHyperdriveDatabase
 } from "./db/pool.js";
 
+import { configureR2Storage } from "./storage/provider.js";
+
 type CloudflareNodeServer =
   Parameters<typeof httpServerHandler>[0];
 
@@ -51,6 +53,14 @@ export default {
     configureHyperdriveDatabase(
       env.HYPERDRIVE.connectionString
     );
+
+    if (!env.R2_STORAGE) {
+      throw new Error(
+        "El binding R2_STORAGE es obligatorio en producción."
+      );
+    }
+
+    configureR2Storage(env.R2_STORAGE);
 
     const handler = await getHandler();
 
