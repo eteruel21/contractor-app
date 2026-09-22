@@ -24,6 +24,12 @@
       "id": "7a329598e4b04653b28173862646054e"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "R2_STORAGE",
+      "bucket_name": "contractor-private-storage"
+    }
+  ],
   "routes": [
     {
       "pattern": "api.leurettech.com",

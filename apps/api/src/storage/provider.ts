@@ -1,14 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-  type S3ClientConfig
-} from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
 import { env } from "../config/env.js";
 import { generateSignedPhotoUrl } from "./signed-url.js";
 
@@ -18,106 +11,191 @@ type UploadInput = {
   mimeType: string;
 };
 
-function createS3Client(): S3Client | null {
-  if (env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY) {
-    const config: S3ClientConfig = {
-      region: env.S3_REGION || "auto",
-      credentials: {
-        accessKeyId: env.S3_ACCESS_KEY_ID,
-        secretAccessKey: env.S3_SECRET_ACCESS_KEY
-      }
-    };
-    if (env.S3_ENDPOINT) {
-      config.endpoint = env.S3_ENDPOINT;
+type R2ObjectBodyLike = {
+  arrayBuffer(): Promise<ArrayBuffer>;
+  httpMetadata?: {
+    contentType?: string;
+  };
+};
+
+type R2BucketBinding = {
+  put(
+    key: string,
+    value: ArrayBuffer | ArrayBufferView,
+    options?: {
+      httpMetadata?: {
+        contentType?: string;
+      };
     }
-    return new S3Client(config);
-  }
-  return null;
+  ): Promise<unknown>;
+
+  get(key: string): Promise<R2ObjectBodyLike | null>;
+
+  delete(key: string | string[]): Promise<void>;
+};
+
+let r2Bucket: R2BucketBinding | null = null;
+
+const uploadsLocalDir = path.join(
+  process.cwd(),
+  "storage",
+  "uploads"
+);
+
+function requiresR2Storage(): boolean {
+  return (
+    env.NODE_ENV === "production" ||
+    env.NODE_ENV === "staging"
+  );
 }
 
-const s3Client = createS3Client();
-const uploadsLocalDir = path.join(process.cwd(), "storage", "uploads");
+function assertLocalStorageAllowed(): void {
+  if (requiresR2Storage()) {
+    throw new Error(
+      "R2_STORAGE es obligatorio en staging y producción."
+    );
+  }
+}
+
+export function configureR2Storage(
+  bucket: R2BucketBinding | null | undefined
+): void {
+  r2Bucket = bucket ?? null;
+}
 
 export function isObjectStorageConfigured(): boolean {
-  return s3Client !== null;
+  return r2Bucket !== null;
 }
 
 export function sanitizeExtension(fileName: string): string {
   const ext = path.extname(fileName).toLowerCase();
-  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".pdf"];
+
+  const allowed = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".webp",
+    ".gif",
+    ".pdf"
+  ];
+
   return allowed.includes(ext) ? ext : ".jpg";
 }
 
-export function buildSecureStorageKey(companyId: string, projectId: string, originalFileName: string): string {
+export function buildSecureStorageKey(
+  companyId: string,
+  projectId: string,
+  originalFileName: string
+): string {
   const safeExt = sanitizeExtension(originalFileName);
   const fileUuid = crypto.randomUUID();
+
   return `projects/${companyId}/${projectId}/${fileUuid}${safeExt}`;
 }
 
-export async function uploadStorageFile({ storagePath, buffer, mimeType }: UploadInput): Promise<void> {
-  if (s3Client) {
-    const command = new PutObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: storagePath,
-      Body: buffer,
-      ContentType: mimeType,
-      ACL: "private"
-    });
-    await s3Client.send(command);
+export async function uploadStorageFile({
+  storagePath,
+  buffer,
+  mimeType
+}: UploadInput): Promise<void> {
+  if (r2Bucket) {
+    await r2Bucket.put(
+      storagePath,
+      buffer,
+      {
+        httpMetadata: {
+          contentType: mimeType
+        }
+      }
+    );
+
     return;
   }
 
-  // Fallback storage driver for local dev and tests
-  const fullPath = path.join(uploadsLocalDir, storagePath);
-  await fs.mkdir(path.dirname(fullPath), { recursive: true });
-  await fs.writeFile(fullPath, buffer);
+  assertLocalStorageAllowed();
+
+  const fullPath = path.join(
+    uploadsLocalDir,
+    storagePath
+  );
+
+  await fs.mkdir(
+    path.dirname(fullPath),
+    { recursive: true }
+  );
+
+  await fs.writeFile(
+    fullPath,
+    buffer
+  );
 }
 
-export async function downloadStorageFile(storagePath: string): Promise<{ buffer: Buffer; mimeType?: string | undefined }> {
-  if (s3Client) {
-    const command = new GetObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: storagePath
-    });
-    const response = await s3Client.send(command);
-    const byteArray = await response.Body?.transformToByteArray();
+export async function downloadStorageFile(
+  storagePath: string
+): Promise<{
+  buffer: Buffer;
+  mimeType?: string | undefined;
+}> {
+  if (r2Bucket) {
+    const object = await r2Bucket.get(storagePath);
+
+    if (!object) {
+      throw new Error(
+        "Archivo no encontrado en R2."
+      );
+    }
+
+    const arrayBuffer =
+      await object.arrayBuffer();
+
     return {
-      buffer: Buffer.from(byteArray || new Uint8Array()),
-      mimeType: response.ContentType
+      buffer: Buffer.from(arrayBuffer),
+      mimeType:
+        object.httpMetadata?.contentType
     };
   }
 
-  const fullPath = path.join(uploadsLocalDir, storagePath);
+  assertLocalStorageAllowed();
+
+  const fullPath = path.join(
+    uploadsLocalDir,
+    storagePath
+  );
+
   const buffer = await fs.readFile(fullPath);
+
   return { buffer };
 }
 
-export async function deleteStorageFile(storagePath: string): Promise<void> {
-  if (s3Client) {
-    const command = new DeleteObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: storagePath
-    });
-    await s3Client.send(command);
+export async function deleteStorageFile(
+  storagePath: string
+): Promise<void> {
+  if (r2Bucket) {
+    await r2Bucket.delete(storagePath);
     return;
   }
 
+  assertLocalStorageAllowed();
+
   try {
-    const fullPath = path.join(uploadsLocalDir, storagePath);
+    const fullPath = path.join(
+      uploadsLocalDir,
+      storagePath
+    );
+
     await fs.unlink(fullPath);
   } catch {
-    // File may already be deleted
+    // El archivo local puede haber sido eliminado previamente.
   }
 }
 
-export async function getStorageSignedUrl(photoId: string, storagePath: string, expiresInMinutes: number = 60): Promise<string> {
-  if (s3Client) {
-    const command = new GetObjectCommand({
-      Bucket: env.S3_BUCKET,
-      Key: storagePath
-    });
-    return getSignedUrl(s3Client, command, { expiresIn: expiresInMinutes * 60 });
-  }
-
-  return generateSignedPhotoUrl(photoId, expiresInMinutes);
+export async function getStorageSignedUrl(
+  photoId: string,
+  _storagePath: string,
+  expiresInMinutes: number = 60
+): Promise<string> {
+  return generateSignedPhotoUrl(
+    photoId,
+    expiresInMinutes
+  );
 }

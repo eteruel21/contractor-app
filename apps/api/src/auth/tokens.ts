@@ -71,7 +71,7 @@ export async function verifyAccessToken(
 }
 
 export function createRefreshToken(): string {
-  return randomBytes(48).toString("base64url");
+  return Buffer.from(randomBytes(48)).toString("base64url");
 }
 
 export function hashRefreshToken(
@@ -83,7 +83,7 @@ export function hashRefreshToken(
 }
 
 export function generateSecureToken(): { token: string; hash: string } {
-  const token = randomBytes(32).toString("hex");
+  const token = Buffer.from(randomBytes(32)).toString("hex");
   const hash = createHash("sha256").update(token).digest("hex");
   return { token, hash };
 }
