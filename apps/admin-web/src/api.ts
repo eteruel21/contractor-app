@@ -26,9 +26,9 @@ export type AdminUser = {
   id: string;
   email: string;
   role:
-    | "super_admin"
-    | "contractor"
-    | "client";
+  | "super_admin"
+  | "contractor"
+  | "client";
   active: boolean;
 };
 
@@ -81,7 +81,7 @@ async function readResponse<T>(
 
     throw new ApiError(
       errorBody?.message ||
-        "No fue posible completar la solicitud.",
+      "No fue posible completar la solicitud.",
       response.status
     );
   }
@@ -120,7 +120,7 @@ function saveSession(
 }
 
 function readStoredSession():
-AdminSession | null {
+  AdminSession | null {
   const value =
     localStorage.getItem(
       SESSION_KEY
@@ -161,7 +161,7 @@ function toSession(
 }
 
 async function refreshSession():
-Promise<AdminSession> {
+  Promise<AdminSession> {
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -207,7 +207,7 @@ Promise<AdminSession> {
 }
 
 async function validSession():
-Promise<AdminSession> {
+  Promise<AdminSession> {
   const session =
     readStoredSession();
 
@@ -274,7 +274,7 @@ function ensureSuperAdmin(
   if (
     !session.user.active ||
     session.user.role !==
-      "super_admin"
+    "super_admin"
   ) {
     clearSession();
 
@@ -318,7 +318,7 @@ export async function loginAdmin(
 }
 
 export async function restoreAdminSession():
-Promise<AdminSession | null> {
+  Promise<AdminSession | null> {
   const stored =
     readStoredSession();
 
@@ -345,7 +345,7 @@ Promise<AdminSession | null> {
 }
 
 export async function logoutAdmin():
-Promise<void> {
+  Promise<void> {
   try {
     await authenticatedRequest(
       "/auth/logout",
@@ -356,4 +356,35 @@ Promise<void> {
   } finally {
     clearSession();
   }
+}
+
+export type LegalDocument = {
+  title: string;
+  updatedAt: string;
+  content: string;
+};
+
+export async function getLegalDocument(
+  type: "terms" | "privacy"
+): Promise<LegalDocument> {
+  return publicRequest<LegalDocument>(
+    `/legal/${type}`
+  );
+}
+
+export async function exportAccountData(): Promise<
+  Record<string, unknown>
+> {
+  return authenticatedRequest<
+    Record<string, unknown>
+  >("/account/export");
+}
+
+export async function deleteAccount(): Promise<void> {
+  await authenticatedRequest<unknown>(
+    "/account",
+    {
+      method: "DELETE"
+    }
+  );
 }
