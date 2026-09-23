@@ -24,6 +24,7 @@ export default function ResetPasswordScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resetComplete, setResetComplete] = useState(false);
 
   useEffect(() => {
     if (params.token) {
@@ -52,14 +53,12 @@ export default function ResetPasswordScreen() {
 
     try {
       setSubmitting(true);
-      const response = await resetPasswordApi(cleanToken, newPassword);
+      await resetPasswordApi(cleanToken, newPassword);
 
-      Alert.alert("¡Contraseña restablecida!", response.message || "Tu contraseña ha sido actualizada con éxito.", [
-        {
-          text: "Iniciar Sesión",
-          onPress: () => router.replace("/(auth)/login")
-        }
-      ]);
+      setTokenInput("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setResetComplete(true);
     } catch (error) {
       const err = error as { message?: string };
       Alert.alert("Error de recuperación", err.message || "El token es inválido o ha expirado.");
@@ -68,6 +67,40 @@ export default function ResetPasswordScreen() {
     }
   }
 
+  if (resetComplete) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.successScreen}>
+          <View style={styles.successCard}>
+            <View style={styles.successIconContainer}>
+              <Ionicons
+                name="checkmark-circle"
+                size={48}
+                color="#16A34A"
+              />
+            </View>
+
+            <Text style={styles.successTitle}>
+              Contraseña actualizada con éxito
+            </Text>
+
+            <Text style={styles.successMessage}>
+              Tu nueva contraseña se guardó correctamente. Ya puedes iniciar sesión en Contractor Pro.
+            </Text>
+
+            <Pressable
+              style={[styles.primaryButton, styles.successButton]}
+              onPress={() => router.replace("/(auth)/login")}
+            >
+              <Text style={styles.primaryButtonText}>
+                Iniciar sesión
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -202,6 +235,48 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
     marginBottom: 16
+  },
+  successScreen: {
+    flex: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  successCard: {
+    width: "100%",
+    maxWidth: 480,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: 28,
+    alignItems: "center",
+    ...shadows.soft
+  },
+  successIconContainer: {
+    width: 82,
+    height: 82,
+    borderRadius: 41,
+    backgroundColor: "#ECFDF3",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20
+  },
+  successTitle: {
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: "700",
+    color: colors.text,
+    textAlign: "center"
+  },
+  successMessage: {
+    fontSize: 15,
+    lineHeight: 23,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginTop: 12
+  },
+  successButton: {
+    width: "100%",
+    marginTop: 24
   },
   primaryButton: {
     height: 48,
