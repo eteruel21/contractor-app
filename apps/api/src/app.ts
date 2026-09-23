@@ -16,6 +16,7 @@ import { corsOrigins, env } from "./config/env.js";
 import { registerCatalogRoutes } from "./catalog/routes.js";
 import { pool } from "./db/pool.js";
 import { registerProfileRoutes } from "./profile/routes.js";
+import { registerProfileDocumentRoutes } from "./profile/document-routes.js";
 import { registerActivityRoutes } from "./activities/routes.js";
 import { registerProjectTaskRoutes } from "./projects/tasks/routes.js";
 import { registerProjectProgressRoutes } from "./projects/progress/routes.js";
@@ -99,6 +100,7 @@ export async function buildApp() {
   app.register(registerAuthRoutes);
   app.register(registerCatalogRoutes);
   app.register(registerProfileRoutes);
+  app.register(registerProfileDocumentRoutes);
   app.register(registerCompanyRoutes);
   app.register(registerClientRoutes);
   app.register(registerProjectRoutes);

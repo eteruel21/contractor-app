@@ -18,6 +18,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { CONTRACTOR_CATEGORIES } from "@/constants/contractor-categories";
 import { colors, layout, radius } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  uploadProfileDocument,
+  type ProfileDocumentMimeType,
+  type ProfileDocumentType,
+} from "@/services/profile-document-service";
 import { showAlert } from "@/utils/alert";
 
 type FormState = {
@@ -84,12 +89,98 @@ function formReducer(state: FormState, action: FormAction): FormState {
   return { ...state, [action.field]: action.value };
 }
 
+type ProfileDocumentField =
+  | "docIdUrl"
+  | "docOperationNoticeUrl"
+  | "docReferencesUrl"
+  | "docAddressProofUrl";
+
+const MAX_PROFILE_DOCUMENT_BYTES =
+  10 * 1024 * 1024;
+
+const ALLOWED_PROFILE_DOCUMENT_MIME_TYPES =
+  new Set<ProfileDocumentMimeType>([
+    "application/pdf",
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+  ]);
+
+function inferProfileDocumentMimeType(
+  file: File
+): ProfileDocumentMimeType | null {
+  const declaredMime =
+    file.type.trim().toLowerCase();
+
+  if (
+    ALLOWED_PROFILE_DOCUMENT_MIME_TYPES.has(
+      declaredMime as ProfileDocumentMimeType
+    )
+  ) {
+    return declaredMime as ProfileDocumentMimeType;
+  }
+
+  const extension =
+    file.name
+      .split(".")
+      .pop()
+      ?.toLowerCase() || "";
+
+  const mimeByExtension: Record<
+    string,
+    ProfileDocumentMimeType
+  > = {
+    pdf: "application/pdf",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    heic: "image/heic",
+    heif: "image/heif",
+  };
+
+  return mimeByExtension[extension] || null;
+}
+
+function readFileAsDataUrl(
+  file: File
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(
+        new Error(
+          "No fue posible leer el archivo."
+        )
+      );
+    };
+
+    reader.onerror = () => {
+      reject(
+        new Error(
+          "No fue posible leer el archivo."
+        )
+      );
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
 export default function ProfessionalProfileScreen() {
   const { updateContractorProfile, signOut } = useAuth();
 
   // Paso actual (1: Info General, 2: Multimedia, 3: Documentos de Aprobación)
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [uploadingDocument, setUploadingDocument] = useState<ProfileDocumentType | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [form, dispatch] = useReducer(formReducer, INITIAL_FORM);
 
@@ -125,6 +216,83 @@ export default function ProfessionalProfileScreen() {
     }
   };
 
+  const handleUploadDocument = (
+    field: ProfileDocumentField,
+    documentType: ProfileDocumentType,
+    title: string
+  ) => {
+    if (Platform.OS !== "web") {
+      showAlert(
+        "Cargar Documento",
+        `Para subir "${title}", abre esta pantalla desde app.leurettech.com en el navegador.`
+      );
+      return;
+    }
+
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept =
+      "application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif";
+
+    input.onchange = async (event) => {
+      const file =
+        (event.target as HTMLInputElement)
+          .files?.[0];
+
+      if (!file) return;
+
+      const mimeType =
+        inferProfileDocumentMimeType(file);
+
+      if (!mimeType) {
+        showAlert(
+          "Formato no permitido",
+          "Usa un archivo PDF o una foto JPG, JPEG, PNG, WEBP, HEIC o HEIF."
+        );
+        return;
+      }
+
+      if (
+        file.size >
+        MAX_PROFILE_DOCUMENT_BYTES
+      ) {
+        showAlert(
+          "Archivo demasiado grande",
+          "El archivo debe pesar como máximo 10 MB."
+        );
+        return;
+      }
+
+      try {
+        setUploadingDocument(documentType);
+
+        const fileData =
+          await readFileAsDataUrl(file);
+
+        const uploaded =
+          await uploadProfileDocument({
+            documentType,
+            fileName: file.name,
+            mimeType,
+            fileData,
+          });
+
+        setField(field)(
+          uploaded.storagePath
+        );
+      } catch (error: any) {
+        showAlert(
+          "No se pudo subir el documento",
+          error?.message ||
+            "Inténtalo nuevamente."
+        );
+      } finally {
+        setUploadingDocument(null);
+      }
+    };
+
+    input.click();
+  };
   async function handleSaveProfile() {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
@@ -461,96 +629,142 @@ export default function ProfessionalProfileScreen() {
                 icon="images-outline"
               />
             </View>
-          )}
-
-          {/* Step 3: Documentos de Aprobación */}
+          )}          {/* Step 3: Documentos de Aprobación */}
           {currentStep === 3 && (
             <View style={styles.stepContainer}>
               <Text style={styles.stepTitle}>Soportes e Identificaciones Oficiales</Text>
               <Text style={styles.stepDescription}>
-                Adjunta copias o fotos de tus documentos legales. Esto nos ayuda a certificar tu cuenta y darte prioridad con los clientes.
+                Adjunta tus documentos en PDF o como foto. Se aceptan JPG, JPEG, PNG, WEBP, HEIC y HEIF, con un máximo de 10 MB por archivo.
               </Text>
 
-              {/* Foto de Cédula */}
+              {/* Cédula o Pasaporte */}
               <View style={styles.uploadCard}>
-                <Text style={styles.uploadLabel}>Foto de Cédula o Pasaporte *</Text>
+                <Text style={styles.uploadLabel}>Cédula o Pasaporte (PDF o foto) *</Text>
                 {form.docIdUrl ? (
-                  <View style={styles.previewBox}>
-                    <Image source={{ uri: form.docIdUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setField("docIdUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                    </Pressable>
-                  </View>
+                  <UploadedDocumentPreview
+                    onClear={() => setField("docIdUrl")("")}
+                  />
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setField("docIdUrl") as (v: string) => void, "Foto de Cédula")}
+                    onPress={() =>
+                      handleUploadDocument(
+                        "docIdUrl",
+                        "identification",
+                        "Cédula o Pasaporte"
+                      )
+                    }
+                    disabled={uploadingDocument === "identification"}
                     style={styles.uploadButton}
                   >
-                    <Ionicons name="document-attach-outline" size={24} color={colors.primary} />
-                    <Text style={styles.uploadButtonText}>Subir Copia de Identificación</Text>
+                    {uploadingDocument === "identification" ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Ionicons name="document-attach-outline" size={24} color={colors.primary} />
+                    )}
+                    <Text style={styles.uploadButtonText}>
+                      {uploadingDocument === "identification"
+                        ? "Subiendo..."
+                        : "Subir PDF o Foto"}
+                    </Text>
                   </Pressable>
                 )}
               </View>
 
               {/* Aviso de Operación */}
               <View style={styles.uploadCard}>
-                <Text style={styles.uploadLabel}>Aviso de Operación (si aplica)</Text>
+                <Text style={styles.uploadLabel}>Aviso de Operación (PDF o foto, si aplica)</Text>
                 {form.docOperationNoticeUrl ? (
-                  <View style={styles.previewBox}>
-                    <Image source={{ uri: form.docOperationNoticeUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setField("docOperationNoticeUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                    </Pressable>
-                  </View>
+                  <UploadedDocumentPreview
+                    onClear={() => setField("docOperationNoticeUrl")("")}
+                  />
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setField("docOperationNoticeUrl") as (v: string) => void, "Aviso de Operación")}
+                    onPress={() =>
+                      handleUploadDocument(
+                        "docOperationNoticeUrl",
+                        "operation_notice",
+                        "Aviso de Operación"
+                      )
+                    }
+                    disabled={uploadingDocument === "operation_notice"}
                     style={styles.uploadButton}
                   >
-                    <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
-                    <Text style={styles.uploadButtonText}>Subir Aviso de Operación</Text>
+                    {uploadingDocument === "operation_notice" ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Ionicons name="shield-checkmark-outline" size={24} color={colors.primary} />
+                    )}
+                    <Text style={styles.uploadButtonText}>
+                      {uploadingDocument === "operation_notice"
+                        ? "Subiendo..."
+                        : "Subir PDF o Foto"}
+                    </Text>
                   </Pressable>
                 )}
               </View>
 
               {/* Referencias comerciales */}
               <View style={styles.uploadCard}>
-                <Text style={styles.uploadLabel}>Referencias Comerciales o de Obras</Text>
+                <Text style={styles.uploadLabel}>Referencias Comerciales o de Obras (PDF o foto)</Text>
                 {form.docReferencesUrl ? (
-                  <View style={styles.previewBox}>
-                    <Image source={{ uri: form.docReferencesUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setField("docReferencesUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                    </Pressable>
-                  </View>
+                  <UploadedDocumentPreview
+                    onClear={() => setField("docReferencesUrl")("")}
+                  />
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setField("docReferencesUrl") as (v: string) => void, "Referencias Comerciales")}
+                    onPress={() =>
+                      handleUploadDocument(
+                        "docReferencesUrl",
+                        "references",
+                        "Referencias Comerciales o de Obras"
+                      )
+                    }
+                    disabled={uploadingDocument === "references"}
                     style={styles.uploadButton}
                   >
-                    <Ionicons name="people-outline" size={24} color={colors.primary} />
-                    <Text style={styles.uploadButtonText}>Subir Documento de Referencia</Text>
+                    {uploadingDocument === "references" ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Ionicons name="people-outline" size={24} color={colors.primary} />
+                    )}
+                    <Text style={styles.uploadButtonText}>
+                      {uploadingDocument === "references"
+                        ? "Subiendo..."
+                        : "Subir PDF o Foto"}
+                    </Text>
                   </Pressable>
                 )}
               </View>
 
               {/* Comprobante de Domicilio */}
               <View style={styles.uploadCard}>
-                <Text style={styles.uploadLabel}>Comprobante de Domicilio (Opcional)</Text>
+                <Text style={styles.uploadLabel}>Comprobante de Domicilio (PDF o foto, opcional)</Text>
                 {form.docAddressProofUrl ? (
-                  <View style={styles.previewBox}>
-                    <Image source={{ uri: form.docAddressProofUrl }} style={styles.docImagePreview} />
-                    <Pressable onPress={() => setField("docAddressProofUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                    </Pressable>
-                  </View>
+                  <UploadedDocumentPreview
+                    onClear={() => setField("docAddressProofUrl")("")}
+                  />
                 ) : (
                   <Pressable
-                    onPress={() => handleUploadImage(setField("docAddressProofUrl") as (v: string) => void, "Comprobante de Domicilio")}
+                    onPress={() =>
+                      handleUploadDocument(
+                        "docAddressProofUrl",
+                        "address_proof",
+                        "Comprobante de Domicilio"
+                      )
+                    }
+                    disabled={uploadingDocument === "address_proof"}
                     style={styles.uploadButton}
                   >
-                    <Ionicons name="home-outline" size={24} color={colors.primary} />
-                    <Text style={styles.uploadButtonText}>Subir Recibo de Domicilio</Text>
+                    {uploadingDocument === "address_proof" ? (
+                      <ActivityIndicator color={colors.primary} />
+                    ) : (
+                      <Ionicons name="home-outline" size={24} color={colors.primary} />
+                    )}
+                    <Text style={styles.uploadButtonText}>
+                      {uploadingDocument === "address_proof"
+                        ? "Subiendo..."
+                        : "Subir PDF o Foto"}
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -571,10 +785,10 @@ export default function ProfessionalProfileScreen() {
 
             <Pressable
               onPress={handleSaveProfile}
-              disabled={saving}
+              disabled={saving || !!uploadingDocument}
               style={({ pressed }) => [
                 styles.saveButton,
-                saving && styles.saveButtonDisabled,
+                (saving || !!uploadingDocument) && styles.saveButtonDisabled,
                 pressed && styles.pressed,
                 { flex: currentStep > 1 ? 2 : 1 },
               ]}
@@ -630,6 +844,40 @@ export default function ProfessionalProfileScreen() {
   );
 }
 
+type UploadedDocumentPreviewProps = {
+  onClear: () => void;
+};
+
+function UploadedDocumentPreview({
+  onClear,
+}: UploadedDocumentPreviewProps) {
+  return (
+    <View style={styles.documentPreviewBox}>
+      <Ionicons
+        name="document-attach-outline"
+        size={28}
+        color={colors.primary}
+      />
+      <View style={styles.documentPreviewTextBlock}>
+        <Text style={styles.documentPreviewTitle}>Archivo cargado</Text>
+        <Text style={styles.documentPreviewSubtitle}>
+          PDF o foto listo para enviar
+        </Text>
+      </View>
+      <Pressable
+        onPress={onClear}
+        style={styles.clearImageButton}
+        accessibilityLabel="Quitar documento"
+      >
+        <Ionicons
+          name="trash-outline"
+          size={16}
+          color="#DC2626"
+        />
+      </Pressable>
+    </View>
+  );
+}
 type FormFieldProps = {
   label: string;
   value: string;
@@ -936,6 +1184,36 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
 
+  documentPreviewBox: {
+    position: "relative",
+    minHeight: 72,
+    paddingHorizontal: 16,
+    paddingRight: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+
+  documentPreviewTextBlock: {
+    flex: 1,
+  },
+
+  documentPreviewTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+
+  documentPreviewSubtitle: {
+    marginTop: 2,
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "600",
+  },
   clearImageButton: {
     position: "absolute",
     top: 5,
