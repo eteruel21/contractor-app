@@ -174,9 +174,9 @@ export async function sendPasswordResetEmail({ to, fullName, token }: PasswordRe
         <p>Has solicitado restablecer tu contraseña de acceso a Contractor Pro:</p>
         
         <div style="text-align: center; margin: 24px 0;">
-          <a href="${deepLink}" class="btn-primary">Restablecer en App Móvil</a>
+          <a href="${webLink}" class="btn-primary">Cambiar mi contrase?a</a>
           <br />
-          <a href="${webLink}" class="btn-secondary">Restablecer en Navegador Web</a>
+          <a href="${deepLink}" class="btn-secondary">Abrir en la App M?vil</a>
         </div>
 
         <p>O ingresa este código de recuperación en la aplicación:</p>
@@ -191,15 +191,17 @@ export async function sendPasswordResetEmail({ to, fullName, token }: PasswordRe
   const text = `
 Hola ${name},
 
-Has solicitado restablecer tu contraseña de Contractor Pro.
+Has solicitado cambiar la contrase?a de tu cuenta de Contractor Pro.
 
-Restablecer en App Móvil:
-${deepLink}
-
-Restablecer en Navegador Web:
+Cambiar mi contrase?a:
 ${webLink}
 
-Token de Recuperación: ${token}
+Abrir en la App M?vil:
+${deepLink}
+
+Token de Recuperaci?n: ${token}
+
+Este enlace vence en 1 hora. Si no solicitaste este cambio, puedes ignorar este mensaje.
   `.trim();
 
   return deliverWithResend({
