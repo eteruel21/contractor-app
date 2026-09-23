@@ -1,5 +1,11 @@
+import { Buffer as NodeBuffer } from "node:buffer";
 import type { FastifyInstance } from "fastify";
 import { requireSuperAdmin } from "./authorize.js";
+import {
+  getContractorDocument,
+  getContractorReview,
+  isContractorDocumentType
+} from "./contractor-review.js";
 import {
   userParamsSchema,
   userSchema,
@@ -37,7 +43,129 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     }
   );
 
-  // 2. Usuarios
+  // 2. Revisión profesional de contratistas
+  app.get(
+    "/admin/users/:userId/review",
+    {
+      preHandler: requireSuperAdmin
+    },
+    async (request, reply) => {
+      const adminUserId =
+        request.authenticatedUser!.id;
+
+      const params =
+        userParamsSchema.safeParse(
+          request.params
+        );
+
+      if (!params.success) {
+        return reply.status(400).send({
+          message:
+            "El usuario indicado no es válido."
+        });
+      }
+
+      const contractor =
+        await getContractorReview(
+          adminUserId,
+          params.data.userId
+        );
+
+      if (!contractor) {
+        return reply.status(404).send({
+          message:
+            "No se encontró el perfil profesional del contratista."
+        });
+      }
+
+      return contractor;
+    }
+  );
+
+  app.get(
+    "/admin/users/:userId/documents/:documentType",
+    {
+      preHandler: requireSuperAdmin
+    },
+    async (request, reply) => {
+      const adminUserId =
+        request.authenticatedUser!.id;
+
+      const params =
+        userParamsSchema.safeParse(
+          request.params
+        );
+
+      const documentType =
+        (
+          request.params as {
+            documentType?: unknown;
+          }
+        ).documentType;
+
+      if (
+        !params.success ||
+        !isContractorDocumentType(
+          documentType
+        )
+      ) {
+        return reply.status(400).send({
+          message:
+            "El documento solicitado no es válido."
+        });
+      }
+
+      try {
+        const document =
+          await getContractorDocument(
+            adminUserId,
+            params.data.userId,
+            documentType
+          );
+
+        if (!document) {
+          return reply.status(404).send({
+            message:
+              "El contratista no ha cargado este documento."
+          });
+        }
+
+        reply.header(
+          "Cache-Control",
+          "private, no-store"
+        );
+
+        return {
+          fileName: document.fileName,
+          mimeType:
+            document.mimeType ??
+            "application/octet-stream",
+          base64:
+            NodeBuffer.from(
+              document.buffer
+            ).toString(
+              "base64"
+            )
+        };
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message
+            .toLowerCase()
+            .includes("no encontrado")
+        ) {
+          return reply.status(404).send({
+            message:
+              "El archivo ya no existe en el almacenamiento."
+          });
+        }
+
+        throw error;
+      }
+    }
+  );
+
+  // 3. Usuarios
   app.patch(
     "/admin/users/:userId",
     {

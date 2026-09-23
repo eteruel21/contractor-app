@@ -202,3 +202,172 @@ button { cursor: pointer; }
   .actions { align-items: stretch; flex-direction: column; }
   .parameter-row { grid-template-columns: 1fr; }
 }
+
+/* ─── Contractor review ─── */
+
+.contractor-review-modal {
+  width: min(1050px, 100%);
+}
+
+.review-loading {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: #91a3ba;
+}
+
+.contractor-review-content {
+  display: grid;
+  gap: 18px;
+}
+
+.review-section {
+  padding: 18px;
+  border: 1px solid #26384d;
+  border-radius: 14px;
+  background: #102035;
+}
+
+.review-section h3 {
+  margin: 0 0 16px;
+  color: #f8fafc;
+  font-size: 15px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.review-value {
+  padding: 12px;
+  border: 1px solid #22354b;
+  border-radius: 10px;
+  background: #0b1728;
+  display: grid;
+  gap: 5px;
+}
+
+.review-value span,
+.review-list-block > span {
+  color: #71849d;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.review-value strong {
+  color: #e5eef9;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.review-list-block {
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #22354b;
+  border-radius: 10px;
+  background: #0b1728;
+  display: grid;
+  gap: 7px;
+}
+
+.review-list-block strong,
+.review-list-block p {
+  margin: 0;
+  color: #d6e0ec;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.review-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-links a {
+  padding: 7px 10px;
+  border: 1px solid #2b4059;
+  border-radius: 8px;
+  color: #93c5fd;
+  background: #15263a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.review-documents {
+  display: grid;
+  gap: 10px;
+}
+
+.review-document {
+  padding: 12px 13px;
+  border: 1px solid #22354b;
+  border-radius: 10px;
+  background: #0b1728;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.review-document > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.review-document svg {
+  flex: 0 0 auto;
+  color: #4ade80;
+}
+
+.review-document strong,
+.review-document small {
+  display: block;
+}
+
+.review-document strong {
+  color: #e5eef9;
+  font-size: 13px;
+}
+
+.review-document small {
+  margin-top: 3px;
+  color: #71849d;
+  font-size: 11px;
+}
+
+@media (max-width: 850px) {
+  .review-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-document {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .review-document .button {
+    width: 100%;
+  }
+}

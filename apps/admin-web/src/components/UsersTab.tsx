@@ -1,7 +1,22 @@
-import { Edit3 } from "lucide-react";
-import type { PlatformUser } from "../admin-data";
-import { SectionHeader, Table } from "./CommonUI";
-import { formatDate, roleLabel, statusFor } from "../utils/helpers";
+import {
+  Edit3,
+  Eye,
+} from "lucide-react";
+
+import type {
+  PlatformUser,
+} from "../admin-data";
+
+import {
+  SectionHeader,
+  Table,
+} from "./CommonUI";
+
+import {
+  formatDate,
+  roleLabel,
+  statusFor,
+} from "../utils/helpers";
 
 interface UsersTabProps {
   users: PlatformUser[];
@@ -10,7 +25,10 @@ interface UsersTabProps {
   currentUserId: string;
   saving: boolean;
   onEdit: (user: PlatformUser) => void;
-  onToggle: (user: PlatformUser) => Promise<void>;
+  onReview: (user: PlatformUser) => void;
+  onToggle: (
+    user: PlatformUser
+  ) => Promise<void>;
 }
 
 export function UsersTab({
@@ -20,19 +38,27 @@ export function UsersTab({
   currentUserId,
   saving,
   onEdit,
+  onReview,
   onToggle,
 }: UsersTabProps) {
   return (
     <section className="data-card">
       <div className="card-toolbar">
-        <SectionHeader title="Todos los usuarios" subtitle={`${users.length} resultados`} />
+        <SectionHeader
+          title="Todos los usuarios"
+          subtitle={`${users.length} resultados`}
+        />
+
         <input
           className="search-input"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
+          onChange={(event) =>
+            setSearch(event.target.value)
+          }
           placeholder="Buscar usuario..."
         />
       </div>
+
       <Table>
         <thead>
           <tr>
@@ -44,36 +70,99 @@ export function UsersTab({
             <th>Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           {users.map((user) => {
-            const status = statusFor(user);
-            const self = user.id === currentUserId;
+            const status =
+              statusFor(user);
+
+            const self =
+              user.id === currentUserId;
+
+            const pendingContractor =
+              user.role === "contractor" &&
+              !user.active &&
+              !user.approvedAt;
+
             return (
               <tr key={user.id}>
                 <td>
-                  <strong>{user.fullName || "Sin nombre"}</strong>
-                  <small>{user.phone || "Sin teléfono"}</small>
+                  <strong>
+                    {user.fullName ||
+                      "Sin nombre"}
+                  </strong>
+
+                  <small>
+                    {user.phone ||
+                      "Sin teléfono"}
+                  </small>
                 </td>
-                <td>{roleLabel(user.role)}</td>
-                <td>{user.companyName}</td>
+
                 <td>
-                  <span className={`badge ${status.className}`}>{status.label}</span>
+                  {roleLabel(user.role)}
                 </td>
-                <td>{formatDate(user.createdAt)}</td>
+
+                <td>
+                  {user.companyName}
+                </td>
+
+                <td>
+                  <span
+                    className={`badge ${status.className}`}
+                  >
+                    {status.label}
+                  </span>
+                </td>
+
+                <td>
+                  {formatDate(user.createdAt)}
+                </td>
+
                 <td>
                   <div className="actions">
-                    <button className="icon-button" onClick={() => onEdit(user)} aria-label="Editar">
+                    <button
+                      className="icon-button"
+                      onClick={() =>
+                        onEdit(user)
+                      }
+                      aria-label="Editar"
+                    >
                       <Edit3 size={17} />
                     </button>
-                    {!self && (
+
+                    {user.role ===
+                      "contractor" && (
                       <button
-                        className={`button ${user.active ? "button-danger" : "button-primary"}`}
-                        disabled={saving}
-                        onClick={() => void onToggle(user)}
+                        className="button button-secondary"
+                        onClick={() =>
+                          onReview(user)
+                        }
                       >
-                        {user.active ? "Suspender" : user.approvedAt ? "Reactivar" : "Aprobar"}
+                        <Eye size={15} />
+                        Revisar
                       </button>
                     )}
+
+                    {!self &&
+                      !pendingContractor && (
+                        <button
+                          className={`button ${
+                            user.active
+                              ? "button-danger"
+                              : "button-primary"
+                          }`}
+                          disabled={saving}
+                          onClick={() =>
+                            void onToggle(user)
+                          }
+                        >
+                          {user.active
+                            ? "Suspender"
+                            : user.approvedAt
+                              ? "Reactivar"
+                              : "Aprobar"}
+                        </button>
+                      )}
                   </div>
                 </td>
               </tr>
