@@ -39,6 +39,8 @@ export default function LoginScreen() {
   const [recoveryCaptchaToken, setRecoveryCaptchaToken] = useState<string | null>(null);
   const [recoveryCaptchaResetKey, setRecoveryCaptchaResetKey] = useState(0);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [recoverySent, setRecoverySent] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
 
   async function handleSignIn() {
     const cleanEmail = email.trim();
@@ -86,36 +88,47 @@ export default function LoginScreen() {
     if (!cleanEmail) {
       Alert.alert(
         "Correo requerido",
-        "Introduce tu correo antes de solicitar la recuperación.",
+        "Introduce tu correo antes de solicitar la recuperaci?n.",
       );
       return;
     }
 
     if (!recoveryCaptchaToken) {
-      Alert.alert("Verificación requerida", "Completa la verificación de seguridad para recuperar tu contraseña.");
-      return;
-    }
-
-    const captchaToken = recoveryCaptchaToken;
-    setRecoveryCaptchaToken(null);
-    setRecoveryCaptchaResetKey((current) => current + 1);
-
-    const { error } =
-      await resetPassword(cleanEmail, captchaToken);
-
-    if (error) {
       Alert.alert(
-        "No fue posible enviar el correo",
-        translateAuthError(error.message),
+        "Verificaci?n requerida",
+        "Completa la verificaci?n de seguridad para recuperar tu contrase?a.",
       );
       return;
     }
 
-    Alert.alert(
-      "Correo enviado",
-      "Revisa tu bandeja de entrada para restablecer la contraseña.",
+    const captchaToken = recoveryCaptchaToken;
+
+    setRecoveryCaptchaToken(null);
+    setRecoveryCaptchaResetKey(
+      (current) => current + 1,
     );
-    setShowRecovery(false);
+
+    try {
+      setSubmitting(true);
+
+      const { error } = await resetPassword(
+        cleanEmail,
+        captchaToken,
+      );
+
+      if (error) {
+        Alert.alert(
+          "No fue posible enviar la solicitud",
+          translateAuthError(error.message),
+        );
+        return;
+      }
+
+      setRecoveryEmail(cleanEmail);
+      setRecoverySent(true);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -184,7 +197,97 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.card}>
-            {showRecovery ? (
+            {recoverySent ? (
+              <>
+                <View
+                  style={[
+                    styles.logo,
+                    {
+                      alignSelf: "center",
+                      marginBottom: 18,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="checkmark"
+                    size={26}
+                    color={colors.surfaceDark}
+                  />
+                </View>
+
+                <Text style={styles.formEyebrow}>
+                  RECUPERACI?N SOLICITADA
+                </Text>
+
+                <Text style={styles.title}>
+                  Solicitud enviada con ?xito
+                </Text>
+
+                <Text style={styles.subtitle}>
+                  Si existe una cuenta asociada a este correo,
+                  recibir?s un enlace para cambiar tu contrase?a.
+                </Text>
+
+                <View
+                  style={[
+                    styles.inputContainer,
+                    {
+                      marginBottom: 18,
+                      justifyContent: "center",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="mail-outline"
+                    size={19}
+                    color={colors.primary}
+                  />
+
+                  <Text
+                    style={{
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: "700",
+                    }}
+                  >
+                    {recoveryEmail}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.subtitle,
+                    { marginBottom: 22 },
+                  ]}
+                >
+                  Revisa tu bandeja de entrada y tambi?n la
+                  carpeta de correo no deseado. El enlace es
+                  v?lido durante 1 hora.
+                </Text>
+
+                <Pressable
+                  onPress={() => {
+                    setRecoverySent(false);
+                    setRecoveryEmail("");
+                    setShowRecovery(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text style={styles.primaryButtonText}>
+                    Volver al inicio de sesi?n
+                  </Text>
+
+                  <Ionicons
+                    name="arrow-back-outline"
+                    size={19}
+                    color={colors.textLight}
+                  />
+                </Pressable>
+              </>
+            ) : showRecovery ? (
               <>
                 <Text style={styles.formEyebrow}>RECUPERAR ACCESO</Text>
                 <Text style={styles.title}>
@@ -254,7 +357,11 @@ export default function LoginScreen() {
                 </Pressable>
 
                 <Pressable
-                  onPress={() => setShowRecovery(false)}
+                  onPress={() => {
+                    setRecoverySent(false);
+                    setRecoveryEmail("");
+                    setShowRecovery(false);
+                  }}
                   style={styles.forgotButton}
                 >
                   <Text style={[styles.forgotText, { color: colors.textSecondary }]}>
@@ -350,7 +457,11 @@ export default function LoginScreen() {
                 />
 
                 <Pressable
-                  onPress={() => setShowRecovery(true)}
+                  onPress={() => {
+                    setRecoverySent(false);
+                    setRecoveryEmail("");
+                    setShowRecovery(true);
+                  }}
                   style={styles.forgotButton}
                 >
                   <Text style={styles.forgotText}>

@@ -626,7 +626,16 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const user = await findUserByEmail(email);
+
       if (!user) {
+        request.log.info(
+          {
+            operation: "recover_password",
+            outcome: "no_matching_account"
+          },
+          "Recuperaci?n procesada sin cuenta coincidente."
+        );
+
         return genericPasswordRecoveryResponse;
       }
 
@@ -644,6 +653,14 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       );
 
       if (recentResult.rows[0]) {
+        request.log.info(
+          {
+            operation: "recover_password",
+            outcome: "throttled"
+          },
+          "Recuperaci?n limitada por frecuencia."
+        );
+
         return genericPasswordRecoveryResponse;
       }
 
@@ -675,6 +692,14 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
         client.release();
       }
 
+      request.log.info(
+        {
+          operation: "recover_password",
+          outcome: "token_created"
+        },
+        "Token de recuperaci?n creado correctamente."
+      );
+
       const delivery = await sendPasswordResetEmail({
         to: user.email,
         fullName: null,
@@ -683,8 +708,20 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
       if (!delivery.sent) {
         request.log.warn(
-          { operation: "password_reset_email", reason: delivery.reason },
-          "No se pudo entregar un correo de autenticación."
+          {
+            operation: "recover_password",
+            outcome: "delivery_failed",
+            reason: delivery.reason
+          },
+          "Resend no acept? el correo de recuperaci?n."
+        );
+      } else {
+        request.log.info(
+          {
+            operation: "recover_password",
+            outcome: "delivery_accepted"
+          },
+          "Resend acept? el correo de recuperaci?n."
         );
       }
 
