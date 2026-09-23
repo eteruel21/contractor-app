@@ -354,6 +354,16 @@ export default function App() {
   ) {
     if (!reviewUser) return;
 
+    const previewWindow =
+      window.open(
+        "about:blank",
+        "_blank"
+      );
+
+    if (previewWindow) {
+      previewWindow.opener = null;
+    }
+
     setDocumentLoading(documentType);
     setReviewError(null);
 
@@ -394,17 +404,34 @@ export default function App() {
       const url =
         URL.createObjectURL(blob);
 
-      window.open(
-        url,
-        "_blank",
-        "noopener,noreferrer"
-      );
+      if (previewWindow) {
+        previewWindow.location.href =
+          url;
+      } else {
+        const link =
+          window.document.createElement(
+            "a"
+          );
+
+        link.href = url;
+        link.download =
+          document.fileName;
+
+        window.document.body.appendChild(
+          link
+        );
+
+        link.click();
+        link.remove();
+      }
 
       window.setTimeout(
         () => URL.revokeObjectURL(url),
         60000
       );
     } catch (error) {
+      previewWindow?.close();
+
       setReviewError(
         errorMessage(error)
       );
