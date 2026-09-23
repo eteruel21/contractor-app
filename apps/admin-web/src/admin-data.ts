@@ -207,3 +207,74 @@ export async function adjustPrices(input: {
     body: JSON.stringify(input)
   });
 }
+
+export type ContractorDocumentType =
+  | "identification"
+  | "operation_notice"
+  | "references"
+  | "address_proof";
+
+export type ContractorReview = {
+  id: string;
+  email: string;
+  fullName: string;
+  phone: string;
+  active: boolean;
+  approvedAt: string | null;
+  createdAt: string;
+
+  province: string;
+  district: string;
+  corregimiento: string;
+
+  businessName: string;
+  idDocument: string;
+  taxId: string;
+  taxDv: string;
+  primaryCategory: string;
+
+  specialties: string[];
+  experienceYears: number | null;
+  workAreas: string[];
+
+  professionalDescription: string;
+  availability: string;
+  preferredContactMethod: string;
+
+  emitsInvoice: boolean;
+  hasTransport: boolean;
+  workMode: string;
+
+  portfolioUrls: string[];
+  certifications: string[];
+
+  documents: {
+    identification: boolean;
+    operationNotice: boolean;
+    references: boolean;
+    addressProof: boolean;
+  };
+};
+
+export type ContractorDocumentResponse = {
+  fileName: string;
+  mimeType: string;
+  base64: string;
+};
+
+export async function loadContractorReview(
+  userId: string
+): Promise<ContractorReview> {
+  return authenticatedRequest<ContractorReview>(
+    `/admin/users/${encodeURIComponent(userId)}/review`
+  );
+}
+
+export async function loadContractorDocument(
+  userId: string,
+  documentType: ContractorDocumentType
+): Promise<ContractorDocumentResponse> {
+  return authenticatedRequest<ContractorDocumentResponse>(
+    `/admin/users/${encodeURIComponent(userId)}/documents/${documentType}`
+  );
+}

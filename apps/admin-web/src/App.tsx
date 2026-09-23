@@ -11,6 +11,10 @@ import {
   type GlobalCatalogItem,
   type ItemType,
   loadAdminData,
+  loadContractorReview,
+  loadContractorDocument,
+  type ContractorReview,
+  type ContractorDocumentType,
   type PlatformUser,
   saveCategory,
   saveFormula,
@@ -51,6 +55,7 @@ import { CalculationsTab } from "./components/CalculationsTab";
 import { PricingTab } from "./components/PricingTab";
 import { SystemTab } from "./components/SystemTab";
 import { EditorModal, type Editor } from "./components/EditorModal";
+import { ContractorReviewModal } from "./components/ContractorReviewModal";
 
 const EMPTY_DATA: AdminData = {
   users: [],
@@ -171,6 +176,33 @@ export default function App() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [saving, setSaving] = useState(false);
 
+  const [
+    reviewUser,
+    setReviewUser
+  ] = useState<PlatformUser | null>(null);
+
+  const [
+    contractorReview,
+    setContractorReview
+  ] = useState<ContractorReview | null>(null);
+
+  const [
+    reviewLoading,
+    setReviewLoading
+  ] = useState(false);
+
+  const [
+    reviewError,
+    setReviewError
+  ] = useState<string | null>(null);
+
+  const [
+    documentLoading,
+    setDocumentLoading
+  ] = useState<ContractorDocumentType | null>(
+    null
+  );
+
   const [priceType, setPriceType] = useState<ItemType | "all">("all");
   const [priceTarget, setPriceTarget] = useState<"unit_cost" | "sale_price">("sale_price");
   const [pricePercentage, setPricePercentage] = useState("5");
@@ -286,6 +318,136 @@ export default function App() {
     window.setTimeout(() => setSuccess(null), 3500);
   }
 
+  async function openContractorReview(
+    user: PlatformUser
+  ) {
+    setReviewUser(user);
+    setContractorReview(null);
+    setReviewError(null);
+    setReviewLoading(true);
+
+    try {
+      const review =
+        await loadContractorReview(
+          user.id
+        );
+
+      setContractorReview(review);
+    } catch (error) {
+      setReviewError(
+        errorMessage(error)
+      );
+    } finally {
+      setReviewLoading(false);
+    }
+  }
+
+  function closeContractorReview() {
+    setReviewUser(null);
+    setContractorReview(null);
+    setReviewError(null);
+    setDocumentLoading(null);
+  }
+
+  async function openContractorDocument(
+    documentType: ContractorDocumentType
+  ) {
+    if (!reviewUser) return;
+
+    setDocumentLoading(documentType);
+    setReviewError(null);
+
+    try {
+      const document =
+        await loadContractorDocument(
+          reviewUser.id,
+          documentType
+        );
+
+      const binary =
+        window.atob(document.base64);
+
+      const bytes =
+        new Uint8Array(
+          binary.length
+        );
+
+      for (
+        let index = 0;
+        index < binary.length;
+        index += 1
+      ) {
+        bytes[index] =
+          binary.charCodeAt(index);
+      }
+
+      const blob =
+        new Blob(
+          [bytes],
+          {
+            type:
+              document.mimeType ||
+              "application/octet-stream"
+          }
+        );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+      window.setTimeout(
+        () => URL.revokeObjectURL(url),
+        60000
+      );
+    } catch (error) {
+      setReviewError(
+        errorMessage(error)
+      );
+    } finally {
+      setDocumentLoading(null);
+    }
+  }
+
+  async function approveContractorFromReview() {
+    if (
+      !reviewUser ||
+      !session?.user
+    ) {
+      return;
+    }
+
+    setSaving(true);
+    setReviewError(null);
+
+    try {
+      await saveUser(
+        {
+          ...userDraft(reviewUser),
+          active: true
+        },
+        session.user.id
+      );
+
+      closeContractorReview();
+
+      showSuccess(
+        "Contratista aprobado correctamente."
+      );
+
+      await loadData();
+    } catch (error) {
+      setReviewError(
+        errorMessage(error)
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
   async function toggleUser(user: PlatformUser) {
     if (!session?.user || user.id === session.user.id) return;
     setSaving(true);
@@ -534,6 +696,7 @@ export default function App() {
               <DashboardTab
                 data={data}
                 pendingUsers={pendingUsers}
+                onReview={openContractorReview}
                 onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })}
                 onToggle={toggleUser}
               />
@@ -541,6 +704,7 @@ export default function App() {
             {activeTab === "users" && (
               <UsersTab
                 users={visibleUsers}
+                onReview={openContractorReview}
                 search={search}
                 setSearch={setSearch}
                 currentUserId={session.user.id}
@@ -598,6 +762,18 @@ export default function App() {
         )}
       </main>
 
+      {reviewUser && (
+        <ContractorReviewModal
+          review={contractorReview}
+          loading={reviewLoading}
+          error={reviewError}
+          saving={saving}
+          documentLoading={documentLoading}
+          onClose={closeContractorReview}
+          onApprove={approveContractorFromReview}
+          onOpenDocument={openContractorDocument}
+        />
+      )}
       {editor && (
         <EditorModal
           editor={editor}
