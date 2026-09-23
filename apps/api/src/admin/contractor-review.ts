@@ -27,6 +27,28 @@ const DOCUMENT_FILE_BASENAME: Record<
   address_proof: "comprobante-domicilio"
 };
 
+function expectedContractorDocumentPath(
+  userId: string,
+  documentType: ContractorDocumentType
+): string {
+  return `profile-documents/${userId}/${documentType}`;
+}
+
+function isOwnedContractorDocumentPath(
+  value: unknown,
+  userId: string,
+  documentType: ContractorDocumentType
+): boolean {
+  return (
+    typeof value === "string" &&
+    value.trim() ===
+      expectedContractorDocumentPath(
+        userId,
+        documentType
+      )
+  );
+}
+
 export function isContractorDocumentType(
   value: unknown
 ): value is ContractorDocumentType {
@@ -253,21 +275,31 @@ export async function getContractorReview(
 
         documents: {
           identification:
-            Boolean(row.doc_id_url),
+            isOwnedContractorDocumentPath(
+              row.doc_id_url,
+              targetUserId,
+              "identification"
+            ),
 
           operationNotice:
-            Boolean(
-              row.doc_operation_notice_url
+            isOwnedContractorDocumentPath(
+              row.doc_operation_notice_url,
+              targetUserId,
+              "operation_notice"
             ),
 
           references:
-            Boolean(
-              row.doc_references_url
+            isOwnedContractorDocumentPath(
+              row.doc_references_url,
+              targetUserId,
+              "references"
             ),
 
           addressProof:
-            Boolean(
-              row.doc_address_proof_url
+            isOwnedContractorDocumentPath(
+              row.doc_address_proof_url,
+              targetUserId,
+              "address_proof"
             )
         }
       };
@@ -319,7 +351,16 @@ export async function getContractorDocument(
       }
     );
 
-  if (!storagePath) {
+  const expectedStoragePath =
+    expectedContractorDocumentPath(
+      targetUserId,
+      documentType
+    );
+
+  if (
+    !storagePath ||
+    storagePath !== expectedStoragePath
+  ) {
     return null;
   }
 
