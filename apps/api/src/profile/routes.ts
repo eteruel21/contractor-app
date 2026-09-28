@@ -9,6 +9,7 @@ import {
 import {
   withUserTransaction
 } from "../db/with-user-transaction.js";
+import { getUserProfileDetails } from "./details.js";
 
 const updateProfileSchema = z.object({
   fullName: z.string().trim().min(2).max(150),
@@ -98,6 +99,33 @@ const updateContractorSchema = z.object({
 export async function registerProfileRoutes(
   app: FastifyInstance
 ): Promise<void> {
+  app.get(
+    "/profile/details",
+    {
+      preHandler: authenticateRequest
+    },
+    async (request, reply) => {
+      const userId = request.authenticatedUser?.id;
+
+      if (!userId) {
+        return reply.status(401).send({
+          message: "Se requiere autenticación."
+        });
+      }
+
+      const profile = await getUserProfileDetails(userId, userId);
+
+      if (!profile) {
+        return reply.status(404).send({
+          message: "No se encontró el perfil."
+        });
+      }
+
+      reply.header("Cache-Control", "private, no-store");
+      return profile;
+    }
+  );
+
   app.patch(
     "/profile",
     {

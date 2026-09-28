@@ -11,9 +11,9 @@ import {
   type GlobalCatalogItem,
   type ItemType,
   loadAdminData,
-  loadContractorReview,
-  loadContractorDocument,
-  type ContractorReview,
+  loadUserProfile,
+  loadUserProfileDocument,
+  type UserProfileDetail,
   type ContractorDocumentType,
   type PlatformUser,
   saveCategory,
@@ -55,7 +55,7 @@ import { CalculationsTab } from "./components/CalculationsTab";
 import { PricingTab } from "./components/PricingTab";
 import { SystemTab } from "./components/SystemTab";
 import { EditorModal, type Editor } from "./components/EditorModal";
-import { ContractorReviewModal } from "./components/ContractorReviewModal";
+import { UserProfileModal } from "./components/UserProfileModal";
 
 const EMPTY_DATA: AdminData = {
   users: [],
@@ -184,7 +184,7 @@ export default function App() {
   const [
     contractorReview,
     setContractorReview
-  ] = useState<ContractorReview | null>(null);
+  ] = useState<UserProfileDetail | null>(null);
 
   const [
     reviewLoading,
@@ -328,7 +328,7 @@ export default function App() {
 
     try {
       const review =
-        await loadContractorReview(
+        await loadUserProfile(
           user.id
         );
 
@@ -369,7 +369,7 @@ export default function App() {
 
     try {
       const document =
-        await loadContractorDocument(
+        await loadUserProfileDocument(
           reviewUser.id,
           documentType
         );
@@ -723,7 +723,7 @@ export default function App() {
               <DashboardTab
                 data={data}
                 pendingUsers={pendingUsers}
-                onReview={openContractorReview}
+                onViewProfile={openContractorReview}
                 onEdit={(user) => setEditor({ kind: "user", draft: userDraft(user) })}
                 onToggle={toggleUser}
               />
@@ -731,7 +731,7 @@ export default function App() {
             {activeTab === "users" && (
               <UsersTab
                 users={visibleUsers}
-                onReview={openContractorReview}
+                onViewProfile={openContractorReview}
                 search={search}
                 setSearch={setSearch}
                 currentUserId={session.user.id}
@@ -790,13 +790,16 @@ export default function App() {
       </main>
 
       {reviewUser && (
-        <ContractorReviewModal
-          review={contractorReview}
+        <UserProfileModal
+          profile={contractorReview}
+          fallbackName={reviewUser.fullName}
           loading={reviewLoading}
-          error={reviewError}
+          error={contractorReview ? null : reviewError}
+          actionError={contractorReview ? reviewError : null}
           saving={saving}
           documentLoading={documentLoading}
           onClose={closeContractorReview}
+          onRetry={() => void openContractorReview(reviewUser)}
           onApprove={approveContractorFromReview}
           onOpenDocument={openContractorDocument}
         />

@@ -203,9 +203,9 @@ button { cursor: pointer; }
   .parameter-row { grid-template-columns: 1fr; }
 }
 
-/* ─── Contractor review ─── */
+/* ─── User profile ─── */
 
-.contractor-review-modal {
+.user-profile-modal {
   width: min(1050px, 100%);
 }
 
@@ -219,9 +219,68 @@ button { cursor: pointer; }
   color: #91a3ba;
 }
 
-.contractor-review-content {
+.user-profile-content {
   display: grid;
   gap: 18px;
+}
+
+.profile-error-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-error-state .alert-banner {
+  width: min(620px, 100%);
+}
+
+.profile-identity {
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-identity h3,
+.profile-identity p {
+  margin: 0;
+}
+
+.profile-identity p {
+  margin-top: 4px;
+  color: #91a3ba;
+  overflow-wrap: anywhere;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  border: 1px solid #31506d;
+  border-radius: 50%;
+  color: #bbf7d0;
+  background: #16314a;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-badges {
+  margin-top: 9px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
 }
 
 .review-section {
@@ -235,6 +294,33 @@ button { cursor: pointer; }
   margin: 0 0 16px;
   color: #f8fafc;
   font-size: 15px;
+}
+
+.profile-section-heading {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-section-heading h3 {
+  margin: 0;
+}
+
+.profile-section-heading p {
+  margin: 5px 0 0;
+  color: #71849d;
+  font-size: 12px;
+}
+
+.profile-company-logo {
+  width: 74px;
+  height: 52px;
+  border: 1px solid #2b4059;
+  border-radius: 9px;
+  background: white;
+  object-fit: contain;
 }
 
 .review-grid {
@@ -350,16 +436,162 @@ button { cursor: pointer; }
   font-size: 11px;
 }
 
+.profile-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-subsection {
+  min-width: 0;
+}
+
+.profile-subsection h4 {
+  margin: 0 0 10px;
+  color: #cbd6e5;
+  font-size: 13px;
+}
+
+.profile-subsection .empty-state,
+.review-section > .empty-state {
+  min-height: 92px;
+  border: 1px dashed #2b4059;
+  border-radius: 10px;
+}
+
+.profile-association-list {
+  display: grid;
+  gap: 9px;
+}
+
+.profile-association {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #22354b;
+  border-radius: 10px;
+  background: #0b1728;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-association > svg {
+  flex: 0 0 auto;
+  color: #4ade80;
+}
+
+.profile-association strong,
+.profile-association small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.profile-association strong {
+  color: #e5eef9;
+  font-size: 13px;
+}
+
+.profile-association small {
+  margin-top: 3px;
+  color: #71849d;
+  font-size: 11px;
+}
+
+.profile-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-photo-card {
+  min-width: 0;
+  border: 1px solid #22354b;
+  border-radius: 11px;
+  background: #0b1728;
+  overflow: hidden;
+}
+
+.profile-photo-preview {
+  height: 150px;
+  color: #93c5fd;
+  background: #081220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.profile-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .18s ease;
+}
+
+.profile-photo-preview:hover img {
+  transform: scale(1.025);
+}
+
+.profile-photo-unavailable {
+  flex-direction: column;
+  gap: 8px;
+  color: #71849d;
+  font-size: 11px;
+}
+
+.profile-photo-body {
+  padding: 12px;
+}
+
+.profile-photo-body strong,
+.profile-photo-body small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.profile-photo-body strong {
+  color: #e5eef9;
+  font-size: 13px;
+}
+
+.profile-photo-body small {
+  margin-top: 4px;
+  color: #71849d;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.profile-photo-body p {
+  margin: 9px 0 0;
+  color: #cbd6e5;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 @media (max-width: 850px) {
   .review-grid {
     grid-template-columns:
       repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-photo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 600px) {
   .review-grid {
     grid-template-columns: 1fr;
+  }
+
+  .profile-two-column,
+  .profile-photo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-section-heading {
+    align-items: flex-start;
   }
 
   .review-document {

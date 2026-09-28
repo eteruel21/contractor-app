@@ -44,7 +44,7 @@ interface DashboardTabProps {
   data: AdminData;
   pendingUsers: PlatformUser[];
   onEdit: (user: PlatformUser) => void;
-  onReview: (user: PlatformUser) => void;
+  onViewProfile: (user: PlatformUser) => void;
   onToggle: (
     user: PlatformUser
   ) => Promise<void>;
@@ -54,7 +54,7 @@ export function DashboardTab({
   data,
   pendingUsers,
   onEdit,
-  onReview,
+  onViewProfile,
   onToggle,
 }: DashboardTabProps) {
   return (
@@ -137,18 +137,23 @@ export function DashboardTab({
                         Editar
                       </button>
 
-                      {user.role ===
-                      "contractor" ? (
-                        <button
-                          className="button button-primary"
-                          onClick={() =>
-                            onReview(user)
-                          }
-                        >
-                          <Eye size={15} />
-                          Revisar
-                        </button>
-                      ) : (
+                      <button
+                        className={
+                          user.role === "contractor"
+                            ? "button button-primary"
+                            : "button button-secondary"
+                        }
+                        onClick={() =>
+                          onViewProfile(user)
+                        }
+                      >
+                        <Eye size={15} />
+                        {user.role === "contractor"
+                          ? "Revisar"
+                          : "Ver perfil"}
+                      </button>
+
+                      {user.role !== "contractor" && (
                         <button
                           className="button button-primary"
                           onClick={() =>

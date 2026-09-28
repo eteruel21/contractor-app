@@ -36,6 +36,21 @@
         "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAESG10HX8vzKwIUe",
         "EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL": "https://app.leurettech.com/turnstile"
       }
+    },
+    "pilot": {
+      "distribution": "internal",
+      "channel": "pilot",
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.leurettech.com",
+        "EXPO_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAESG10HX8vzKwIUe",
+        "EXPO_PUBLIC_TURNSTILE_CHALLENGE_URL": "https://app.leurettech.com/turnstile"
+      }
     }
   },
   "submit": {

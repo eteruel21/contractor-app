@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -18,11 +18,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, layout, radius, shadows } from "@/constants/theme";
+import { ProfileOverview } from "@/components/ProfileOverview";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   deleteOwnAccount,
   exportAccountData,
 } from "@/services/api";
+import {
+  loadOwnProfileDetails,
+  type UserProfileDetails
+} from "@/services/profile-details-service";
 
 const TERMS_URL = "https://admin.leurettech.com/legal/terms";
 const PRIVACY_URL = "https://admin.leurettech.com/legal/privacy";
@@ -33,6 +38,36 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState(profile?.phone ?? "");
   const [saving, setSaving] = useState(false);
   const [accountAction, setAccountAction] = useState<"export" | "delete" | null>(null);
+  const [details, setDetails] = useState<UserProfileDetails | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
+
+  const loadDetails = useCallback(async () => {
+    setDetailsLoading(true);
+    setDetailsError(null);
+
+    try {
+      setDetails(await loadOwnProfileDetails());
+    } catch (error) {
+      setDetails(null);
+      setDetailsError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible cargar tu perfil completo."
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDetails();
+  }, [loadDetails]);
+
+  useEffect(() => {
+    setFullName(profile?.full_name ?? "");
+    setPhone(profile?.phone ?? "");
+  }, [profile?.id, profile?.updated_at, profile?.full_name, profile?.phone]);
 
   const initial = useMemo(
     () => (fullName.trim().charAt(0) || "P").toUpperCase(),
@@ -54,6 +89,8 @@ export default function ProfileScreen() {
       Alert.alert("No se pudo guardar", error);
       return;
     }
+
+    await loadDetails();
 
     Alert.alert("Perfil actualizado", "Tus datos se guardaron correctamente.");
   };
@@ -254,6 +291,15 @@ export default function ProfileScreen() {
               </>
             )}
           </Pressable>
+
+          <ProfileOverview
+            details={details}
+            loading={detailsLoading}
+            error={detailsError}
+            onRetry={() => {
+              void loadDetails();
+            }}
+          />
 
           <View style={styles.formCard}>
             <Text style={{ fontSize: 16, fontWeight: "900", color: colors.text, marginBottom: 12 }}>

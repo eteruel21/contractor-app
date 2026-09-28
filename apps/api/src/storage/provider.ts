@@ -18,7 +18,7 @@ type R2ObjectBodyLike = {
   };
 };
 
-type R2BucketBinding = {
+export type R2BucketBinding = {
   put(
     key: string,
     value: ArrayBuffer | ArrayBufferView,
@@ -36,21 +36,32 @@ type R2BucketBinding = {
 
 let r2Bucket: R2BucketBinding | null = null;
 
+type StorageRuntimeEnvironment =
+  | "development"
+  | "test"
+  | "staging"
+  | "production";
+
 const uploadsLocalDir = path.join(
   process.cwd(),
   "storage",
   "uploads"
 );
 
-function requiresR2Storage(): boolean {
+export function isLocalStorageFallbackAllowed(
+  runtimeEnvironment: StorageRuntimeEnvironment = env.NODE_ENV
+): boolean {
   return (
-    env.NODE_ENV === "production" ||
-    env.NODE_ENV === "staging"
+    runtimeEnvironment === "development" ||
+    runtimeEnvironment === "test"
   );
 }
 
-function assertLocalStorageAllowed(): void {
-  if (requiresR2Storage()) {
+export function assertStorageConfigured(
+  bucket: R2BucketBinding | null | undefined = r2Bucket,
+  runtimeEnvironment: StorageRuntimeEnvironment = env.NODE_ENV
+): void {
+  if (!bucket && !isLocalStorageFallbackAllowed(runtimeEnvironment)) {
     throw new Error(
       "R2_STORAGE es obligatorio en staging y producción."
     );
@@ -61,6 +72,7 @@ export function configureR2Storage(
   bucket: R2BucketBinding | null | undefined
 ): void {
   r2Bucket = bucket ?? null;
+  assertStorageConfigured();
 }
 
 export function isObjectStorageConfigured(): boolean {
@@ -112,7 +124,7 @@ export async function uploadStorageFile({
     return;
   }
 
-  assertLocalStorageAllowed();
+  assertStorageConfigured();
 
   const fullPath = path.join(
     uploadsLocalDir,
@@ -155,7 +167,7 @@ export async function downloadStorageFile(
     };
   }
 
-  assertLocalStorageAllowed();
+  assertStorageConfigured();
 
   const fullPath = path.join(
     uploadsLocalDir,
@@ -175,7 +187,7 @@ export async function deleteStorageFile(
     return;
   }
 
-  assertLocalStorageAllowed();
+  assertStorageConfigured();
 
   try {
     const fullPath = path.join(

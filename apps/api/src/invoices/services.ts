@@ -21,6 +21,10 @@ import {
   type ReverseInvoicePaymentInput,
   type TransitionInvoiceStatusInput
 } from "./repository.js";
+import {
+  notifyInvoiceIssued,
+  notifyInvoicePaymentRegistered
+} from "../notifications/event-service.js";
 
 export async function getInvoicesService(userId: string, companyId: string) {
   return findInvoicesRepo(userId, companyId);
@@ -78,7 +82,9 @@ export async function issueInvoiceService(
   invoiceId: string,
   companyId: string
 ) {
-  return issueInvoiceRepo(userId, invoiceId, companyId);
+  const invoice = await issueInvoiceRepo(userId, invoiceId, companyId);
+  await notifyInvoiceIssued(invoice);
+  return invoice;
 }
 
 export async function transitionInvoiceStatusService(
@@ -94,7 +100,11 @@ export async function recordInvoicePaymentService(
   invoiceId: string,
   input: CreateInvoicePaymentInput
 ) {
-  return recordInvoicePaymentRepo(userId, invoiceId, input);
+  const result = await recordInvoicePaymentRepo(userId, invoiceId, input);
+  if (result?.invoice && result.payment) {
+    await notifyInvoicePaymentRegistered(result.invoice, result.payment);
+  }
+  return result;
 }
 
 export async function reverseInvoicePaymentService(

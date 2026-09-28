@@ -1,8 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { sendPushNotificationToUser } from "../push-service.js";
 import * as repository from "../repository.js";
 
 describe("Push Notifications Service", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it("despacha notificaciones push usando la Expo Push API cuando existen tokens", async () => {
     vi.spyOn(repository, "findUserPushTokensRepo").mockResolvedValueOnce([
       {
@@ -35,8 +40,6 @@ describe("Push Notifications Service", () => {
     expect(payload[0].to).toBe("ExponentPushToken[mock-token-abc]");
     expect(payload[0].title).toBe("Presupuesto Aprobado");
 
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   it("retorna cero despachos si el usuario no tiene tokens push registrados", async () => {
@@ -49,7 +52,93 @@ describe("Push Notifications Service", () => {
 
     expect(result.sent).toBe(0);
     expect(result.failed).toBe(0);
+  });
 
-    vi.restoreAllMocks();
+  it("interpreta cada ticket de Expo y elimina DeviceNotRegistered", async () => {
+    vi.spyOn(repository, "findUserPushTokensRepo").mockResolvedValueOnce([
+      {
+        id: "token-1",
+        user_id: "usr-123",
+        expo_push_token: "ExponentPushToken[active-token]",
+        device_platform: "android"
+      },
+      {
+        id: "token-2",
+        user_id: "usr-123",
+        expo_push_token: "ExponentPushToken[expired-token]",
+        device_platform: "ios"
+      }
+    ]);
+    const deleteSpy = vi
+      .spyOn(repository, "deletePushTokenRepo")
+      .mockResolvedValueOnce(true);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          { status: "ok", id: "ticket-1" },
+          {
+            status: "error",
+            message: "Device is not registered",
+            details: { error: "DeviceNotRegistered" }
+          }
+        ]
+      })
+    }));
+
+    const result = await sendPushNotificationToUser("usr-123", {
+      title: "Factura emitida",
+      body: "Se emitió la factura FAC-104."
+    });
+
+    expect(result).toEqual({ sent: 1, failed: 1 });
+    expect(deleteSpy).toHaveBeenCalledWith(
+      "usr-123",
+      "ExponentPushToken[expired-token]"
+    );
+  });
+
+  it("marca como fallidos los mensajes sin ticket válido aunque Expo responda 200", async () => {
+    vi.spyOn(repository, "findUserPushTokensRepo").mockResolvedValueOnce([
+      {
+        id: "token-1",
+        user_id: "usr-123",
+        expo_push_token: "ExponentPushToken[mock-token]",
+        device_platform: "android"
+      }
+    ]);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [] })
+    }));
+
+    await expect(sendPushNotificationToUser("usr-123", {
+      title: "Pago registrado",
+      body: "Se registró un pago."
+    })).resolves.toEqual({ sent: 0, failed: 1 });
+  });
+
+  it("no propaga fallos de red y contabiliza todo el lote como fallido", async () => {
+    vi.spyOn(repository, "findUserPushTokensRepo").mockResolvedValueOnce([
+      {
+        id: "token-1",
+        user_id: "usr-123",
+        expo_push_token: "ExponentPushToken[first-token]",
+        device_platform: "android"
+      },
+      {
+        id: "token-2",
+        user_id: "usr-123",
+        expo_push_token: "ExponentPushToken[second-token]",
+        device_platform: "ios"
+      }
+    ]);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("network down")));
+
+    await expect(sendPushNotificationToUser("usr-123", {
+      title: "Presupuesto aprobado",
+      body: "El cliente aprobó el presupuesto."
+    })).resolves.toEqual({ sent: 0, failed: 2 });
   });
 });

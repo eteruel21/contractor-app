@@ -27,6 +27,7 @@ import {
   insertIdentity,
   insertToken,
   getUserStatus,
+  toPublicUserProfile,
   loadOwnProfile,
   createSession,
   updateUserSignIn,
@@ -266,20 +267,14 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
             reply.setCookie("refreshToken", refreshToken, getCookieOptions());
             return {
               ...restTokens,
-              user: {
-                ...profile,
-                status
-              },
+              user: toPublicUserProfile(profile, status),
               requiresApproval: status !== "active"
             };
           }
 
           return {
             ...tokens,
-            user: {
-              ...profile,
-              status
-            },
+            user: toPublicUserProfile(profile, status),
             requiresApproval: status !== "active"
           };
         });
@@ -376,10 +371,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
             accessToken,
             expiresIn: env.ACCESS_TOKEN_MINUTES * 60,
             sessionId: session.session_id,
-            user: {
-              ...profile,
-              status
-            },
+            user: toPublicUserProfile(profile, status),
             requiresApproval: status !== "active"
           };
         }
@@ -389,10 +381,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
           refreshToken: newRefreshToken,
           expiresIn: env.ACCESS_TOKEN_MINUTES * 60,
           sessionId: session.session_id,
-          user: {
-            ...profile,
-            status
-          },
+          user: toPublicUserProfile(profile, status),
           requiresApproval: status !== "active"
         };
       } catch (error) {
@@ -453,10 +442,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
         const status = getUserStatus(profile);
         return {
-          user: {
-            ...profile,
-            status
-          },
+          user: toPublicUserProfile(profile, status),
           requiresApproval: status !== "active"
         };
       } catch (error) {
