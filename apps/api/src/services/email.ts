@@ -1,5 +1,3 @@
-import nodemailer, { type Transporter } from "nodemailer";
-
 import { env } from "../config/env.js";
 
 type VerificationEmailInput = {
@@ -21,237 +19,40 @@ export type EmailDeliveryResult =
       reason: "not_configured" | "delivery_failed";
     };
 
-export type EmailTransportHealth =
-  | { ready: true }
-  | {
-      ready: false;
-      reason: "not_configured" | "verification_failed";
-    };
-
-type EmailEnvironment = typeof env & {
-  SMTP_HOST?: string;
-  SMTP_PORT?: number;
-  SMTP_USER?: string;
-  SMTP_PASS?: string;
-  EMAIL_FROM?: string;
-  EMAIL_REPLY_TO?: string;
-  EMAIL_WEB_BASE_URL?: string;
-};
-
-type SmtpConfiguration = {
-  host: string;
-  port: number;
-  user: string;
-  pass: string;
-  from: string;
-  replyTo?: string;
-};
-
-type TransactionalMessage = {
+type ResendMessage = {
   to: string;
   subject: string;
   text: string;
   html: string;
 };
 
-type TransactionalTemplate = {
-  title: string;
-  preheader: string;
-  heading: string;
-  greeting: string;
-  introduction: string;
-  webLink: string;
-  webAction: string;
-  deepLink: string;
-  deepLinkAction: string;
-  expiration: string;
-  securityNotice: string;
-  code?: string;
-  codeLabel?: string;
-};
-
-const emailEnvironment = env as EmailEnvironment;
-
-const DEVELOPMENT_WEB_BASE_URL = "https://app.leurettech.com";
-const SMTP_CONNECTION_TIMEOUT_MS = 10_000;
-const SMTP_GREETING_TIMEOUT_MS = 10_000;
-const SMTP_SOCKET_TIMEOUT_MS = 30_000;
-const SMTP_DNS_TIMEOUT_MS = 10_000;
-
-let cachedTransport:
-  | {
-      configuration: SmtpConfiguration;
-      transporter: Transporter;
-    }
-  | undefined;
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function normalizeOptionalValue(value: string | undefined): string | undefined {
-  const normalized = value?.trim();
-  return normalized ? normalized : undefined;
-}
-
-function resolveSmtpConfiguration(): SmtpConfiguration | null {
-  const host = normalizeOptionalValue(emailEnvironment.SMTP_HOST);
-  const user = normalizeOptionalValue(emailEnvironment.SMTP_USER);
-  const pass = emailEnvironment.SMTP_PASS;
-  const from = normalizeOptionalValue(emailEnvironment.EMAIL_FROM);
-  const replyTo = normalizeOptionalValue(emailEnvironment.EMAIL_REPLY_TO);
-  const port = emailEnvironment.SMTP_PORT ?? 587;
-
-  if (!host || !user || !pass || !from) {
-    return null;
-  }
-
-  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
-    return null;
-  }
-
-  return {
-    host,
-    port,
-    user,
-    pass,
-    from,
-    ...(replyTo ? { replyTo } : {})
-  };
-}
-
-function smtpConfigurationsMatch(
-  first: SmtpConfiguration,
-  second: SmtpConfiguration
-): boolean {
-  return (
-    first.host === second.host &&
-    first.port === second.port &&
-    first.user === second.user &&
-    first.pass === second.pass &&
-    first.from === second.from &&
-    first.replyTo === second.replyTo
-  );
-}
-
-function getEmailTransporter():
-  | {
-      configuration: SmtpConfiguration;
-      transporter: Transporter;
-    }
-  | null {
-  const configuration = resolveSmtpConfiguration();
-
-  if (!configuration) {
-    return null;
-  }
-
-  if (
-    cachedTransport &&
-    smtpConfigurationsMatch(cachedTransport.configuration, configuration)
-  ) {
-    return cachedTransport;
-  }
-
-  const secure = configuration.port === 465;
-  const transporter = nodemailer.createTransport({
-    host: configuration.host,
-    port: configuration.port,
-    secure,
-    requireTLS: !secure,
-    auth: {
-      user: configuration.user,
-      pass: configuration.pass
-    },
-    connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
-    greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
-    socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
-    dnsTimeout: SMTP_DNS_TIMEOUT_MS,
-    tls: {
-      minVersion: "TLSv1.2",
-      rejectUnauthorized: true
-    },
-    logger: false,
-    debug: false
-  });
-
-  cachedTransport = { configuration, transporter };
-  return cachedTransport;
-}
-
-function resolveWebBaseUrl(): string | null {
-  const configured = normalizeOptionalValue(emailEnvironment.EMAIL_WEB_BASE_URL);
-  const rawBaseUrl =
-    configured ??
-    (emailEnvironment.NODE_ENV === "development" || emailEnvironment.NODE_ENV === "test"
-      ? DEVELOPMENT_WEB_BASE_URL
-      : undefined);
-
-  if (!rawBaseUrl) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(rawBaseUrl);
-
-    if (
-      parsed.protocol !== "https:" ||
-      parsed.username ||
-      parsed.password ||
-      parsed.search ||
-      parsed.hash
-    ) {
-      return null;
-    }
-
-    return parsed.toString().replace(/\/+$/, "");
-  } catch {
-    return null;
-  }
-}
-
-function buildWebLink(route: string, token: string): string {
-  const baseUrl = resolveWebBaseUrl();
-
-  if (!baseUrl) {
-    throw new Error("La URL web de correos no está configurada correctamente.");
-  }
-
-  return `${baseUrl}/${route}?token=${encodeURIComponent(token)}`;
-}
-
-async function deliverWithSmtp({
+async function deliverWithResend({
   to,
   subject,
   text,
   html
-}: TransactionalMessage): Promise<EmailDeliveryResult> {
-  const transport = getEmailTransporter();
-
-  if (!transport) {
+}: ResendMessage): Promise<EmailDeliveryResult> {
+  if (!env.RESEND_API_KEY || !env.EMAIL_FROM) {
     return { sent: false, reason: "not_configured" };
   }
 
   try {
-    const delivery = await transport.transporter.sendMail({
-      from: transport.configuration.from,
-      to,
-      ...(transport.configuration.replyTo
-        ? { replyTo: transport.configuration.replyTo }
-        : {}),
-      subject,
-      text,
-      html,
-      disableFileAccess: true,
-      disableUrlAccess: true
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: env.EMAIL_FROM,
+        to: [to],
+        subject,
+        text,
+        html
+      })
     });
 
-    if (Array.isArray(delivery.rejected) && delivery.rejected.length > 0) {
+    if (!response.ok) {
       return { sent: false, reason: "delivery_failed" };
     }
 
@@ -261,127 +62,238 @@ async function deliverWithSmtp({
   }
 }
 
-export async function verifyEmailTransport(): Promise<EmailTransportHealth> {
-  const transport = getEmailTransporter();
-
-  if (!transport) {
-    return { ready: false, reason: "not_configured" };
-  }
-
-  try {
-    await transport.transporter.verify();
-    return { ready: true };
-  } catch {
-    return { ready: false, reason: "verification_failed" };
-  }
-}
-
-export function resetEmailTransportForTests(): void {
-  if (emailEnvironment.NODE_ENV !== "test") {
-    return;
-  }
-
-  cachedTransport = undefined;
-}
-
 export function buildVerificationLinks(token: string) {
   const deepLink = `contractorpro://confirm-email?token=${encodeURIComponent(token)}`;
-  const webLink = buildWebLink("confirm-email", token);
+  const webLink = `https://app.leurettech.com/confirm-email?token=${encodeURIComponent(token)}`;
   return { deepLink, webLink };
 }
 
 export function buildPasswordResetLinks(token: string) {
   const deepLink = `contractorpro://reset-password?token=${encodeURIComponent(token)}`;
-  const webLink = buildWebLink("reset-password", token);
+  const webLink = `https://app.leurettech.com/reset-password?token=${encodeURIComponent(token)}`;
   return { deepLink, webLink };
 }
 
-function renderTransactionalEmail(template: TransactionalTemplate): string {
-  const codeBlock =
-    template.code && template.codeLabel
-      ? `
-              <p style="margin:0 0 8px; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#475569;">
-                ${escapeHtml(template.codeLabel)}
-              </p>
-              <div style="margin:0 0 24px; padding:14px 16px; border-radius:10px; background-color:#f1f5f9; font-family:'Courier New', Courier, monospace; font-size:18px; line-height:26px; letter-spacing:1px; text-align:center; color:#0f172a; word-break:break-all;">
-                ${escapeHtml(template.code)}
-              </div>`
-      : "";
+export async function sendVerificationEmail({ to, fullName, token }: VerificationEmailInput): Promise<EmailDeliveryResult> {
+  const name = fullName?.trim() || "Usuario";
+  const { deepLink, webLink } = buildVerificationLinks(token);
 
-  return `<!DOCTYPE html>
-<html lang="es" dir="ltr">
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Verifica tu cuenta - Contractor Pro</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
+        .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; }
+        .header { text-align: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 24px; }
+        .brand { font-size: 24px; font-weight: 700; color: #0f172a; text-decoration: none; }
+        .title { font-size: 20px; font-weight: 600; color: #0f172a; margin-top: 0; }
+        .btn-primary { display: inline-block; background-color: #2563eb; color: #ffffff !important; font-weight: 600; padding: 14px 28px; border-radius: 8px; text-decoration: none; margin: 16px 0; text-align: center; }
+        .btn-secondary { display: inline-block; background-color: #f1f5f9; color: #334155 !important; font-weight: 600; padding: 10px 20px; border-radius: 8px; text-decoration: none; margin-top: 8px; text-align: center; }
+        .code-box { background-color: #f1f5f9; font-family: monospace; font-size: 16px; padding: 12px; border-radius: 6px; text-align: center; letter-spacing: 2px; margin: 16px 0; word-break: break-all; }
+        .footer { font-size: 12px; color: #64748b; margin-top: 32px; border-top: 1px solid #f1f5f9; padding-top: 16px; text-align: center; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <span class="brand">🏗️ Contractor Pro</span>
+        </div>
+        <h2 class="title">Verificación de Cuenta</h2>
+        <p>Hola, <strong>${name}</strong>:</p>
+        <p>Gracias por registrarte en Contractor Pro. Por favor, confirma tu correo electrónico para activar tu cuenta:</p>
+        
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${deepLink}" class="btn-primary">Abrir en la App Móvil</a>
+          <br />
+          <a href="${webLink}" class="btn-secondary">Confirmar en Navegador Web</a>
+        </div>
+
+        <p>O copia tu token de verificación directamente en la aplicación:</p>
+        <div class="code-box">${token}</div>
+
+        <p class="footer">Si no creaste esta cuenta, puedes ignorar este mensaje.<br />© Contractor Pro</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const text = `
+Hola ${name},
+
+Gracias por registrarte en Contractor Pro. Confirma tu correo para activar tu cuenta.
+
+Abrir en App Móvil:
+${deepLink}
+
+Abrir en Navegador Web:
+${webLink}
+
+Token de Verificación: ${token}
+  `.trim();
+
+  return deliverWithResend({
+    to,
+    subject: "Verifica tu cuenta - Contractor Pro",
+    text,
+    html
+  });
+}
+
+export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailInput): Promise<EmailDeliveryResult> {
+  const { deepLink, webLink } = buildPasswordResetLinks(token);
+
+  const html = `
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="color-scheme" content="light">
-  <title>${escapeHtml(template.title)}</title>
+  <title>Cambiar contraseña - Contractor Pro</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f1f5f9;">
-  <table lang="es" dir="ltr" width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%; background-color:#f1f5f9;">
+
+<body style="margin:0; padding:0; background-color:#f4f7fb;">
+  <table
+    width="100%"
+    cellpadding="0"
+    cellspacing="0"
+    border="0"
+    role="presentation"
+    style="width:100%; background-color:#f4f7fb;"
+  >
     <tr>
-      <td align="center" style="padding:40px 16px;">
-        <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent; mso-hide:all;">
-          ${escapeHtml(template.preheader)}
-        </div>
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #cbd5e1; border-radius:16px;">
+      <td
+        align="center"
+        style="padding-top:40px; padding-right:16px; padding-bottom:40px; padding-left:16px;"
+      >
+        <table
+          width="100%"
+          cellpadding="0"
+          cellspacing="0"
+          border="0"
+          role="presentation"
+          style="width:100%; max-width:600px; background-color:#ffffff; border:1px solid #e2e8f0; border-radius:16px;"
+        >
           <tr>
-            <td bgcolor="#0f172a" style="background-color:#0f172a; padding:26px 32px; border-radius:16px 16px 0 0;">
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;">
+            <td
+              bgcolor="#0f172a"
+              style="background-color:#0f172a; padding-top:26px; padding-right:32px; padding-bottom:26px; padding-left:32px;"
+            >
+              <p
+                style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;"
+              >
                 Contractor Pro
               </p>
-              <p style="margin:6px 0 0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#cbd5e1;">
+
+              <p
+                style="margin-top:6px; margin-right:0; margin-bottom:0; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:20px; color:#cbd5e1;"
+              >
                 Seguridad de tu cuenta
               </p>
             </td>
           </tr>
+
           <tr>
-            <td style="padding:36px 32px;">
-              <h1 style="margin:0 0 20px; font-family:Arial, Helvetica, sans-serif; font-size:26px; line-height:34px; font-weight:700; color:#0f172a;">
-                ${escapeHtml(template.heading)}
+            <td
+              style="padding-top:36px; padding-right:32px; padding-bottom:36px; padding-left:32px;"
+            >
+              <h1
+                style="margin-top:0; margin-right:0; margin-bottom:20px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:26px; line-height:34px; font-weight:700; color:#0f172a;"
+              >
+                Cambia tu contraseña
               </h1>
-              <p style="margin:0 0 14px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:24px; color:#334155;">
-                ${escapeHtml(template.greeting)}
+
+              <p
+                style="margin-top:0; margin-right:0; margin-bottom:14px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#475569;"
+              >
+                Hola,
               </p>
-              <p style="margin:0 0 26px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:24px; color:#334155;">
-                ${escapeHtml(template.introduction)}
+
+              <p
+                style="margin-top:0; margin-right:0; margin-bottom:26px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#475569;"
+              >
+                Recibimos una solicitud para cambiar la contraseña de tu cuenta de Contractor Pro.
+                Utiliza el siguiente botón para establecer una nueva contraseña.
               </p>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation">
+
+              <table
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                role="presentation"
+              >
                 <tr>
-                  <td align="center" style="padding:4px 0 24px;">
-                    <a href="${escapeHtml(template.webLink)}" style="display:inline-block; min-width:220px; background-color:#1d4ed8; border-radius:10px; padding:14px 28px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:20px; font-weight:700; color:#ffffff; text-decoration:none; text-align:center;">
-                      ${escapeHtml(template.webAction)}
+                  <td align="center" style="padding-top:4px; padding-bottom:28px;">
+                    <a
+                      href="${webLink}"
+                      style="display:inline-block; background-color:#2563eb; border-radius:10px; padding-top:14px; padding-right:28px; padding-bottom:14px; padding-left:28px; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:20px; font-weight:700; color:#ffffff; text-decoration:none;"
+                    >
+                      Cambiar mi contraseña
                     </a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 8px; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#475569;">
+
+              <p
+                style="margin-top:0; margin-right:0; margin-bottom:8px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#64748b;"
+              >
                 ¿Estás usando Contractor Pro desde tu teléfono?
               </p>
-              <p style="margin:0 0 24px; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px;">
-                <a href="${escapeHtml(template.deepLink)}" style="font-weight:600; color:#1d4ed8; text-decoration:underline;">
-                  ${escapeHtml(template.deepLinkAction)}
+
+              <p
+                style="margin-top:0; margin-right:0; margin-bottom:26px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px;"
+              >
+                <a
+                  href="${deepLink}"
+                  style="font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; font-weight:600; color:#2563eb; text-decoration:none;"
+                >
+                  Abrir en la aplicación móvil
                 </a>
-              </p>${codeBlock}
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:24px;">
+              </p>
+
+              <table
+                width="100%"
+                cellpadding="0"
+                cellspacing="0"
+                border="0"
+                role="presentation"
+                style="margin-bottom:24px;"
+              >
                 <tr>
-                  <td bgcolor="#eff6ff" style="background-color:#eff6ff; border-radius:10px; padding:16px 18px;">
-                    <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#1e3a8a;">
-                      <strong>Importante:</strong> ${escapeHtml(template.expiration)}
+                  <td
+                    bgcolor="#eff6ff"
+                    style="background-color:#eff6ff; border-radius:10px; padding-top:16px; padding-right:18px; padding-bottom:16px; padding-left:18px;"
+                  >
+                    <p
+                      style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:21px; color:#1e40af;"
+                    >
+                      <strong>Importante:</strong> este enlace vence en 1 hora y solamente puede utilizarse para restablecer tu contraseña.
                     </p>
                   </td>
                 </tr>
               </table>
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#475569;">
-                ${escapeHtml(template.securityNotice)}
+
+              <p
+                style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:13px; line-height:21px; color:#64748b;"
+              >
+                Si no solicitaste este cambio, puedes ignorar este mensaje. Tu contraseña actual seguirá funcionando.
               </p>
             </td>
           </tr>
+
           <tr>
-            <td bgcolor="#f8fafc" style="background-color:#f8fafc; border-top:1px solid #cbd5e1; padding:20px 32px; border-radius:0 0 16px 16px;">
-              <p style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:19px; text-align:center; color:#475569;">
-                Contractor Pro · LEURET TECH<br>
-                Responde a este mensaje si necesitas ayuda.
+            <td
+              bgcolor="#f8fafc"
+              style="background-color:#f8fafc; border-top:1px solid #e2e8f0; padding-top:20px; padding-right:32px; padding-bottom:20px; padding-left:32px;"
+            >
+              <p
+                style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:19px; text-align:center; color:#94a3b8;"
+              >
+                © 2026 Contractor Pro · LEURET TECH
               </p>
             </td>
           </tr>
@@ -390,115 +302,32 @@ function renderTransactionalEmail(template: TransactionalTemplate): string {
     </tr>
   </table>
 </body>
-</html>`;
-}
-
-export async function sendVerificationEmail({
-  to,
-  fullName,
-  token
-}: VerificationEmailInput): Promise<EmailDeliveryResult> {
-  let deepLink: string;
-  let webLink: string;
-
-  try {
-    ({ deepLink, webLink } = buildVerificationLinks(token));
-  } catch {
-    return { sent: false, reason: "not_configured" };
-  }
-
-  const name = fullName?.trim() || "Usuario";
-  const subject = "Verifica tu correo | Contractor Pro";
-  const html = renderTransactionalEmail({
-    title: subject,
-    preheader: "Confirma tu correo; el enlace vence en 24 horas.",
-    heading: "Confirma tu correo electrónico",
-    greeting: `Hola, ${name}:`,
-    introduction:
-      "Gracias por registrarte. Confirma tu correo para activar tu cuenta de Contractor Pro.",
-    webLink,
-    webAction: "Confirmar mi correo",
-    deepLink,
-    deepLinkAction: "Confirmar correo en la aplicación móvil",
-    code: token,
-    codeLabel: "También puedes copiar este código en la aplicación:",
-    expiration: "este enlace y el código vencen en 24 horas y solamente pueden utilizarse una vez.",
-    securityNotice:
-      "Si no creaste esta cuenta, ignora este mensaje. No es necesario realizar ninguna acción."
-  });
-
-  const text = `
-Hola, ${name}:
-
-Gracias por registrarte. Confirma tu correo para activar tu cuenta de Contractor Pro.
-
-Confirmar mi correo:
-${webLink}
-
-Abrir en la aplicación móvil:
-${deepLink}
-
-Código de verificación: ${token}
-
-Este enlace y el código vencen en 24 horas y solamente pueden utilizarse una vez.
-
-Si no creaste esta cuenta, ignora este mensaje. No es necesario realizar ninguna acción.
-
-Contractor Pro · LEURET TECH
+</html>
   `.trim();
 
-  return deliverWithSmtp({ to, subject, text, html });
-}
-
-export async function sendPasswordResetEmail({
-  to,
-  fullName,
-  token
-}: PasswordResetEmailInput): Promise<EmailDeliveryResult> {
-  let deepLink: string;
-  let webLink: string;
-
-  try {
-    ({ deepLink, webLink } = buildPasswordResetLinks(token));
-  } catch {
-    return { sent: false, reason: "not_configured" };
-  }
-
-  const name = fullName?.trim() || "Usuario";
-  const subject = "Restablece tu contraseña | Contractor Pro";
-  const html = renderTransactionalEmail({
-    title: subject,
-    preheader: "Usa este enlace seguro dentro de la próxima hora.",
-    heading: "Restablece tu contraseña",
-    greeting: `Hola, ${name}:`,
-    introduction:
-      "Recibimos una solicitud para cambiar la contraseña de tu cuenta de Contractor Pro.",
-    webLink,
-    webAction: "Crear una nueva contraseña",
-    deepLink,
-    deepLinkAction: "Restablecer contraseña en la aplicación móvil",
-    expiration: "este enlace vence en 1 hora y solamente puede utilizarse una vez.",
-    securityNotice:
-      "Si no solicitaste este cambio, ignora este mensaje. Tu contraseña actual seguirá funcionando."
-  });
-
   const text = `
-Hola, ${name}:
+Hola,
 
 Recibimos una solicitud para cambiar la contraseña de tu cuenta de Contractor Pro.
 
-Crear una nueva contraseña:
+Cambiar mi contraseña:
 ${webLink}
 
 Abrir en la aplicación móvil:
 ${deepLink}
 
-Este enlace vence en 1 hora y solamente puede utilizarse una vez.
+Este enlace vence en 1 hora.
 
-Si no solicitaste este cambio, ignora este mensaje. Tu contraseña actual seguirá funcionando.
+Si no solicitaste este cambio, puedes ignorar este mensaje. Tu contraseña actual seguirá funcionando.
 
-Contractor Pro · LEURET TECH
+Contractor Pro
+LEURET TECH
   `.trim();
 
-  return deliverWithSmtp({ to, subject, text, html });
+  return deliverWithResend({
+    to,
+    subject: "Cambia tu contraseña | Contractor Pro",
+    text,
+    html
+  });
 }
