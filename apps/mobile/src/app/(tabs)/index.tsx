@@ -8,17 +8,114 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInUp,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ModuleCard } from "@/components/ModuleCard";
 import {
   colors,
   layout,
   radius,
   shadows,
+  spacing,
+  typography,
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
+
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+type QuickActionProps = {
+  icon: IconName;
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  delay?: number;
+};
+
+function LeuretMark() {
+  return (
+    <View style={styles.mark}>
+      <View style={styles.markVertical} />
+      <View style={styles.markDiagonal} />
+      <View style={styles.markHorizontal} />
+      <View style={styles.markGlow} />
+    </View>
+  );
+}
+
+function QuickAction({
+  icon,
+  title,
+  subtitle,
+  onPress,
+  delay = 0,
+}: QuickActionProps) {
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(420)}
+      style={styles.quickActionWrapper}
+    >
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.quickAction,
+          pressed && styles.quickActionPressed,
+        ]}
+      >
+        <View style={styles.quickIcon}>
+          <Ionicons name={icon} size={22} color={colors.accent} />
+        </View>
+
+        <View style={styles.quickCopy}>
+          <Text style={styles.quickTitle}>{title}</Text>
+          <Text style={styles.quickSubtitle}>{subtitle}</Text>
+        </View>
+
+        <Ionicons
+          name="arrow-forward"
+          size={17}
+          color={colors.textMuted}
+        />
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  action,
+  onAction,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View>
+        <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+
+      {action && onAction ? (
+        <Pressable
+          hitSlop={10}
+          onPress={onAction}
+          style={({ pressed }) => pressed && styles.actionPressed}
+        >
+          <Text style={styles.sectionAction}>{action}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const { profile } = useAuth();
@@ -26,42 +123,61 @@ export default function HomeScreen() {
 
   const firstName =
     profile?.full_name?.trim().split(/\s+/)[0] || "Profesional";
-  const initial = firstName.charAt(0).toUpperCase();
-  const companyName = activeCompany?.name || "Contractor Pro";
 
-  const handleUnderDevelopment = (moduleName: string) => {
+  const initial = firstName.charAt(0).toUpperCase();
+  const companyName = activeCompany?.name || "Leuret";
+
+  const now = new Date();
+  const hour = now.getHours();
+
+  const greeting =
+    hour < 12
+      ? "Buenos días"
+      : hour < 18
+        ? "Buenas tardes"
+        : "Buenas noches";
+
+  const formattedDate = new Intl.DateTimeFormat("es-PA", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now);
+
+  const handleInvoices = () => {
     Alert.alert(
-      "Próximamente",
-      `El módulo de ${moduleName} estará disponible en una siguiente actualización.`,
+      "Facturación",
+      "Este acceso se conectará al nuevo módulo financiero de Leuret.",
     );
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.hero}>
-          <View style={styles.heroOrbLarge} />
-          <View style={styles.heroOrbSmall} />
+          <View style={styles.glowTop} />
+          <View style={styles.glowSide} />
 
-          <View style={styles.brandRow}>
-            <View style={styles.brandLockup}>
-              <View style={styles.brandMark}>
-                <Ionicons
-                  name="construct"
-                  size={18}
-                  color={colors.surfaceDark}
-                />
+          <Animated.View
+            entering={FadeIn.duration(500)}
+            style={styles.topBar}
+          >
+            <View style={styles.brand}>
+              <LeuretMark />
+
+              <View>
+                <Text style={styles.brandName}>LEURET</Text>
+                <Text style={styles.brandTagline}>
+                  WORK SMARTER
+                </Text>
               </View>
-              <Text style={styles.brandName}>CONTRACTOR PRO</Text>
             </View>
 
             <Pressable
-              accessibilityLabel="Editar perfil"
+              accessibilityLabel="Abrir perfil"
               accessibilityRole="button"
-              hitSlop={8}
               onPress={() => router.push("/perfil" as Href)}
               style={({ pressed }) => [
                 styles.avatar,
@@ -70,170 +186,317 @@ export default function HomeScreen() {
             >
               <Text style={styles.avatarText}>{initial}</Text>
             </Pressable>
-          </View>
+          </Animated.View>
 
-          <View style={styles.heroCopy}>
-            <View style={styles.companyPill}>
-              <View style={styles.companyDot} />
-              <Text style={styles.companyPillText} numberOfLines={1}>
-                {companyName}
+          <Animated.View
+            entering={FadeInUp.delay(100).duration(520)}
+            style={styles.heroCopy}
+          >
+            <Text style={styles.dateText}>
+              {formattedDate.toUpperCase()}
+            </Text>
+
+            <Text style={styles.greeting}>
+              {greeting}, {firstName}
+            </Text>
+
+            <Text style={styles.heroTitle}>
+              Tu trabajo,
+              {"\n"}
+              <Text style={styles.heroTitleAccent}>
+                más inteligente.
               </Text>
+            </Text>
+
+            <Text style={styles.heroDescription}>
+              Proyectos, cálculos, presupuestos y clientes
+              organizados desde un solo lugar.
+            </Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(220).duration(520)}
+            style={styles.companyCard}
+          >
+            <View style={styles.companyTop}>
+              <View style={styles.companyIdentity}>
+                <View style={styles.companyIndicator}>
+                  <View style={styles.companyIndicatorDot} />
+                </View>
+
+                <View style={styles.companyCopy}>
+                  <Text style={styles.companyLabel}>
+                    ESPACIO ACTIVO
+                  </Text>
+
+                  <Text
+                    style={styles.companyName}
+                    numberOfLines={1}
+                  >
+                    {companyName}
+                  </Text>
+                </View>
+              </View>
+
+              <Ionicons
+                name="chevron-forward"
+                size={19}
+                color={colors.textMuted}
+              />
             </View>
 
-            <Text style={styles.greeting}>Hola, {firstName}</Text>
-            <Text style={styles.heroTitle}>
-              Toda tu operación, bajo control.
-            </Text>
-            <Text style={styles.heroDescription}>
-              Calcula, cotiza y organiza cada trabajo desde un solo lugar.
-            </Text>
+            <View style={styles.metrics}>
+              <View style={styles.metric}>
+                <Text style={styles.metricValue}>10</Text>
+                <Text style={styles.metricLabel}>
+                  Calculadoras
+                </Text>
+              </View>
+
+              <View style={styles.metricDivider} />
+
+              <View style={styles.metric}>
+                <View style={styles.metricOnline}>
+                  <View style={styles.onlineDot} />
+                  <Text style={styles.metricValueSmall}>
+                    Activo
+                  </Text>
+                </View>
+
+                <Text style={styles.metricLabel}>
+                  Estado
+                </Text>
+              </View>
+
+              <View style={styles.metricDivider} />
+
+              <View style={styles.metric}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  size={22}
+                  color={colors.accent}
+                />
+                <Text style={styles.metricLabel}>
+                  Protegido
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
+        <View style={styles.content}>
+          <SectionHeader
+            eyebrow="ACCESOS RÁPIDOS"
+            title="¿Qué quieres hacer?"
+          />
+
+          <View style={styles.quickGrid}>
+            <QuickAction
+              icon="calculator-outline"
+              title="Calcular"
+              subtitle="Materiales y mano de obra"
+              delay={80}
+              onPress={() =>
+                router.push("/calculos" as Href)
+              }
+            />
+
+            <QuickAction
+              icon="document-text-outline"
+              title="Presupuesto"
+              subtitle="Crear una cotización"
+              delay={140}
+              onPress={() =>
+                router.push("/presupuestos" as Href)
+              }
+            />
+
+            <QuickAction
+              icon="business-outline"
+              title="Proyecto"
+              subtitle="Organizar una obra"
+              delay={200}
+              onPress={() =>
+                router.push("/proyectos" as Href)
+              }
+            />
+
+            <QuickAction
+              icon="person-add-outline"
+              title="Cliente"
+              subtitle="Gestionar contactos"
+              delay={260}
+              onPress={() =>
+                router.push("/(tabs)/clientes" as Href)
+              }
+            />
+          </View>
+
+          <Animated.View
+            entering={FadeInDown.delay(320).duration(480)}
+          >
+            <SectionHeader
+              eyebrow="CONTROL"
+              title="Tu operación"
+            />
+
+            <View style={styles.operationCard}>
+              <Pressable
+                onPress={() =>
+                  router.push("/proyectos" as Href)
+                }
+                style={({ pressed }) => [
+                  styles.operationRow,
+                  pressed && styles.rowPressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.operationIcon,
+                    styles.operationIconBlue,
+                  ]}
+                >
+                  <Ionicons
+                    name="briefcase-outline"
+                    size={20}
+                    color={colors.primary}
+                  />
+                </View>
+
+                <View style={styles.operationCopy}>
+                  <Text style={styles.operationTitle}>
+                    Proyectos
+                  </Text>
+                  <Text style={styles.operationText}>
+                    Revisa avances y trabajos activos.
+                  </Text>
+                </View>
+
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+
+              <View style={styles.rowDivider} />
+
+              <Pressable
+                onPress={handleInvoices}
+                style={({ pressed }) => [
+                  styles.operationRow,
+                  pressed && styles.rowPressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.operationIcon,
+                    styles.operationIconCyan,
+                  ]}
+                >
+                  <Ionicons
+                    name="receipt-outline"
+                    size={20}
+                    color={colors.accent}
+                  />
+                </View>
+
+                <View style={styles.operationCopy}>
+                  <Text style={styles.operationTitle}>
+                    Finanzas
+                  </Text>
+                  <Text style={styles.operationText}>
+                    Facturas, cobros y saldos.
+                  </Text>
+                </View>
+
+                <View style={styles.soonBadge}>
+                  <Text style={styles.soonText}>
+                    PRÓXIMO
+                  </Text>
+                </View>
+              </Pressable>
+            </View>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(390).duration(480)}
+          >
+            <SectionHeader
+              eyebrow="AGENDA"
+              title="Próximas actividades"
+              action="Ver agenda"
+              onAction={() =>
+                router.push("/(tabs)/agenda" as Href)
+              }
+            />
 
             <Pressable
-              onPress={() => router.push("/calculos" as Href)}
+              onPress={() =>
+                router.push("/(tabs)/agenda" as Href)
+              }
               style={({ pressed }) => [
-                styles.heroButton,
-                pressed && styles.heroButtonPressed,
+                styles.agendaCard,
+                pressed && styles.rowPressed,
               ]}
             >
-              <View style={styles.heroButtonIcon}>
+              <View style={styles.agendaIcon}>
                 <Ionicons
-                  name="add"
-                  size={20}
-                  color={colors.surfaceDark}
+                  name="calendar-clear-outline"
+                  size={24}
+                  color={colors.accent}
                 />
               </View>
-              <Text style={styles.heroButtonText}>Nuevo cálculo</Text>
+
+              <View style={styles.agendaCopy}>
+                <Text style={styles.agendaTitle}>
+                  Tu agenda está libre
+                </Text>
+
+                <Text style={styles.agendaText}>
+                  Tus próximas visitas, trabajos y
+                  recordatorios aparecerán aquí.
+                </Text>
+              </View>
+
               <Ionicons
                 name="arrow-forward"
                 size={18}
-                color={colors.surfaceDark}
+                color={colors.textMuted}
               />
             </Pressable>
-          </View>
-        </View>
+          </Animated.View>
 
-        <View style={styles.dashboard}>
-          <View style={styles.statusCard}>
-            <View style={styles.statusItem}>
-              <Text style={styles.statusValue}>10</Text>
-              <Text style={styles.statusLabel}>Calculadoras</Text>
-            </View>
-            <View style={styles.statusDivider} />
-            <View style={styles.statusItem}>
-              <View style={styles.statusInline}>
-                <View style={styles.liveDot} />
-                <Text style={styles.statusValueSmall}>Activa</Text>
+          <Animated.View
+            entering={FadeInDown.delay(460).duration(480)}
+            style={styles.pulseCard}
+          >
+            <View style={styles.pulseIcon}>
+              <View style={styles.pulseRing}>
+                <View style={styles.pulseCore} />
               </View>
-              <Text style={styles.statusLabel}>Empresa</Text>
             </View>
-            <View style={styles.statusDivider} />
-            <View style={styles.statusItem}>
-              <Ionicons
-                name="shield-checkmark"
-                size={23}
-                color={colors.primary}
-              />
-              <Text style={styles.statusLabel}>Todo listo</Text>
-            </View>
-          </View>
 
-          <View style={styles.sectionHeading}>
-            <View>
-              <Text style={styles.sectionEyebrow}>GESTIÓN DIARIA</Text>
-              <Text style={styles.sectionTitle}>Accesos rápidos</Text>
-            </View>
-            <View style={styles.sectionBadge}>
-              <Text style={styles.sectionBadgeText}>4 módulos</Text>
-            </View>
-          </View>
+            <View style={styles.pulseCopy}>
+              <Text style={styles.pulseEyebrow}>
+                LEURET PULSE
+              </Text>
 
-          <View style={styles.grid}>
-            <ModuleCard
-              title="Cálculos"
-              description="Materiales, equipos y mano de obra con tus fórmulas."
-              icon="calculator-outline"
-              label="Estimar"
-              tone="green"
-              onPress={() => router.push("/calculos" as Href)}
-            />
+              <Text style={styles.pulseTitle}>
+                Todo listo para trabajar
+              </Text>
 
-            <ModuleCard
-              title="Presupuestos"
-              description="Cotizaciones claras y profesionales para tus clientes."
-              icon="document-text-outline"
-              label="Cotizar"
-              tone="blue"
-              onPress={() => router.push("/presupuestos" as Href)}
-            />
-
-            <ModuleCard
-              title="Proyectos"
-              description="Controla el avance y la información de cada obra."
-              icon="business-outline"
-              label="Organizar"
-              tone="violet"
-              onPress={() => router.push("/proyectos" as Href)}
-            />
-
-            <ModuleCard
-              title="Facturas"
-              description="Registra cobros, abonos y saldos pendientes."
-              icon="receipt-outline"
-              label="Finanzas"
-              tone="amber"
-              onPress={() => handleUnderDevelopment("Facturas")}
-            />
-          </View>
-
-          <View style={styles.sectionHeadingCompact}>
-            <View>
-              <Text style={styles.sectionEyebrow}>AGENDA</Text>
-              <Text style={styles.sectionTitle}>Próximas actividades</Text>
-            </View>
-            <Pressable
-              onPress={() => router.push("/(tabs)/agenda" as Href)}
-              hitSlop={10}
-            >
-              <Text style={styles.viewAllText}>Ver agenda</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Ionicons
-                name="calendar-clear-outline"
-                size={25}
-                color={colors.primary}
-              />
-            </View>
-            <View style={styles.emptyCopy}>
-              <Text style={styles.emptyTitle}>Tu agenda está libre</Text>
-              <Text style={styles.emptyText}>
-                Las próximas citas y trabajos aparecerán aquí.
+              <Text style={styles.pulseText}>
+                Tu espacio está sincronizado y preparado.
               </Text>
             </View>
+
             <Ionicons
-              name="chevron-forward"
-              size={19}
-              color={colors.textMuted}
+              name="sparkles-outline"
+              size={20}
+              color={colors.accent}
             />
-          </View>
-
-          <View style={styles.insightCard}>
-            <View style={styles.insightIcon}>
-              <Ionicons
-                name="sparkles"
-                size={22}
-                color={colors.warning}
-              />
-            </View>
-            <View style={styles.insightCopy}>
-              <Text style={styles.insightTitle}>Catálogo conectado</Text>
-              <Text style={styles.insightText}>
-                Los precios y rendimientos configurados se aplican a tus cálculos.
-              </Text>
-            </View>
-          </View>
+          </Animated.View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -243,270 +506,344 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.surfaceDark,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 32,
     backgroundColor: colors.background,
   },
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 120,
+    backgroundColor: colors.background,
+  },
+
   hero: {
-    minHeight: 390,
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: 12,
-    paddingBottom: 52,
-    backgroundColor: colors.surfaceDark,
+    position: "relative",
     overflow: "hidden",
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
   },
-  heroOrbLarge: {
+
+  glowTop: {
     position: "absolute",
-    width: 260,
-    height: 260,
-    top: -90,
-    right: -110,
-    borderRadius: 130,
-    borderWidth: 44,
-    borderColor: "rgba(255,255,255,0.035)",
+    width: 280,
+    height: 280,
+    top: -165,
+    right: -100,
+    borderRadius: 140,
+    backgroundColor: colors.glowBlue,
+    opacity: 0.42,
   },
-  heroOrbSmall: {
+
+  glowSide: {
     position: "absolute",
-    width: 130,
-    height: 130,
-    bottom: -58,
-    left: -40,
-    borderRadius: 65,
-    backgroundColor: "rgba(22,155,98,0.13)",
+    width: 190,
+    height: 190,
+    bottom: 40,
+    left: -135,
+    borderRadius: 95,
+    backgroundColor: colors.glowCyan,
+    opacity: 0.18,
   },
-  brandRow: {
+
+  topBar: {
+    minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  brandLockup: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  brandMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 11,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandName: {
-    color: colors.textLight,
-    fontSize: 12,
-    fontWeight: "900",
-    letterSpacing: 1.3,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: colors.surfaceDarkRaised,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    color: colors.textLight,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-  avatarPressed: {
-    opacity: 0.72,
-    transform: [{ scale: 0.96 }],
-  },
-  heroCopy: {
-    marginTop: 39,
-  },
-  companyPill: {
-    maxWidth: 240,
-    alignSelf: "flex-start",
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-  },
-  companyDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  companyPillText: {
-    flexShrink: 1,
-    color: colors.textLightMuted,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  greeting: {
-    marginTop: 21,
-    color: colors.textLightMuted,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  heroTitle: {
-    maxWidth: 360,
-    marginTop: 5,
-    color: colors.textLight,
-    fontSize: 33,
-    fontWeight: "900",
-    lineHeight: 38,
-    letterSpacing: -1.1,
-  },
-  heroDescription: {
-    maxWidth: 390,
-    marginTop: 10,
-    color: colors.textLightMuted,
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  heroButton: {
-    minHeight: 54,
-    marginTop: 24,
-    paddingHorizontal: 13,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
+
+  brand: {
     flexDirection: "row",
     alignItems: "center",
     gap: 11,
   },
-  heroButtonPressed: {
-    backgroundColor: colors.primaryPressed,
-    transform: [{ scale: 0.99 }],
+
+  mark: {
+    position: "relative",
+    width: 40,
+    height: 40,
   },
-  heroButtonIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.72)",
+
+  markVertical: {
+    position: "absolute",
+    left: 9,
+    top: 4,
+    width: 8,
+    height: 29,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    transform: [{ rotate: "-8deg" }],
+  },
+
+  markDiagonal: {
+    position: "absolute",
+    left: 14,
+    top: 20,
+    width: 10,
+    height: 19,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    transform: [{ rotate: "-42deg" }],
+  },
+
+  markHorizontal: {
+    position: "absolute",
+    left: 18,
+    bottom: 5,
+    width: 20,
+    height: 8,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    transform: [{ rotate: "-10deg" }],
+  },
+
+  markGlow: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    left: 7,
+    top: 7,
+    borderRadius: 14,
+    backgroundColor: colors.glowBlue,
+    opacity: 0.5,
+  },
+
+  brandName: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "900",
+    letterSpacing: 2.2,
+  },
+
+  brandTagline: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontSize: 7,
+    fontWeight: "800",
+    letterSpacing: 1.6,
+  },
+
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surfaceRaised,
     alignItems: "center",
     justifyContent: "center",
   },
-  heroButtonText: {
-    flex: 1,
-    color: colors.surfaceDark,
+
+  avatarPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.96 }],
+  },
+
+  avatarText: {
+    color: colors.text,
     fontSize: 15,
     fontWeight: "900",
   },
-  dashboard: {
+
+  heroCopy: {
+    marginTop: spacing.xl,
+  },
+
+  dateText: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+  },
+
+  greeting: {
+    marginTop: spacing.md,
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  heroTitle: {
+    marginTop: spacing.xs,
+    color: colors.text,
+    fontSize: 38,
+    lineHeight: 43,
+    fontWeight: "900",
+    letterSpacing: -1.4,
+  },
+
+  heroTitleAccent: {
+    color: colors.primary,
+  },
+
+  heroDescription: {
+    maxWidth: 360,
+    marginTop: spacing.md,
+    color: colors.textSecondary,
+    ...typography.body,
+  },
+
+  companyCard: {
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    ...shadows.raised,
+  },
+
+  companyTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  companyIdentity: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  companyIndicator: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  companyIndicatorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    ...shadows.glow,
+  },
+
+  companyCopy: {
+    flex: 1,
+    marginLeft: spacing.base,
+  },
+
+  companyLabel: {
+    color: colors.textMuted,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  companyName: {
+    marginTop: 3,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+
+  metrics: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+    flexDirection: "row",
+  },
+
+  metric: {
+    flex: 1,
+    minHeight: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  metricDivider: {
+    width: 1,
+    height: 36,
+    alignSelf: "center",
+    backgroundColor: colors.divider,
+  },
+
+  metricValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  metricValueSmall: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  metricOnline: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.success,
+  },
+
+  metricLabel: {
+    marginTop: 5,
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: "700",
+  },
+
+  content: {
     width: "100%",
     maxWidth: layout.maxContentWidth,
     alignSelf: "center",
     paddingHorizontal: layout.screenPadding,
   },
-  statusCard: {
-    minHeight: 96,
-    marginTop: -28,
-    paddingVertical: 18,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    ...shadows.raised,
-  },
-  statusItem: {
-    flex: 1,
-    minHeight: 56,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statusDivider: {
-    width: 1,
-    height: 43,
-    backgroundColor: colors.border,
-  },
-  statusValue: {
-    color: colors.text,
-    fontSize: 22,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-  },
-  statusValueSmall: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: "900",
-  },
-  statusInline: {
-    minHeight: 25,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  statusLabel: {
-    marginTop: 5,
-    color: colors.textSecondary,
-    fontSize: 10,
-    fontWeight: "700",
-  },
-  sectionHeading: {
-    marginTop: 34,
-    marginBottom: 15,
+
+  sectionHeader: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
   },
-  sectionHeadingCompact: {
-    marginTop: 5,
-    marginBottom: 15,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
+
   sectionEyebrow: {
-    marginBottom: 4,
-    color: colors.primary,
-    fontSize: 10,
+    marginBottom: 5,
+    color: colors.accent,
+    fontSize: 9,
     fontWeight: "900",
-    letterSpacing: 1.1,
+    letterSpacing: 1.4,
   },
+
   sectionTitle: {
     color: colors.text,
-    fontSize: 21,
-    fontWeight: "900",
-    letterSpacing: -0.5,
+    ...typography.heading,
   },
-  sectionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceAlt,
-  },
-  sectionBadgeText: {
-    color: colors.textSecondary,
-    fontSize: 10,
-    fontWeight: "800",
-  },
-  grid: {
-    marginBottom: 30,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-  },
-  viewAllText: {
+
+  sectionAction: {
     color: colors.primary,
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "800",
   },
-  emptyState: {
-    minHeight: 94,
-    padding: 16,
+
+  actionPressed: {
+    opacity: 0.6,
+  },
+
+  quickGrid: {
+    gap: layout.cardGap,
+  },
+
+  quickActionWrapper: {
+    width: "100%",
+  },
+
+  quickAction: {
+    minHeight: 82,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
@@ -515,58 +852,210 @@ const styles = StyleSheet.create({
     alignItems: "center",
     ...shadows.soft,
   },
-  emptyIcon: {
-    width: 48,
-    height: 48,
+
+  quickActionPressed: {
+    backgroundColor: colors.surfaceRaised,
+    borderColor: colors.borderStrong,
+    transform: [{ scale: 0.985 }],
+  },
+
+  quickIcon: {
+    width: 46,
+    height: 46,
     borderRadius: 15,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyCopy: {
+
+  quickCopy: {
     flex: 1,
-    marginHorizontal: 13,
+    marginLeft: spacing.base,
   },
-  emptyTitle: {
+
+  quickTitle: {
     color: colors.text,
-    fontSize: 14,
-    fontWeight: "900",
+    fontSize: 15,
+    fontWeight: "800",
   },
-  emptyText: {
+
+  quickSubtitle: {
     marginTop: 4,
     color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 11,
+    lineHeight: 16,
   },
-  insightCard: {
-    marginTop: 14,
-    padding: 17,
+
+  operationCard: {
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.lg,
-    backgroundColor: colors.surfaceDark,
+    backgroundColor: colors.surface,
+  },
+
+  operationRow: {
+    minHeight: 84,
+    padding: spacing.md,
     flexDirection: "row",
     alignItems: "center",
   },
-  insightIcon: {
-    width: 43,
-    height: 43,
+
+  rowPressed: {
+    backgroundColor: colors.surfaceRaised,
+  },
+
+  operationIcon: {
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: "rgba(232,155,45,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },
-  insightCopy: {
+
+  operationIconBlue: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  operationIconCyan: {
+    backgroundColor: colors.accentSoft,
+  },
+
+  operationCopy: {
     flex: 1,
-    marginLeft: 13,
+    marginLeft: spacing.base,
   },
-  insightTitle: {
-    color: colors.textLight,
-    fontSize: 13,
-    fontWeight: "900",
+
+  operationTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
   },
-  insightText: {
-    marginTop: 3,
-    color: colors.textLightMuted,
+
+  operationText: {
+    marginTop: 4,
+    color: colors.textSecondary,
     fontSize: 11,
     lineHeight: 16,
+  },
+
+  rowDivider: {
+    height: 1,
+    marginLeft: 72,
+    backgroundColor: colors.divider,
+  },
+
+  soonBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
+  },
+
+  soonText: {
+    color: colors.primary,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 0.7,
+  },
+
+  agendaCard: {
+    minHeight: 104,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  agendaIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  agendaCopy: {
+    flex: 1,
+    marginHorizontal: spacing.base,
+  },
+
+  agendaTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  agendaText: {
+    marginTop: 5,
+    color: colors.textSecondary,
+    fontSize: 11,
+    lineHeight: 17,
+  },
+
+  pulseCard: {
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceAlt,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  pulseIcon: {
+    width: 46,
+    height: 46,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pulseRing: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  pulseCore: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    ...shadows.glow,
+  },
+
+  pulseCopy: {
+    flex: 1,
+    marginHorizontal: spacing.base,
+  },
+
+  pulseEyebrow: {
+    color: colors.accent,
+    fontSize: 8,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  pulseTitle: {
+    marginTop: 3,
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  pulseText: {
+    marginTop: 3,
+    color: colors.textSecondary,
+    fontSize: 10,
+    lineHeight: 15,
   },
 });
