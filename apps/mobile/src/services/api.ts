@@ -82,8 +82,6 @@ export type AppProfile = {
   corregimiento: string | null;
   terms_accepted: boolean;
   notifications_opt_in: boolean;
-  registration_ip: string | null;
-  registration_device: string | null;
 
   business_name?: string | null;
   id_document?: string | null;
@@ -102,12 +100,6 @@ export type AppProfile = {
   emits_invoice?: boolean;
   has_transport?: boolean;
   work_mode?: string | null;
-
-  doc_id_url?: string | null;
-  doc_operation_notice_url?: string | null;
-  doc_technical_certs_urls?: string[] | null;
-  doc_references_url?: string | null;
-  doc_address_proof_url?: string | null;
 
   created_at: string;
   updated_at: string;

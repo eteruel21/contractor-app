@@ -90,6 +90,34 @@ export function getUserStatus(user: {
   return "pending_approval";
 }
 
+/**
+ * Construye la representación que puede salir de los endpoints de sesión.
+ * Los campos omitidos son necesarios dentro del servidor para autenticar o
+ * localizar archivos, pero no forman parte del contrato público del perfil.
+ */
+export function toPublicUserProfile(
+  profile: UserProfile,
+  status: UserStatus = getUserStatus(profile)
+) {
+  const {
+    email_confirmed_at: _emailConfirmedAt,
+    deleted_at: _deletedAt,
+    registration_ip: _registrationIp,
+    registration_device: _registrationDevice,
+    doc_id_url: _documentIdPath,
+    doc_operation_notice_url: _operationNoticePath,
+    doc_technical_certs_urls: _technicalCertificatesPaths,
+    doc_references_url: _referencesPath,
+    doc_address_proof_url: _addressProofPath,
+    ...publicProfile
+  } = profile;
+
+  return {
+    ...publicProfile,
+    status
+  };
+}
+
 export async function findUserByEmail(email: string): Promise<AuthUserRecord | null> {
   const result = await pool.query<AuthUserRecord>(
     `

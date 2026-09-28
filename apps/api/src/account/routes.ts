@@ -67,12 +67,7 @@ function sanitizeStorageReference(value: string): string {
 
   try {
     const url = new URL(sanitized);
-    const pathname = decodeURIComponent(url.pathname).replace(/^\/+/, "");
-    const bucketPrefix = `${env.S3_BUCKET}/`;
-
-    return pathname.startsWith(bucketPrefix)
-      ? pathname.slice(bucketPrefix.length)
-      : pathname;
+    return decodeURIComponent(url.pathname).replace(/^\/+/, "");
   } catch {
     return sanitized.replace(/^\/+/, "");
   }

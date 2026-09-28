@@ -8,6 +8,7 @@ import type {
 } from "../admin-data";
 
 import {
+  EmptyState,
   SectionHeader,
   Table,
 } from "./CommonUI";
@@ -25,7 +26,7 @@ interface UsersTabProps {
   currentUserId: string;
   saving: boolean;
   onEdit: (user: PlatformUser) => void;
-  onReview: (user: PlatformUser) => void;
+  onViewProfile: (user: PlatformUser) => void;
   onToggle: (
     user: PlatformUser
   ) => Promise<void>;
@@ -38,7 +39,7 @@ export function UsersTab({
   currentUserId,
   saving,
   onEdit,
-  onReview,
+  onViewProfile,
   onToggle,
 }: UsersTabProps) {
   return (
@@ -59,33 +60,34 @@ export function UsersTab({
         />
       </div>
 
-      <Table>
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Rol</th>
-            <th>Empresa</th>
-            <th>Estado</th>
-            <th>Registro</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
+      {users.length ? (
+        <Table>
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Empresa</th>
+              <th>Estado</th>
+              <th>Registro</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
 
-        <tbody>
-          {users.map((user) => {
-            const status =
-              statusFor(user);
+          <tbody>
+            {users.map((user) => {
+              const status =
+                statusFor(user);
 
-            const self =
-              user.id === currentUserId;
+              const self =
+                user.id === currentUserId;
 
-            const pendingContractor =
-              user.role === "contractor" &&
-              !user.active &&
-              !user.approvedAt;
+              const pendingContractor =
+                user.role === "contractor" &&
+                !user.active &&
+                !user.approvedAt;
 
-            return (
-              <tr key={user.id}>
+              return (
+                <tr key={user.id}>
                 <td>
                   <strong>
                     {user.fullName ||
@@ -130,18 +132,15 @@ export function UsersTab({
                       <Edit3 size={17} />
                     </button>
 
-                    {user.role ===
-                      "contractor" && (
-                      <button
-                        className="button button-secondary"
-                        onClick={() =>
-                          onReview(user)
-                        }
-                      >
-                        <Eye size={15} />
-                        Revisar
-                      </button>
-                    )}
+                    <button
+                      className="button button-secondary"
+                      onClick={() =>
+                        onViewProfile(user)
+                      }
+                    >
+                      <Eye size={15} />
+                      Ver perfil
+                    </button>
 
                     {!self &&
                       !pendingContractor && (
@@ -165,11 +164,20 @@ export function UsersTab({
                       )}
                   </div>
                 </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </Table>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      ) : (
+        <EmptyState
+          label={
+            search.trim()
+              ? "No hay usuarios que coincidan con la búsqueda."
+              : "No hay usuarios registrados."
+          }
+        />
+      )}
     </section>
   );
 }

@@ -6,6 +6,7 @@ import {
   getContractorReview,
   isContractorDocumentType
 } from "./contractor-review.js";
+import { getUserProfileDetails } from "../profile/details.js";
 import {
   userParamsSchema,
   userSchema,
@@ -44,6 +45,37 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   // 2. Revisión profesional de contratistas
+  app.get(
+    "/admin/users/:userId/profile",
+    {
+      preHandler: requireSuperAdmin
+    },
+    async (request, reply) => {
+      const adminUserId = request.authenticatedUser!.id;
+      const params = userParamsSchema.safeParse(request.params);
+
+      if (!params.success) {
+        return reply.status(400).send({
+          message: "El usuario indicado no es válido."
+        });
+      }
+
+      const profile = await getUserProfileDetails(
+        adminUserId,
+        params.data.userId
+      );
+
+      if (!profile) {
+        return reply.status(404).send({
+          message: "No se encontró el perfil del usuario."
+        });
+      }
+
+      reply.header("Cache-Control", "private, no-store");
+      return profile;
+    }
+  );
+
   app.get(
     "/admin/users/:userId/review",
     {

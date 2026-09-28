@@ -9,7 +9,10 @@ import {
   deleteStorageFile,
   getStorageSignedUrl
 } from "./provider.js";
-import { verifyPhotoToken } from "./signed-url.js";
+import {
+  verifyPhotoToken,
+  verifyProfileDocumentToken
+} from "./signed-url.js";
 import { pool } from "../db/pool.js";
 
 const uploadPhotoSchema = z.object({
@@ -31,6 +34,42 @@ const photoParamsSchema = z.object({
   projectId: z.string().uuid(),
   photoId: z.string().uuid()
 });
+
+const profileDocumentParamsSchema = z.object({
+  userId: z.string().uuid(),
+  documentType: z.enum([
+    "identification",
+    "operation_notice",
+    "references",
+    "address_proof"
+  ])
+});
+
+const profileDocumentFileNames = {
+  identification: "identificacion",
+  operation_notice: "aviso-operacion",
+  references: "referencias",
+  address_proof: "comprobante-domicilio"
+} as const;
+
+function extensionForMimeType(mimeType?: string): string {
+  switch (mimeType) {
+    case "application/pdf":
+      return ".pdf";
+    case "image/jpeg":
+      return ".jpg";
+    case "image/png":
+      return ".png";
+    case "image/webp":
+      return ".webp";
+    case "image/heic":
+      return ".heic";
+    case "image/heif":
+      return ".heif";
+    default:
+      return "";
+  }
+}
 
 function authenticatedUserId(request: FastifyRequest, reply: FastifyReply): string | null {
   const userId = request.authenticatedUser?.id;
@@ -184,4 +223,55 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
       return reply.status(404).send({ message: "Archivo no disponible en el almacenamiento físico o R2/S3." });
     }
   });
+
+  // Sirve únicamente el documento exacto autorizado por una URL firmada y
+  // breve. El token liga usuario y tipo; nunca acepta una ruta de storage.
+  app.get(
+    "/storage/profile-documents/:userId/:documentType",
+    async (request, reply) => {
+      const params = profileDocumentParamsSchema.safeParse(request.params);
+      const token = (request.query as { token?: unknown }).token;
+
+      if (!params.success || typeof token !== "string" || !token) {
+        return reply.status(401).send({
+          message: "URL firmada requerida."
+        });
+      }
+
+      const valid = await verifyProfileDocumentToken(
+        token,
+        params.data.userId,
+        params.data.documentType
+      );
+
+      if (!valid) {
+        return reply.status(403).send({
+          message: "URL firmada inválida o expirada."
+        });
+      }
+
+      const storagePath =
+        `profile-documents/${params.data.userId}/${params.data.documentType}`;
+
+      try {
+        const { buffer, mimeType } = await downloadStorageFile(storagePath);
+        const contentType = mimeType || "application/octet-stream";
+        const fileName =
+          `${profileDocumentFileNames[params.data.documentType]}${extensionForMimeType(mimeType)}`;
+
+        return reply
+          .header("Content-Type", contentType)
+          .header(
+            "Content-Disposition",
+            `inline; filename="${fileName}"`
+          )
+          .header("Cache-Control", "private, no-store")
+          .send(buffer);
+      } catch {
+        return reply.status(404).send({
+          message: "Archivo no disponible."
+        });
+      }
+    }
+  );
 }

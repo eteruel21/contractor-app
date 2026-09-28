@@ -34,6 +34,91 @@ export type PlatformUser = {
   companyName: string;
 };
 
+export type ContractorDocumentType =
+  | "identification"
+  | "operation_notice"
+  | "references"
+  | "address_proof";
+
+export type UserProfileProfessional = {
+  businessName: string;
+  idDocument: string;
+  taxId: string;
+  taxDv: string;
+  primaryCategory: string;
+  specialties: string[];
+  experienceYears: number | null;
+  workAreas: string[];
+  professionalDescription: string;
+  companyLogoUrl: string | null;
+  portfolioUrls: string[];
+  certifications: string[];
+  availability: string;
+  preferredContactMethod: string;
+  emitsInvoice: boolean;
+  hasTransport: boolean;
+  workMode: string;
+};
+
+export type UserProfileDetail = {
+  id: string;
+  email: string;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  avatarUrl: string | null;
+  role: UserRole;
+  active: boolean;
+  status: string;
+  approvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  location: {
+    province: string;
+    district: string;
+    corregimiento: string;
+  };
+  preferences: {
+    termsAccepted: boolean;
+    notificationsOptIn: boolean;
+  };
+  professional: UserProfileProfessional | null;
+  associations: {
+    companies: Array<{
+      id: string;
+      name: string;
+      role: string | null;
+      active: boolean;
+    }>;
+    linkedClients: Array<{
+      id: string;
+      companyName: string;
+      displayName: string;
+      active: boolean;
+    }>;
+  };
+  resources: {
+    profileDocuments: Array<{
+      id: string;
+      type: ContractorDocumentType;
+      label: string;
+      available: true;
+    }>;
+    projectPhotos: Array<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      mimeType: string;
+      caption: string;
+      createdAt: string;
+      projectName: string;
+      companyName: string;
+      url: string;
+    }>;
+  };
+};
+
 export type Category = {
   id: string;
   companyId: string;

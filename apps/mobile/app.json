@@ -39,11 +39,27 @@
       "expo-sharing",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font",
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8eee9ec7-318c-407b-83b6-446d873e7209"
+      }
+    },
+    "owner": "leuret",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8eee9ec7-318c-407b-83b6-446d873e7209"
     }
   }
 }

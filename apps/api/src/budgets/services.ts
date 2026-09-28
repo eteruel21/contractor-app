@@ -11,6 +11,7 @@ import {
   getBudgetHistoryRepo,
   type CreateBudgetItemInput
 } from "./repository.js";
+import { notifyBudgetDecision } from "../notifications/event-service.js";
 
 export async function getClientBudgetsService(userId: string) {
   return findClientBudgets(userId);
@@ -41,11 +42,15 @@ export async function deleteBudgetItemService(userId: string, budgetId: string, 
 }
 
 export async function approveBudgetService(userId: string, budgetId: string, companyId?: string) {
-  return approveBudgetRepo(userId, budgetId, companyId);
+  const budget = await approveBudgetRepo(userId, budgetId, companyId);
+  await notifyBudgetDecision(budget, "approved");
+  return budget;
 }
 
 export async function rejectBudgetService(userId: string, budgetId: string, rejectionReason: string, companyId?: string) {
-  return rejectBudgetRepo(userId, budgetId, rejectionReason, companyId);
+  const budget = await rejectBudgetRepo(userId, budgetId, rejectionReason, companyId);
+  await notifyBudgetDecision(budget, "rejected");
+  return budget;
 }
 
 export async function getBudgetHistoryService(userId: string, budgetId: string, companyId?: string) {
