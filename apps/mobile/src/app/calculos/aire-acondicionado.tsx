@@ -763,7 +763,7 @@ function Results({
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
   },
   content: {
     padding: 20,
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   subtitle: {
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
   },
   section: {
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 12,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
@@ -848,14 +848,14 @@ const styles = StyleSheet.create({
   },
   info: {
     padding: 12,
-    backgroundColor: "#EFF6FF",
-    color: "#1E3A8A",
+    backgroundColor: colors.steelSoft,
+    color: colors.primary,
     borderRadius: radius.md,
   },
   warning: {
     padding: 12,
-    backgroundColor: "#FFF7ED",
-    color: "#9A3412",
+    backgroundColor: colors.sandSoft,
+    color: colors.primary,
     borderRadius: radius.md,
     fontSize: 12,
     lineHeight: 18,
@@ -863,20 +863,20 @@ const styles = StyleSheet.create({
   catalog: {
     minHeight: 58,
     padding: 14,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     borderRadius: radius.md,
     flexDirection: "row",
     alignItems: "center",
   },
   catalogValue: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 12,
   },
   primary: {
     minHeight: 52,
     paddingHorizontal: 14,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   success: {
-    color: colors.primary,
+    color: colors.success,
     padding: 12,
   },
   results: {
@@ -902,6 +902,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   total: {
+    color: colors.accent,
     fontSize: 18,
     fontWeight: "900",
     marginVertical: 8,
@@ -909,7 +910,7 @@ const styles = StyleSheet.create({
   modal: {
     flex: 1,
     padding: 20,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
   },
   close: {
     color: colors.primary,
@@ -931,7 +932,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   price: {
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: "900",
   },
 });

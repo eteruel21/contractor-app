@@ -185,7 +185,7 @@ export default function PaintScreen() {
         <View style={styles.switchRow}><View style={styles.flex}>
           <Text style={styles.switchTitle}>Aplicar primer o sellador</Text>
           <Text style={styles.small}>Incluye primer antes de la pintura.</Text></View>
-          <Switch value={primer} onValueChange={setPrimer} trackColor={{ true: colors.primary }} />
+          <Switch value={primer} onValueChange={setPrimer} trackColor={{ true: colors.accent }} />
         </View>
       </Section>
 
@@ -259,26 +259,26 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background }, content: { padding: 20, paddingBottom: 44 },
   flex: { flex: 1 }, hero: { padding: 18, borderRadius: radius.lg, backgroundColor: colors.surfaceDark,
     flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 18 },
-  title: { color: colors.textLight, fontSize: 21, fontWeight: "900" }, subtitle: { color: "#CBD5E1", fontSize: 13 },
+  title: { color: colors.textLight, fontSize: 21, fontWeight: "900" }, subtitle: { color: colors.textLightMuted, fontSize: 13 },
   section: { padding: 18, borderRadius: radius.lg, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, marginBottom: 16 },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "900" }, small: { color: colors.textSecondary, fontSize: 12 },
   body: { marginTop: 14, gap: 12 }, grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   inputGroup: { width: "48%", minWidth: 135, flexGrow: 1 }, label: { color: colors.text, fontSize: 12, fontWeight: "800", marginBottom: 6 },
-  inputBox: { height: 50, paddingHorizontal: 12, borderRadius: radius.md, backgroundColor: colors.background,
+  inputBox: { height: 50, paddingHorizontal: 12, borderRadius: radius.md, backgroundColor: colors.surfaceAlt,
     borderWidth: 1, borderColor: colors.border, flexDirection: "row", alignItems: "center" },
   input: { flex: 1, height: "100%", color: colors.text }, unit: { color: colors.textSecondary, fontSize: 11 },
-  info: { padding: 12, backgroundColor: "#EFF6FF", color: "#1E3A8A", borderRadius: radius.md },
-  switchRow: { flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.background, borderRadius: radius.md },
+  info: { padding: 12, backgroundColor: colors.steelSoft, color: colors.primary, borderRadius: radius.md },
+  switchRow: { flexDirection: "row", alignItems: "center", padding: 12, backgroundColor: colors.surfaceAlt, borderRadius: radius.md },
   switchTitle: { color: colors.text, fontWeight: "800" }, catalog: { minHeight: 58, padding: 14,
-    backgroundColor: colors.primarySoft, borderRadius: radius.md, flexDirection: "row", alignItems: "center" },
-  catalogValue: { color: colors.primary, fontSize: 12 }, primary: { height: 52, borderRadius: radius.md,
-    backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+    backgroundColor: colors.steelSoft, borderRadius: radius.md, flexDirection: "row", alignItems: "center" },
+  catalogValue: { color: colors.accent, fontSize: 12 }, primary: { height: 52, borderRadius: radius.md,
+    backgroundColor: colors.accent, alignItems: "center", justifyContent: "center", marginBottom: 16 },
   primaryText: { color: colors.textLight, fontWeight: "900" }, error: { color: colors.danger, padding: 12 },
-  success: { color: colors.primary, padding: 12 }, results: { padding: 18, backgroundColor: colors.surface,
+  success: { color: colors.success, padding: 12 }, results: { padding: 18, backgroundColor: colors.surface,
     borderRadius: radius.lg, gap: 8, marginBottom: 16 }, total: { fontSize: 18, fontWeight: "900", marginVertical: 8 },
   modal: { flex: 1, padding: 20, backgroundColor: colors.background }, close: { color: colors.primary,
     fontWeight: "900", marginBottom: 16 }, item: { padding: 15, backgroundColor: colors.surface,
     borderRadius: radius.md, marginBottom: 10, flexDirection: "row", justifyContent: "space-between" },
-  itemName: { color: colors.text, fontWeight: "800" }, price: { color: colors.primary, fontWeight: "900" },
+  itemName: { color: colors.text, fontWeight: "800" }, price: { color: colors.accent, fontWeight: "900" },
 });

@@ -1133,7 +1133,7 @@ function FormField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={colors.textMuted}
         keyboardType={keyboardType}
         multiline={multiline}
         style={[
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1197,7 +1197,7 @@ const styles = StyleSheet.create({
 
   clientType: {
     marginTop: 4,
-    color: "#94A3B8",
+    color: colors.textLightMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: radius.sm,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
   },
 
   sectionActionText: {
@@ -1240,7 +1240,7 @@ const styles = StyleSheet.create({
   infoRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
+    borderBottomColor: colors.divider,
     flexDirection: "row",
     gap: 12,
   },
@@ -1266,14 +1266,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 13,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   projectCard: {
     marginBottom: 10,
     padding: 13,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   cardTopRow: {
@@ -1308,7 +1308,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.sandSoft,
   },
 
   badgeText: {
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
   },
 
   dangerText: {
-    color: "#DC2626",
+    color: colors.danger,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -1361,7 +1361,7 @@ const styles = StyleSheet.create({
   emptySmall: {
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   emptySmallText: {
@@ -1399,7 +1399,7 @@ const styles = StyleSheet.create({
   },
 
   saveText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -1441,7 +1441,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     marginTop: 8,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },

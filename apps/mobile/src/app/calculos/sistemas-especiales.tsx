@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   subtitle: {
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
   },
   section: {
@@ -1001,15 +1001,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
   systemOptionActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   systemOptionText: {
     color: colors.text,
@@ -1042,7 +1042,7 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 12,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
@@ -1059,35 +1059,35 @@ const styles = StyleSheet.create({
   },
   info: {
     padding: 12,
-    backgroundColor: "#EFF6FF",
-    color: "#1E3A8A",
+    backgroundColor: colors.steelSoft,
+    color: colors.primary,
     borderRadius: radius.md,
   },
   notice: {
     padding: 12,
     marginBottom: 16,
     borderRadius: radius.md,
-    backgroundColor: "#FFF7ED",
-    color: "#9A3412",
+    backgroundColor: colors.sandSoft,
+    color: colors.primary,
     fontSize: 12,
     lineHeight: 18,
   },
   catalog: {
     minHeight: 58,
     padding: 14,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     borderRadius: radius.md,
     flexDirection: "row",
     alignItems: "center",
   },
   catalogValue: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 12,
   },
   primary: {
     height: 52,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -1101,7 +1101,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   success: {
-    color: colors.primary,
+    color: colors.success,
     padding: 12,
   },
   results: {
@@ -1112,6 +1112,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   total: {
+    color: colors.accent,
     fontSize: 18,
     fontWeight: "900",
     marginVertical: 8,
@@ -1139,7 +1140,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   price: {
-    color: colors.primary,
+    color: colors.accent,
     fontWeight: "900",
   },
 });

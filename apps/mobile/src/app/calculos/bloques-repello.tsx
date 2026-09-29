@@ -819,7 +819,7 @@ function FormInput({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           keyboardType="decimal-pad"
           inputMode="decimal"
           style={styles.input}
@@ -962,7 +962,7 @@ function CatalogPicker({
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar por nombre, SKU o categoría"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.searchInput}
             />
           </View>
@@ -1154,7 +1154,7 @@ function Results({
         <Ionicons
           name="warning-outline"
           size={20}
-          color="#92400E"
+          color={colors.primary}
         />
         <Text style={styles.warningText}>
           La cantidad real puede variar por juntas, modulación, cortes,
@@ -1210,7 +1210,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 4,
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -1275,7 +1275,7 @@ const styles = StyleSheet.create({
     height: 50,
     paddingHorizontal: 13,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: "row",
@@ -1308,15 +1308,15 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: 8,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
   segmentButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   segmentText: {
     color: colors.textSecondary,
@@ -1336,7 +1336,7 @@ const styles = StyleSheet.create({
   ratioInput: {
     height: 50,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     color: colors.text,
@@ -1354,9 +1354,9 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: 14,
     borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     borderWidth: 1,
-    borderColor: "#A7F3D0",
+    borderColor: colors.steel,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -1368,7 +1368,7 @@ const styles = StyleSheet.create({
   },
   catalogValue: {
     marginTop: 3,
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1381,7 +1381,7 @@ const styles = StyleSheet.create({
     flex: 1.3,
     height: 54,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1414,7 +1414,7 @@ const styles = StyleSheet.create({
   errorBox: {
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: colors.dangerSoft,
     flexDirection: "row",
     gap: 9,
     marginBottom: 14,
@@ -1428,7 +1428,7 @@ const styles = StyleSheet.create({
   successBox: {
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.successSoft,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
@@ -1436,7 +1436,7 @@ const styles = StyleSheet.create({
   },
   successText: {
     flex: 1,
-    color: colors.primary,
+    color: colors.success,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1468,7 +1468,7 @@ const styles = StyleSheet.create({
     width: 45,
     height: 45,
     borderRadius: 14,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.successSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1525,14 +1525,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   totalValue: {
-    color: colors.textLight,
+    color: colors.accent,
     fontSize: 18,
     fontWeight: "900",
   },
   addBudgetButton: {
     height: 52,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1547,7 +1547,7 @@ const styles = StyleSheet.create({
   warningBox: {
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: colors.sandSoft,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     flex: 1,
-    color: "#92400E",
+    color: colors.primary,
     fontSize: 11,
     lineHeight: 17,
   },
@@ -1635,7 +1635,7 @@ const styles = StyleSheet.create({
   },
   catalogItemPrice: {
     marginLeft: 12,
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
