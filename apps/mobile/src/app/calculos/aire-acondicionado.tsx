@@ -763,7 +763,7 @@ function Results({
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.background,
   },
   content: {
     padding: 20,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   modal: {
     flex: 1,
     padding: 20,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.background,
   },
   close: {
     color: colors.primary,

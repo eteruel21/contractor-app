@@ -399,7 +399,7 @@ export default function ProfessionalProfileScreen() {
             </Text>
 
             <Pressable onPress={() => signOut()} style={styles.logoutButton}>
-              <Ionicons name="log-out-outline" size={16} color="#DC2626" />
+              <Ionicons name="log-out-outline" size={16} color={colors.danger} />
               <Text style={styles.logoutText}>Salir</Text>
             </Pressable>
           </View>
@@ -578,7 +578,7 @@ export default function ProfessionalProfileScreen() {
                   <View style={styles.previewBox}>
                     <Image source={{ uri: form.avatarUrl }} style={styles.avatarPreview} />
                     <Pressable onPress={() => setField("avatarUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
                     </Pressable>
                   </View>
                 ) : (
@@ -599,7 +599,7 @@ export default function ProfessionalProfileScreen() {
                   <View style={styles.previewBox}>
                     <Image source={{ uri: form.companyLogoUrl }} style={styles.logoPreview} resizeMode="contain" />
                     <Pressable onPress={() => setField("companyLogoUrl")('')} style={styles.clearImageButton}>
-                      <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
                     </Pressable>
                   </View>
                 ) : (
@@ -872,7 +872,7 @@ function UploadedDocumentPreview({
         <Ionicons
           name="trash-outline"
           size={16}
-          color="#DC2626"
+          color={colors.danger}
         />
       </Pressable>
     </View>
@@ -905,7 +905,7 @@ function FormField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           keyboardType={keyboardType}
           style={styles.input}
         />
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
 
   safeArea: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.background,
   },
 
   content: {
@@ -964,12 +964,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
-    backgroundColor: "#FEF2F2",
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.dangerSoft,
   },
 
   logoutText: {
-    color: "#DC2626",
+    color: colors.danger,
     fontSize: 11,
     fontWeight: "800",
   },
@@ -984,7 +984,7 @@ const styles = StyleSheet.create({
 
   progressIndicator: {
     height: "100%",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
 
   stepContainer: {
@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -1058,7 +1058,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1070,7 +1070,7 @@ const styles = StyleSheet.create({
   },
 
   selectPlaceholderText: {
-    color: "#94A3B8",
+    color: colors.textMuted,
     fontSize: 13,
   },
 
@@ -1103,14 +1103,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
   },
 
   workModeActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryWash,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
 
   workModeText: {
@@ -1120,7 +1120,7 @@ const styles = StyleSheet.create({
   },
 
   workModeTextActive: {
-    color: colors.primary,
+    color: colors.accent,
   },
 
   uploadCard: {
@@ -1130,7 +1130,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     marginBottom: 16,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   uploadLabel: {
@@ -1142,8 +1142,8 @@ const styles = StyleSheet.create({
 
   uploadButton: {
     minHeight: 50,
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
+    backgroundColor: colors.steelSoft,
+    borderColor: colors.steel,
     borderWidth: 1,
     borderRadius: radius.md,
     flexDirection: "row",
@@ -1169,7 +1169,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.accent,
   },
 
   logoPreview: {
@@ -1253,7 +1253,7 @@ const styles = StyleSheet.create({
 
   saveButton: {
     minHeight: 52,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.md,
     flexDirection: "row",
     alignItems: "center",
@@ -1282,7 +1282,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(15, 23, 42, 0.7)",
+    backgroundColor: colors.overlay,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -1328,7 +1328,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 48,
     marginTop: 16,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
