@@ -217,9 +217,9 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.steel,
     borderRadius: radius.md,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.steelSoft,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
   },
 
   companyCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
 
   companyIcon: {

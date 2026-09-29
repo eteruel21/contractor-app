@@ -118,7 +118,7 @@ export default function ProfileScreen() {
       const data = await exportAccountData();
       const json = JSON.stringify(data, null, 2);
       const date = new Date().toISOString().slice(0, 10);
-      const fileName = `contractor-pro-data-export-${date}.json`;
+      const fileName = `leuret-data-export-${date}.json`;
 
       if (Platform.OS === "web") {
         const blob = new Blob([json], { type: "application/json;charset=utf-8" });
@@ -132,7 +132,7 @@ export default function ProfileScreen() {
         URL.revokeObjectURL(objectUrl);
       } else {
         await Share.share({
-          title: "Exportación de datos de Contractor Pro",
+          title: "Exportación de datos de Leuret",
           message: json,
         });
       }
@@ -283,10 +283,10 @@ export default function ProfileScreen() {
             ]}
           >
             {saving ? (
-              <ActivityIndicator color={colors.surfaceDark} size="small" />
+              <ActivityIndicator color={colors.textLight} size="small" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={20} color={colors.surfaceDark} />
+                <Ionicons name="checkmark-circle-outline" size={20} color={colors.textLight} />
                 <Text style={styles.saveButtonText}>Guardar cambios</Text>
               </>
             )}
@@ -313,7 +313,7 @@ export default function ProfileScreen() {
               }}
               style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderColor: colors.border }}
             >
-              <Ionicons name="download-outline" size={20} color={colors.primary} />
+              <Ionicons name="download-outline" size={20} color={colors.accent} />
               <Text style={{ color: colors.text, fontSize: 14, fontWeight: "700" }}>Exportar mis datos (JSON)</Text>
             </Pressable>
 
@@ -384,12 +384,12 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     ...shadows.soft,
   },
-  avatarText: { color: colors.surfaceDark, fontSize: 30, fontWeight: "900" },
+  avatarText: { color: colors.textLight, fontSize: 30, fontWeight: "900" },
   title: { marginTop: 18, color: colors.text, fontSize: 24, fontWeight: "900" },
   subtitle: {
     maxWidth: 360,
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -432,13 +432,13 @@ const styles = StyleSheet.create({
     minHeight: 54,
     marginTop: 20,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 9,
   },
   saveButtonDisabled: { opacity: 0.45 },
-  saveButtonPressed: { backgroundColor: colors.primaryPressed, transform: [{ scale: 0.99 }] },
-  saveButtonText: { color: colors.surfaceDark, fontSize: 15, fontWeight: "900" },
+  saveButtonPressed: { backgroundColor: colors.accentPressed, transform: [{ scale: 0.99 }] },
+  saveButtonText: { color: colors.textLight, fontSize: 15, fontWeight: "900" },
 });
