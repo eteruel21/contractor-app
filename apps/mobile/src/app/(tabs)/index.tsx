@@ -68,7 +68,7 @@ function QuickAction({
         ]}
       >
         <View style={styles.quickIcon}>
-          <Ionicons name={icon} size={22} color={colors.accent} />
+          <Ionicons name={icon} size={22} color={colors.primary} />
         </View>
 
         <View style={styles.quickCopy}>
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     bottom: 40,
     left: -135,
     borderRadius: 95,
-    backgroundColor: colors.glowCyan,
+    backgroundColor: colors.glowSoft,
     opacity: 0.18,
   },
 

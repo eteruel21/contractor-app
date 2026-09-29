@@ -130,16 +130,16 @@ export default function MoreScreen() {
                 pressed && styles.pressedOption,
               ]}
             >
-              <View style={styles.iconContainer}>
+              <View style={[styles.iconContainer, option.id === "logout" && styles.logoutIconContainer]}>
                 <Ionicons
                   name={option.icon}
                   size={24}
-                  color={colors.primary}
+                  color={option.id === "logout" ? colors.danger : colors.primary}
                 />
               </View>
 
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>
+                <Text style={[styles.optionTitle, option.id === "logout" && styles.logoutTitle]}>
                   {option.title}
                 </Text>
 
@@ -151,7 +151,7 @@ export default function MoreScreen() {
               <Ionicons
                 name="chevron-forward-outline"
                 size={21}
-                color="#94A3B8"
+                color={colors.steel}
               />
             </Pressable>
           ))}
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
 
   subtitle: {
     marginTop: 5,
-    color: "#94A3B8",
+    color: colors.steel,
     fontSize: 14,
   },
 
@@ -209,7 +209,8 @@ const styles = StyleSheet.create({
   },
 
   pressedOption: {
-    opacity: 0.75,
+    backgroundColor: colors.surfaceAlt,
+    opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
 
@@ -217,9 +218,17 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 15,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  logoutIconContainer: {
+    backgroundColor: colors.dangerSoft,
+  },
+
+  logoutTitle: {
+    color: colors.danger,
   },
 
   optionText: {
