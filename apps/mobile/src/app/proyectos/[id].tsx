@@ -544,7 +544,7 @@ export default function ProjectDetailScreen() {
                     <Ionicons
                       name={isDone ? "checkbox" : "square-outline"}
                       size={24}
-                      color={isDone ? "#10B981" : colors.textMuted}
+                      color={isDone ? colors.success : colors.textMuted}
                     />
                   </Pressable>
 
@@ -561,7 +561,7 @@ export default function ProjectDetailScreen() {
                     onPress={() => void handleDeleteTask(task.id)}
                     style={styles.deleteIconButton}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
                   </Pressable>
                 </View>
               );
@@ -629,7 +629,7 @@ export default function ProjectDetailScreen() {
                         onPress={() => void handleDeletePhoto(photo.id)}
                         style={styles.photoDeleteBtn}
                       >
-                        <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                        <Ionicons name="trash-outline" size={16} color={colors.danger} />
                       </Pressable>
                     </View>
                   </View>
@@ -821,27 +821,27 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   headerCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceDark,
     borderRadius: radius.lg,
     padding: 16,
     gap: 6,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.surfaceDarkRaised,
   },
   codeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.sand,
     letterSpacing: 0.5,
   },
   titleText: {
     fontSize: 22,
     fontWeight: "700",
-    color: colors.text,
+    color: colors.textLight,
   },
   clientText: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: colors.textLightMuted,
   },
   progressHeaderRow: {
     flexDirection: "row",
@@ -852,19 +852,19 @@ const styles = StyleSheet.create({
   progressBarBackground: {
     flex: 1,
     height: 8,
-    backgroundColor: colors.border,
+    backgroundColor: colors.steel,
     borderRadius: radius.full,
     overflow: "hidden",
   },
   progressBarFill: {
     height: "100%",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.full,
   },
   progressPercentText: {
     fontSize: 14,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accent,
   },
   sectionCard: {
     backgroundColor: colors.surface,
@@ -919,8 +919,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   selectedStatusChip: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   disabledChip: {
     opacity: 0.5,
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   saveProgressButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.md,
     paddingVertical: 10,
     alignItems: "center",
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
   historyPercent: {
     fontWeight: "700",
     fontSize: 13,
-    color: colors.primary,
+    color: colors.accent,
   },
   historyDate: {
     fontSize: 11,
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   saveSmallButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderRadius: radius.sm,
     paddingVertical: 8,
     alignItems: "center",
@@ -1129,7 +1129,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     paddingVertical: 12,
     borderRadius: radius.md,
   },
@@ -1142,7 +1142,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   pressed: {
-    opacity: 0.8,
+    backgroundColor: colors.accentSoft,
+    opacity: 0.92,
   },
   emptyBudgetBox: {
     paddingVertical: 12,
@@ -1168,7 +1169,7 @@ const styles = StyleSheet.create({
   budgetNumber: {
     fontSize: 11,
     fontWeight: "700",
-    color: colors.primary,
+    color: colors.accent,
   },
   budgetTitle: {
     fontSize: 14,

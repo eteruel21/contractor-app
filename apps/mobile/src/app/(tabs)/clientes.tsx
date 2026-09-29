@@ -268,7 +268,7 @@ export default function ClientsScreen() {
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Buscar por nombre, teléfono, correo o documento"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.searchInput}
               />
             </View>
@@ -357,7 +357,7 @@ function ClientCard({
         <Ionicons
           name="trash-outline"
           size={20}
-          color="#EF4444"
+          color={colors.danger}
         />
       </Pressable>
     </Pressable>
@@ -668,7 +668,7 @@ function FormField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={colors.textMuted}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     padding: 4,
     borderRadius: radius.md,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: colors.sandSoft,
     flexDirection: "row",
   },
 

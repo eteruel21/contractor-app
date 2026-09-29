@@ -138,7 +138,7 @@ export default function InvoiceSettingsScreen() {
               value={legalName}
               onChangeText={setLegalName}
               placeholder="Ej. Soluciones Constructivas S.A."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
           </View>
@@ -149,7 +149,7 @@ export default function InvoiceSettingsScreen() {
               value={taxId}
               onChangeText={setTaxId}
               placeholder="Ej. 155-224-899 DV 20"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
           </View>
@@ -160,7 +160,7 @@ export default function InvoiceSettingsScreen() {
               value={address}
               onChangeText={setAddress}
               placeholder="Ej. Calle 50, Edificio Pro, Ciudad de Panamá"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
           </View>
@@ -173,7 +173,7 @@ export default function InvoiceSettingsScreen() {
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
                 placeholder="Ej. +507 399-2811"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
             </View>
@@ -186,7 +186,7 @@ export default function InvoiceSettingsScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholder="Ej. facturas@empresa.com"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
             </View>
@@ -206,13 +206,13 @@ export default function InvoiceSettingsScreen() {
                   onPress={() => setLogoUrl("")}
                   style={styles.removeLogoButton}
                 >
-                  <Ionicons name="trash-outline" size={15} color="#EF4444" />
+                  <Ionicons name="trash-outline" size={15} color={colors.danger} />
                   <Text style={styles.removeLogoText}>Quitar logotipo</Text>
                 </Pressable>
               </View>
             ) : (
               <View style={styles.noLogoBox}>
-                <Ionicons name="image-outline" size={32} color="#94A3B8" />
+                <Ionicons name="image-outline" size={32} color={colors.steel} />
                 <Text style={styles.noLogoText}>Sin logotipo seleccionado</Text>
               </View>
             )}
@@ -234,7 +234,7 @@ export default function InvoiceSettingsScreen() {
                 onChangeText={setLogoUrl}
                 autoCapitalize="none"
                 placeholder="O pega la URL de la imagen aquí..."
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={[styles.input, styles.logoUrlInput]}
               />
             </View>
@@ -248,7 +248,7 @@ export default function InvoiceSettingsScreen() {
                 onChangeText={setInvoicePrefix}
                 autoCapitalize="characters"
                 placeholder="Ej. FAC"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
             </View>
@@ -260,7 +260,7 @@ export default function InvoiceSettingsScreen() {
                 onChangeText={setTaxRate}
                 keyboardType="numeric"
                 placeholder="Ej. 7"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.input}
               />
             </View>
@@ -322,16 +322,16 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.infoSoft,
+    borderColor: colors.steelSoft,
     borderRadius: radius.md,
-    backgroundColor: colors.infoSoft,
+    backgroundColor: colors.steelSoft,
     flexDirection: "row",
     gap: 8,
   },
 
   infoText: {
     flex: 1,
-    color: colors.info,
+    color: colors.primary,
     fontSize: 12,
     lineHeight: 17,
     fontWeight: "bold",
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     marginTop: 15,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   logoPreview: {
     width: 100,
     height: 50,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     borderRadius: radius.sm,
   },
 
@@ -420,12 +420,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: "#FEE2E2",
-    backgroundColor: "#FEF2F2",
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.dangerSoft,
   },
 
   removeLogoText: {
-    color: "#DC2626",
+    color: colors.danger,
     fontSize: 12,
     fontWeight: "800",
   },
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     marginBottom: 10,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   noLogoText: {
@@ -458,8 +458,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: colors.steel,
+    backgroundColor: colors.steelSoft,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

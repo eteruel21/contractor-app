@@ -171,7 +171,7 @@ export default function BudgetsScreen() {
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Buscar por número, título o estado"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.searchInput}
               />
             </View>
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.surfaceDark,
+    backgroundColor: colors.steel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
   },
 
   budgetNumber: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -487,12 +487,13 @@ const styles = StyleSheet.create({
   },
 
   amountValueStrong: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 13,
   },
 
   pressed: {
-    opacity: 0.78,
+    backgroundColor: colors.accentSoft,
+    opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
 });

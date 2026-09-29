@@ -117,36 +117,26 @@ export default function ProjectsScreen() {
 
   const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case "in_progress":
-      case "completed":
-        return {
-          bg: colors.primarySoft,
-          text: colors.primary,
-        };
+      case "in_progress": return { bg: colors.accentSoft, text: colors.accent }; case "completed": return { bg: colors.successSoft, text: colors.success };
       case "approved":
         return {
-          bg: "#DBEAFE",
-          text: colors.info,
+          bg: colors.steelSoft, text: colors.primary,
         };
       case "quoted":
         return {
-          bg: "#FEF3C7",
-          text: colors.warning,
+          bg: colors.sandSoft, text: colors.warning,
         };
       case "paused":
         return {
-          bg: "#F3F4F6",
-          text: colors.textSecondary,
+          bg: colors.surfaceAlt, text: colors.textSecondary,
         };
       case "cancelled":
         return {
-          bg: "#FEE2E2",
-          text: colors.danger,
+          bg: colors.dangerSoft, text: colors.danger,
         };
       default: // lead, inspection
         return {
-          bg: "#F1F5F9",
-          text: "#475569",
+          bg: colors.steelSoft, text: colors.textSecondary,
         };
     }
   };
@@ -217,7 +207,7 @@ export default function ProjectsScreen() {
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Buscar por código, nombre o cliente"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textMuted}
                 style={styles.searchInput}
               />
             </View>
@@ -363,7 +353,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: colors.surfaceDark,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -436,7 +426,8 @@ const styles = StyleSheet.create({
   },
 
   pressed: {
-    opacity: 0.85,
+    backgroundColor: colors.accentSoft,
+    opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
 
@@ -509,13 +500,13 @@ const styles = StyleSheet.create({
   progressBarBg: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.background,
+    backgroundColor: colors.steelSoft,
     overflow: "hidden",
   },
 
   progressBarFill: {
     height: "100%",
     borderRadius: 3,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
 });

@@ -132,7 +132,7 @@ export default function AgendaScreen() {
             <Ionicons
               name="calendar-clear-outline"
               size={48}
-              color="#94A3B8"
+              color={colors.steel}
             />
 
             <Text style={styles.emptyTitle}>
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginTop: 4,
-    color: "#94A3B8",
+    color: colors.steel,
     fontSize: 13,
   },
   addButton: {
     width: 48,
     height: 48,
     borderRadius: 15,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   cardAddress: {
     marginTop: 5,
-    color: "#64748B",
+    color: colors.textSecondary,
     fontSize: 11,
   },
   statusBadge: {
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 20,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.sandSoft,
   },
   statusText: {
     color: colors.primary,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: colors.dangerSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     minHeight: 46,
     paddingHorizontal: 18,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },

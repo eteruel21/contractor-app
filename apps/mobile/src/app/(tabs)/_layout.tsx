@@ -70,14 +70,15 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarHideOnKeyboard: true,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.steel,
         tabBarStyle: {
-          height: 76,
-          paddingTop: 7,
-          paddingBottom: 9,
+          height: 80,
+          paddingTop: 8,
+          paddingBottom: 10,
           backgroundColor: colors.surface,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: colors.divider,
           shadowColor: colors.surfaceDark,
           shadowOffset: { width: 0, height: -5 },
           shadowOpacity: 0.06,
@@ -158,6 +159,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconWrapActive: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.accentSoft,
   },
 });

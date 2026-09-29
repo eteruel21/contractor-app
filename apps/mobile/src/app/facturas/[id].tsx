@@ -1292,7 +1292,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 18,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1309,7 +1309,7 @@ const styles = StyleSheet.create({
 
   invoiceDate: {
     marginTop: 4,
-    color: "#94A3B8",
+    color: colors.steel,
     fontSize: 12,
     fontWeight: "700",
   },
@@ -1326,15 +1326,15 @@ const styles = StyleSheet.create({
   },
 
   badgePaid: {
-    backgroundColor: "#DCFCE7",
+    backgroundColor: colors.successSoft,
   },
 
   badgeCancelled: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: colors.dangerSoft,
   },
 
   badgePending: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.sandSoft,
   },
 
   statusText: {
@@ -1344,15 +1344,15 @@ const styles = StyleSheet.create({
   },
 
   textPaid: {
-    color: "#16A34A",
+    color: colors.success,
   },
 
   textCancelled: {
-    color: "#DC2626",
+    color: colors.danger,
   },
 
   textPending: {
-    color: "#D97706",
+    color: colors.warning,
   },
 
   actionsRow: {
@@ -1434,7 +1434,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: colors.divider,
   },
 
   itemInfo: {
@@ -1497,19 +1497,19 @@ const styles = StyleSheet.create({
   },
 
   grandTotalVal: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 18,
     fontWeight: "900",
   },
 
   paidValue: {
-    color: colors.primary,
+    color: colors.success,
     fontSize: 13,
     fontWeight: "900",
   },
 
   creditValue: {
-    color: "#2563EB",
+    color: colors.primary,
     fontSize: 13,
     fontWeight: "900",
   },
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 12,
     borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1580,7 +1580,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1589,7 +1589,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#DBEAFE",
+    backgroundColor: colors.steelSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1611,13 +1611,13 @@ const styles = StyleSheet.create({
   },
 
   paymentAmount: {
-    color: colors.primary,
+    color: colors.success,
     fontSize: 14,
     fontWeight: "900",
   },
 
   creditNoteAmount: {
-    color: "#2563EB",
+    color: colors.primary,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -1694,7 +1694,7 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(16, 37, 29, 0.55)",
+    backgroundColor: colors.overlay,
   },
 
   modalCard: {
@@ -1787,8 +1787,8 @@ const styles = StyleSheet.create({
   },
 
   methodButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
   },
 
   methodButtonText: {
@@ -1798,14 +1798,14 @@ const styles = StyleSheet.create({
   },
 
   methodButtonTextActive: {
-    color: colors.primaryDark,
+    color: colors.accent,
   },
 
   confirmPaymentButton: {
     minHeight: 52,
     marginTop: 20,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1856,15 +1856,15 @@ const styles = StyleSheet.create({
   },
 
   btnPay: {
-    backgroundColor: "#16A34A",
+    backgroundColor: colors.success,
   },
 
   btnCancel: {
-    backgroundColor: "#DC2626",
+    backgroundColor: colors.danger,
   },
 
   btnPending: {
-    backgroundColor: "#D97706",
+    backgroundColor: colors.warning,
   },
 
   statusOptionButtonText: {

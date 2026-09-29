@@ -352,8 +352,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#D7E4F8",
-    backgroundColor: colors.infoSoft,
+    borderColor: colors.border,
+    backgroundColor: colors.steelSoft,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
 
   noticeText: {
     flex: 1,
-    color: "#1E3A8A",
+    color: colors.textSecondary,
     fontSize: 13,
     lineHeight: 19,
   },
