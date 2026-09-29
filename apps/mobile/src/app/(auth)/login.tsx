@@ -41,9 +41,11 @@ export default function LoginScreen() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [loginDiagnostic, setLoginDiagnostic] = useState<string | null>(null);
 
   async function handleSignIn() {
     const cleanEmail = email.trim();
+    setLoginDiagnostic("1/3 Botón detectado.");
 
     if (!cleanEmail || !password) {
       Alert.alert(
@@ -64,12 +66,15 @@ export default function LoginScreen() {
 
     try {
       setSubmitting(true);
+      setLoginDiagnostic("2/3 Enviando solicitud a /auth/login...");
 
       const { error } = await signIn(
         cleanEmail,
         password,
         captchaToken,
       );
+
+      setLoginDiagnostic(error ? "ERROR: " + error.message : "3/3 Login aceptado por API. Revisando navegación...");
 
       if (error) {
         Alert.alert(
@@ -499,6 +504,12 @@ export default function LoginScreen() {
                     </>
                   )}
                 </Pressable>
+
+                {loginDiagnostic ? (
+                  <Text style={{ marginTop: 12, textAlign: "center", fontWeight: "700", color: "#B45309" }}>
+                    {loginDiagnostic}
+                  </Text>
+                ) : null}
 
                 <View style={styles.registerRow}>
                   <Text style={styles.registerLabel}>
