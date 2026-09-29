@@ -1063,7 +1063,7 @@ function CatalogPricePicker({
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar por nombre, SKU o categoría"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.catalogSearchInput}
             />
           </View>
@@ -1168,7 +1168,7 @@ function FormInput({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           keyboardType="decimal-pad"
           inputMode="decimal"
           style={styles.input}
@@ -1477,7 +1477,7 @@ function Results({
         <Ionicons
           name="warning-outline"
           size={20}
-          color="#92400E"
+          color={colors.primary}
         />
 
         <Text style={styles.warningText}>
@@ -1545,7 +1545,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 17,
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.steelSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1624,7 +1624,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
   },
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     padding: 13,
     borderRadius: radius.sm,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: colors.sandSoft,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,
@@ -1676,7 +1676,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     color: colors.text,
     fontSize: 17,
     fontWeight: "800",
@@ -1708,7 +1708,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     padding: 4,
     borderRadius: radius.sm,
-    backgroundColor: "#E2E8F0",
+    backgroundColor: colors.steelSoft,
     flexDirection: "row",
   },
 
@@ -1755,7 +1755,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: "#FEF2F2",
+    backgroundColor: colors.dangerSoft,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
@@ -1763,7 +1763,7 @@ const styles = StyleSheet.create({
 
   errorText: {
     flex: 1,
-    color: "#991B1B",
+    color: colors.danger,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -1778,7 +1778,7 @@ const styles = StyleSheet.create({
     flex: 2,
     minHeight: 54,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1786,7 +1786,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonDisabled: {
-    backgroundColor: "#94A3B8",
+    backgroundColor: colors.steel,
   },
 
   primaryButtonText: {
@@ -1833,7 +1833,7 @@ const styles = StyleSheet.create({
   },
 
   resultsLabel: {
-    color: "#94A3B8",
+    color: colors.textLightMuted,
     fontSize: 13,
   },
 
@@ -1848,14 +1848,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 17,
-    backgroundColor: "#14532D",
+    backgroundColor: colors.successSoft,
     alignItems: "center",
     justifyContent: "center",
   },
 
   resultGroupTitle: {
     marginBottom: 7,
-    color: "#94A3B8",
+    color: colors.textLightMuted,
     fontSize: 12,
     fontWeight: "800",
     textTransform: "uppercase",
@@ -1875,13 +1875,13 @@ const styles = StyleSheet.create({
   },
 
   resultLabel: {
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 14,
   },
 
   resultDetail: {
     marginTop: 3,
-    color: "#64748B",
+    color: colors.steel,
     fontSize: 11,
   },
 
@@ -1894,14 +1894,14 @@ const styles = StyleSheet.create({
   resultDivider: {
     height: 1,
     marginVertical: 13,
-    backgroundColor: "#334155",
+    backgroundColor: colors.surfaceDarkRaised,
   },
 
   totalRow: {
     marginTop: 12,
     paddingTop: 17,
     borderTopWidth: 1,
-    borderTopColor: "#334155",
+    borderTopColor: colors.surfaceDarkRaised,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -1914,7 +1914,7 @@ const styles = StyleSheet.create({
   },
 
   totalValue: {
-    color: "#4ADE80",
+    color: colors.success,
     fontSize: 21,
     fontWeight: "900",
   },
@@ -1923,7 +1923,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     marginTop: 20,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1941,8 +1941,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: "#BBF7D0",
-    backgroundColor: "#F0FDF4",
+    borderColor: colors.successSoft,
+    backgroundColor: colors.successSoft,
   },
 
   budgetSuccessTextContainer: {
@@ -1953,7 +1953,7 @@ const styles = StyleSheet.create({
 
   budgetSuccessText: {
     flex: 1,
-    color: "#166534",
+    color: colors.success,
     fontSize: 13,
     lineHeight: 19,
     fontWeight: "700",
@@ -1980,7 +1980,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -1998,7 +1998,7 @@ const styles = StyleSheet.create({
 
   catalogPriceValue: {
     marginTop: 3,
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 13,
     fontWeight: "900",
   },
@@ -2119,7 +2119,7 @@ const styles = StyleSheet.create({
   },
 
   catalogItemPrice: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -2128,7 +2128,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 14,
     borderRadius: radius.md,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: colors.sandSoft,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,
@@ -2136,7 +2136,7 @@ const styles = StyleSheet.create({
 
   warningText: {
     flex: 1,
-    color: "#78350F",
+    color: colors.primary,
     fontSize: 11,
     lineHeight: 17,
   },
