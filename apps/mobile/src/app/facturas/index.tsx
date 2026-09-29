@@ -79,17 +79,17 @@ export default function InvoicesListScreen() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "paid":
-        return { text: "#16A34A", bg: "#DCFCE7" };
+        return { text: colors.success, bg: colors.successSoft };
       case "cancelled":
-        return { text: "#DC2626", bg: "#FEE2E2" };
+        return { text: colors.danger, bg: colors.dangerSoft };
       case "overdue":
-        return { text: "#B91C1C", bg: "#FEE2E2" };
+        return { text: colors.danger, bg: colors.dangerSoft };
       case "draft":
-        return { text: "#475569", bg: "#E2E8F0" };
+        return { text: colors.textSecondary, bg: colors.steelSoft };
       case "issued":
-        return { text: "#1D4ED8", bg: "#DBEAFE" };
+        return { text: colors.primary, bg: colors.steelSoft };
       default:
-        return { text: "#D97706", bg: "#FEF3C7" };
+        return { text: colors.warning, bg: colors.sandSoft };
     }
   };
 
@@ -106,12 +106,12 @@ export default function InvoicesListScreen() {
     <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <View style={styles.header}>
         <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={20} color="#64748B" />
+          <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Buscar por número o cliente..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textMuted}
             style={styles.searchInput}
           />
         </View>
@@ -141,7 +141,7 @@ export default function InvoicesListScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={48} color="#94A3B8" />
+            <Ionicons name="receipt-outline" size={48} color={colors.steel} />
             <Text style={styles.emptyTitle}>No hay facturas</Text>
             <Text style={styles.emptySubtitle}>
               Las facturas se generan aprobando un presupuesto y haciendo clic en &quot;Generar factura&quot;.
@@ -299,7 +299,8 @@ const styles = StyleSheet.create({
   },
 
   pressedCard: {
-    opacity: 0.85,
+    backgroundColor: colors.accentSoft,
+    opacity: 0.92,
     transform: [{ scale: 0.99 }],
   },
 
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
   },
 
   totalValue: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 16,
     fontWeight: "900",
   },

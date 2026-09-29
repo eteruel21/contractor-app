@@ -600,7 +600,7 @@ function BudgetSectionBlock({
                 <Ionicons
                   name="trash-outline"
                   size={19}
-                  color="#EF4444"
+                  color={colors.danger}
                 />
               </Pressable>
             </View>
@@ -883,7 +883,7 @@ function FormField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={colors.textMuted}
         keyboardType={keyboardType}
         multiline={multiline}
         style={[
@@ -1057,7 +1057,7 @@ function AddCatalogItemModal({
               value={search}
               onChangeText={setSearch}
               placeholder="Buscar material, mano de obra o SKU"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.catalogSearchInput}
             />
           </View>
@@ -1072,7 +1072,7 @@ function AddCatalogItemModal({
               onChangeText={setQuantity}
               keyboardType="decimal-pad"
               placeholder="1"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textMuted}
               style={styles.input}
             />
           </View>
@@ -1237,7 +1237,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 18,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1247,7 +1247,7 @@ const styles = StyleSheet.create({
   },
 
   budgetNumber: {
-    color: "#94A3B8",
+    color: colors.sand,
     fontSize: 12,
     fontWeight: "900",
   },
@@ -1261,7 +1261,7 @@ const styles = StyleSheet.create({
 
   budgetStatus: {
     marginTop: 5,
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
     fontWeight: "700",
   },
@@ -1295,7 +1295,7 @@ const styles = StyleSheet.create({
   },
 
   totalStrong: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 18,
   },
 
@@ -1331,7 +1331,7 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 12,
     borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
@@ -1359,7 +1359,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     padding: 13,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.surfaceAlt,
   },
 
   itemHeader: {
@@ -1386,7 +1386,7 @@ const styles = StyleSheet.create({
 
   itemSubtotal: {
     marginTop: 5,
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 15,
     fontWeight: "900",
   },
@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
   },
 
   saveText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -1501,7 +1501,7 @@ const styles = StyleSheet.create({
     minHeight: 56,
     marginTop: 8,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1548,7 +1548,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 54,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 15,
-    backgroundColor: colors.surfaceDark,
+    backgroundColor: colors.steel,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1688,7 +1688,7 @@ const styles = StyleSheet.create({
 
   catalogPriceValue: {
     marginTop: 3,
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 15,
     fontWeight: "900",
   },
@@ -1698,7 +1698,7 @@ const styles = StyleSheet.create({
     minWidth: 90,
     paddingHorizontal: 12,
     borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
