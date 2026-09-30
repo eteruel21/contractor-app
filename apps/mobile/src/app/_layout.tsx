@@ -1,12 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 import {
-  ActivityIndicator,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { colors } from "@/constants/theme";
@@ -25,6 +24,41 @@ import {
   unregisterCurrentPushTokenAsync,
 } from "@/services/push-notification-service";
 import { processOfflineSyncQueue } from "@/services/offline-sync-service";
+
+function LeuretStartupMark() {
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 780 }),
+        withTiming(0, { duration: 780 }),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+
+  const haloStyle = useAnimatedStyle(() => ({
+    opacity: 0.22 + pulse.value * 0.5,
+    transform: [{ scale: 1 + pulse.value * 0.28 }],
+  }));
+
+  const markStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pulse.value * 0.035 }],
+  }));
+
+  return (
+    <View style={styles.loadingLogo}>
+      <Animated.View style={[styles.loadingPulseRing, haloStyle]} />
+      <Animated.View style={[styles.loadingMark, markStyle]}>
+        <View style={styles.loadingMarkVertical} />
+        <View style={styles.loadingMarkDiagonal} />
+        <View style={styles.loadingMarkHorizontal} />
+      </Animated.View>
+    </View>
+  );
+}
 
 function RootNavigator() {
   const {
@@ -76,25 +110,13 @@ function RootNavigator() {
     return (
       <View style={styles.loading}>
         <View style={styles.loadingOrb} />
-        <View style={styles.loadingLogo}>
-          <Ionicons
-            name="construct"
-            size={29}
-            color={colors.surfaceDark}
-          />
-        </View>
+        <LeuretStartupMark />
 
-        <Text style={styles.loadingBrand}>CONTRACTOR PRO</Text>
+        <Text style={styles.loadingBrand}>LEURET</Text>
 
         <Text style={styles.loadingText}>
           Preparando tu espacio de trabajo
         </Text>
-
-        <ActivityIndicator
-          style={styles.loadingIndicator}
-          size="small"
-          color={colors.primary}
-        />
       </View>
     );
   }
@@ -195,9 +217,58 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 21,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.cream,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  loadingPulseRing: {
+    position: "absolute",
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    backgroundColor: colors.glowAccent,
+  },
+
+  loadingMark: {
+    position: "relative",
+    width: 40,
+    height: 40,
+  },
+
+  loadingMarkVertical: {
+    position: "absolute",
+    left: 9,
+    top: 4,
+    width: 8,
+    height: 29,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    transform: [{ rotate: "-8deg" }],
+  },
+
+  loadingMarkDiagonal: {
+    position: "absolute",
+    left: 14,
+    top: 20,
+    width: 10,
+    height: 19,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    transform: [{ rotate: "-42deg" }],
+  },
+
+  loadingMarkHorizontal: {
+    position: "absolute",
+    left: 18,
+    bottom: 5,
+    width: 20,
+    height: 8,
+    borderRadius: 5,
+    backgroundColor: colors.accent,
+    transform: [{ rotate: "-10deg" }],
   },
 
   loadingBrand: {

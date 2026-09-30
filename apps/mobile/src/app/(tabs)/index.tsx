@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
+import { useEffect } from "react";
 import {
   Alert,
+
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +15,11 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -35,17 +43,6 @@ type QuickActionProps = {
   onPress: () => void;
   delay?: number;
 };
-
-function LeuretMark() {
-  return (
-    <View style={styles.mark}>
-      <View style={styles.markVertical} />
-      <View style={styles.markDiagonal} />
-      <View style={styles.markHorizontal} />
-      <View style={styles.markGlow} />
-    </View>
-  );
-}
 
 function QuickAction({
   icon,
@@ -83,6 +80,38 @@ function QuickAction({
         />
       </Pressable>
     </Animated.View>
+  );
+}
+
+function LeuretPulseOrb() {
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 900 }),
+        withTiming(0, { duration: 900 }),
+      ),
+      -1,
+      false,
+    );
+  }, [pulse]);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: 0.45 + pulse.value * 0.55,
+    transform: [{ scale: 1 + pulse.value * 0.22 }],
+  }));
+
+  const coreStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pulse.value * 0.12 }],
+  }));
+
+  return (
+    <View style={styles.pulseIcon}>
+      <Animated.View style={[styles.pulseRing, ringStyle]}>
+        <Animated.View style={[styles.pulseCore, coreStyle]} />
+      </Animated.View>
+    </View>
   );
 }
 
@@ -164,16 +193,7 @@ export default function HomeScreen() {
             entering={FadeIn.duration(500)}
             style={styles.topBar}
           >
-            <View style={styles.brand}>
-              <LeuretMark />
-
-              <View>
-                <Text style={styles.brandName}>LEURET</Text>
-                <Text style={styles.brandTagline}>
-                  WORK SMARTER
-                </Text>
-              </View>
-            </View>
+            <View style={styles.brand}><Image source={require("../../../assets/images/leuret-logo-header.png")} style={styles.brandLogo} resizeMode="contain" /></View>
 
             <Pressable
               accessibilityLabel="Abrir perfil"
@@ -471,11 +491,7 @@ export default function HomeScreen() {
             entering={FadeInDown.delay(460).duration(480)}
             style={styles.pulseCard}
           >
-            <View style={styles.pulseIcon}>
-              <View style={styles.pulseRing}>
-                <View style={styles.pulseCore} />
-              </View>
-            </View>
+            <LeuretPulseOrb />
 
             <View style={styles.pulseCopy}>
               <Text style={styles.pulseEyebrow}>
@@ -547,9 +563,14 @@ const styles = StyleSheet.create({
 
   topBar: {
     minHeight: 52,
-    flexDirection: "row",
+    flexDirection: "row-reverse",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+
+  brandLogo: {
+    width: 112,
+    height: 79,
   },
 
   brand: {
