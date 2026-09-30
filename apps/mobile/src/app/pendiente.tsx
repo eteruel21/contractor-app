@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -17,6 +18,15 @@ import {
   shadows,
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
+
+function ReviewPulse() {
+  const pulse = useSharedValue(0);
+  useEffect(() => {
+    pulse.value = withRepeat(withSequence(withTiming(1, { duration: 850 }), withTiming(0, { duration: 850 })), -1, false);
+  }, [pulse]);
+  const style = useAnimatedStyle(() => ({ opacity: 0.55 + pulse.value * 0.45, transform: [{ scale: 1 + pulse.value * 0.16 }] }));
+  return <Animated.View style={[styles.progressCurrent, style]}><View style={styles.progressCurrentDot} /></Animated.View>;
+}
 
 export default function PendingApprovalScreen() {
   const {
@@ -56,7 +66,7 @@ export default function PendingApprovalScreen() {
               color={colors.surfaceDark}
             />
           </View>
-          <Text style={styles.brandName}>CONTRACTOR PRO</Text>
+          <Text style={styles.brandName}>LEURET</Text>
         </View>
 
         <View style={styles.heroCopy}>
@@ -107,9 +117,7 @@ export default function PendingApprovalScreen() {
             </View>
             <View style={styles.progressLineActive} />
             <View style={styles.progressStep}>
-              <View style={styles.progressCurrent}>
-                <View style={styles.progressCurrentDot} />
-              </View>
+              <ReviewPulse />
               <Text style={styles.progressLabelActive}>Revisión</Text>
             </View>
             <View style={styles.progressLine} />
@@ -210,7 +218,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -304,7 +312,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -337,7 +345,7 @@ const styles = StyleSheet.create({
     height: 2,
     marginTop: 12,
     marginHorizontal: -13,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
   },
   progressLine: {
     flex: 1,
@@ -373,7 +381,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     marginTop: 22,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
