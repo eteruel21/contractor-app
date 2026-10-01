@@ -29,6 +29,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   colors,
   radius,
+  shadows,
+  typography,
 } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
@@ -231,6 +233,8 @@ export default function ClientsScreen() {
           <View>
             <View style={styles.header}>
               <View>
+                <Text style={styles.eyebrow}>LEURET CLIENTES</Text>
+
                 <Text style={styles.title}>
                   Clientes
                 </Text>
@@ -700,27 +704,39 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 18,
     paddingBottom: 40,
   },
 
   header: {
     marginBottom: 16,
+    padding: 18,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceDark,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    ...shadows.raised,
+  },
+
+  eyebrow: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 
   title: {
-    color: colors.text,
-    fontSize: 28,
-    fontWeight: "900",
+    marginTop: 6,
+    color: colors.textLight,
+    ...typography.title,
   },
 
   subtitle: {
-    marginTop: 3,
-    color: colors.textSecondary,
-    fontSize: 13,
+    marginTop: 4,
+    color: colors.textLightMuted,
+    fontSize: 12,
     fontWeight: "700",
   },
 
@@ -728,21 +744,23 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.glow,
   },
 
   searchBox: {
-    minHeight: 48,
-    paddingHorizontal: 14,
+    minHeight: 50,
+    paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
+    ...shadows.soft,
   },
 
   searchInput: {
@@ -752,11 +770,13 @@ const styles = StyleSheet.create({
   },
 
   counter: {
-    marginTop: 12,
+    marginTop: 14,
     marginBottom: 12,
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "800",
+    color: colors.accent,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
   },
 
   empty: {
@@ -781,21 +801,23 @@ const styles = StyleSheet.create({
   },
 
   clientCard: {
+    minHeight: 84,
     marginBottom: 12,
-    padding: 15,
+    padding: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    ...shadows.soft,
   },
 
   clientIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 17,
     backgroundColor: colors.surfaceDark,
     alignItems: "center",
     justifyContent: "center",
@@ -852,7 +874,7 @@ const styles = StyleSheet.create({
   },
 
   saveText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "900",
   },
@@ -924,9 +946,10 @@ const styles = StyleSheet.create({
     minHeight: 56,
     marginTop: 8,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.glow,
   },
 
   fullSaveText: {

@@ -73,22 +73,30 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.steel,
         tabBarStyle: {
-          height: 80,
+          height: 74,
+          marginHorizontal: 12,
+          marginBottom: 10,
           paddingTop: 8,
-          paddingBottom: 10,
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.divider,
+          paddingBottom: 8,
+          backgroundColor: colors.surfaceRaised,
+          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: 24,
           shadowColor: colors.surfaceDark,
-          shadowOffset: { width: 0, height: -5 },
-          shadowOpacity: 0.06,
-          shadowRadius: 15,
-          elevation: 12,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.10,
+          shadowRadius: 22,
+          elevation: 14,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
         },
         tabBarLabelStyle: {
-          marginTop: 2,
-          fontSize: 10,
+          marginTop: 1,
+          fontSize: 9,
           fontWeight: "800",
+          letterSpacing: 0.15,
         },
       }}
     >
@@ -152,13 +160,16 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   iconWrap: {
-    width: 40,
-    height: 29,
-    borderRadius: 11,
+    width: 42,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },
   iconWrapActive: {
     backgroundColor: colors.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.glowAccent,
+    transform: [{ translateY: -1 }],
   },
 });

@@ -12,9 +12,10 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 
 type OptionItem = {
@@ -110,7 +111,9 @@ export default function MoreScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInUp.duration(420)} style={styles.header}>
+          <Text style={styles.eyebrow}>LEURET</Text>
+
           <Text style={styles.title}>
             Más herramientas
           </Text>
@@ -118,6 +121,11 @@ export default function MoreScreen() {
           <Text style={styles.subtitle}>
             Administración general de la empresa.
           </Text>
+        </Animated.View>
+
+        <View style={styles.sectionIntro}>
+          <Text style={styles.sectionEyebrow}>CENTRO DE CONTROL</Text>
+          <Text style={styles.sectionText}>Todo lo que complementa tu operación.</Text>
         </View>
 
         <View style={styles.list}>
@@ -175,43 +183,74 @@ const styles = StyleSheet.create({
 
   header: {
     paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 28,
+    paddingTop: 22,
+    paddingBottom: 34,
     backgroundColor: colors.surfaceDark,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+
+  eyebrow: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.8,
   },
 
   title: {
+    marginTop: 8,
     color: colors.textLight,
-    fontSize: 25,
-    fontWeight: "900",
+    ...typography.title,
   },
 
   subtitle: {
+    marginTop: 7,
+    color: colors.textLightMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  sectionIntro: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+
+  sectionEyebrow: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+  },
+
+  sectionText: {
     marginTop: 5,
-    color: colors.steel,
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: 12,
   },
 
   list: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 20,
     gap: 12,
   },
 
   option: {
-    minHeight: 82,
-    padding: 15,
-    borderRadius: radius.lg,
+    minHeight: 86,
+    padding: 16,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
+    ...shadows.soft,
   },
 
   pressedOption: {
     backgroundColor: colors.surfaceAlt,
     opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.985 }],
   },
 
   iconContainer: {
