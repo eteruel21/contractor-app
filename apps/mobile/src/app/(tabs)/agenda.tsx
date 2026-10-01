@@ -9,9 +9,10 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { colors, radius } from "@/constants/theme";
+import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import { formatDate as formatDateUtil } from "@/utils/format";
 import {
@@ -103,8 +104,9 @@ export default function AgendaScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420)} style={styles.header}>
         <View>
+          <Text style={styles.eyebrow}>LEURET AGENDA</Text>
           <Text style={styles.title}>Agenda</Text>
           <Text style={styles.subtitle}>
             {appointments.length} actividad(es)
@@ -124,7 +126,7 @@ export default function AgendaScreen() {
             color={colors.textLight}
           />
         </Pressable>
-      </View>
+      </Animated.View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {appointments.length === 0 ? (
@@ -237,22 +239,31 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 24,
+    paddingTop: 18,
+    paddingBottom: 30,
     backgroundColor: colors.surfaceDark,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  title: {
-    color: colors.textLight,
-    fontSize: 25,
+  eyebrow: {
+    color: colors.accent,
+    fontSize: 9,
     fontWeight: "900",
+    letterSpacing: 1.6,
+  },
+
+  title: {
+    marginTop: 6,
+    color: colors.textLight,
+    ...typography.title,
   },
   subtitle: {
-    marginTop: 4,
-    color: colors.steel,
-    fontSize: 13,
+    marginTop: 5,
+    color: colors.textLightMuted,
+    fontSize: 12,
   },
   addButton: {
     width: 48,
@@ -261,10 +272,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.glow,
   },
   content: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 40,
     backgroundColor: colors.background,
   },
@@ -272,28 +285,30 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   dayTitle: {
-    marginBottom: 10,
-    color: colors.text,
-    fontSize: 15,
+    marginBottom: 11,
+    color: colors.accent,
+    fontSize: 10,
     fontWeight: "900",
-    textTransform: "capitalize",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
   },
   card: {
-    minHeight: 105,
-    marginBottom: 10,
-    padding: 14,
-    borderRadius: radius.lg,
+    minHeight: 108,
+    marginBottom: 12,
+    padding: 15,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "flex-start",
+    ...shadows.soft,
   },
   timeBlock: {
-    width: 58,
-    paddingRight: 10,
+    width: 62,
+    paddingRight: 12,
     borderRightWidth: 1,
-    borderRightColor: colors.border,
+    borderRightColor: colors.divider,
   },
   timeText: {
     color: colors.primary,

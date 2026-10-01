@@ -14,6 +14,7 @@ import {
   layout,
   radius,
   shadows,
+  typography,
 } from "@/constants/theme";
 
 type CalculationCategory = {
@@ -182,6 +183,11 @@ export default function CalculationsScreen() {
           </Text>
         </View>
 
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionEyebrow}>CALCULADORAS DISPONIBLES</Text>
+          <Text style={styles.sectionMeta}>10 herramientas técnicas</Text>
+        </View>
+
         <View style={styles.grid}>
           {categories.map((category) => (
             <Pressable
@@ -243,7 +249,7 @@ export default function CalculationsScreen() {
                   <Ionicons
                     name="arrow-forward-outline"
                     size={18}
-                    color={colors.primary}
+                    color={colors.accent}
                   />
                 </View>
               )}
@@ -268,11 +274,13 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    minHeight: 174,
+    minHeight: 178,
     paddingHorizontal: layout.screenPadding,
     paddingTop: 24,
-    paddingBottom: 30,
+    paddingBottom: 32,
     backgroundColor: colors.surfaceDark,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
@@ -292,10 +300,11 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 54,
     height: 54,
-    borderRadius: 17,
-    backgroundColor: colors.primary,
+    borderRadius: 18,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
+    ...shadows.glow,
   },
 
   headerText: {
@@ -304,17 +313,16 @@ const styles = StyleSheet.create({
   },
 
   headerEyebrow: {
-    marginBottom: 4,
-    color: colors.primary,
+    marginBottom: 5,
+    color: colors.accent,
     fontSize: 9,
     fontWeight: "900",
-    letterSpacing: 1,
+    letterSpacing: 1.4,
   },
 
   title: {
     color: colors.textLight,
-    fontSize: 25,
-    fontWeight: "900",
+    ...typography.title,
   },
 
   subtitle: {
@@ -325,12 +333,14 @@ const styles = StyleSheet.create({
   },
 
   countBadge: {
-    minWidth: 50,
+    minWidth: 52,
     marginLeft: 10,
-    paddingVertical: 9,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingVertical: 10,
+    paddingHorizontal: 11,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     alignItems: "center",
   },
 
@@ -348,15 +358,18 @@ const styles = StyleSheet.create({
   },
 
   notice: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginTop: 22,
+    marginBottom: 20,
     padding: 16,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.steelSoft,
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
+    ...shadows.soft,
   },
 
   noticeText: {
@@ -366,11 +379,32 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
+  sectionHeader: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+
+  sectionEyebrow: {
+    color: colors.accent,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.2,
+  },
+
+  sectionMeta: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
   grid: {
     paddingHorizontal: 20,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 14,
+    gap: 12,
   },
 
   card: {
@@ -378,9 +412,9 @@ const styles = StyleSheet.create({
     minWidth: 155,
     maxWidth: 340,
     flexGrow: 1,
-    minHeight: 205,
+    minHeight: 202,
     padding: 17,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -405,10 +439,10 @@ const styles = StyleSheet.create({
   },
 
   categoryIcon: {
-    width: 47,
-    height: 47,
-    borderRadius: 15,
-    backgroundColor: colors.primarySoft,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: colors.accentSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -456,9 +490,9 @@ const styles = StyleSheet.create({
   },
 
   openText: {
-    color: colors.primary,
+    color: colors.accent,
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "900",
   },
 });
 
