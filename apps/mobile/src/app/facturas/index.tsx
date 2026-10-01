@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -11,8 +10,12 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
+import { MotionPressable } from "@/components/MotionPressable";
 import { colors, radius } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import { listInvoices } from "@/services/invoice-service";
@@ -94,12 +97,7 @@ export default function InvoicesListScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loaderText}>Cargando facturas...</Text>
-      </View>
-    );
+    return <LeuretLoading message="Cargando facturas…" fullScreen />;
   }
 
   return (
@@ -140,15 +138,17 @@ export default function InvoicesListScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="receipt-outline" size={48} color={colors.steel} />
-            <Text style={styles.emptyTitle}>No hay facturas</Text>
-            <Text style={styles.emptySubtitle}>
-              Las facturas se generan aprobando un presupuesto y haciendo clic en &quot;Generar factura&quot;.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon={search.trim() ? "search-outline" : "receipt-outline"}
+            title={search.trim() ? "Sin coincidencias" : "No hay facturas"}
+            description={search.trim() ? "Prueba con otro número o nombre de cliente." : "Las facturas se generan desde presupuestos aprobados cuando seleccionas Generar factura."}
+            actionLabel={search.trim() ? "Limpiar búsqueda" : "Ir a presupuestos"}
+            actionIcon={search.trim() ? "close-outline" : "document-text-outline"}
+            onAction={() => search.trim() ? setSearch("") : router.push("/presupuestos" as Href)}
+            style={styles.emptySpacing}
+          />
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const snapshotClient = item.snapshot_data?.client;
           const clientName = snapshotClient
             ? snapshotClient.businessName?.trim() ||
@@ -165,7 +165,9 @@ export default function InvoicesListScreen() {
           const currencyCode = item.snapshot_data?.currency ?? item.budget?.currency_code ?? activeCompany?.currency_code;
 
           return (
-            <Pressable
+            <MotionPressable
+              entering={FadeInUp.delay(index * 45).duration(320)}
+              pressedScale={0.985}
               onPress={() =>
                 router.push({
                   pathname: "/facturas/[id]",
@@ -209,7 +211,7 @@ export default function InvoicesListScreen() {
                   {formatMoney(total, currencyCode)}
                 </Text>
               </View>
-            </Pressable>
+            </MotionPressable>
           );
         }}
       />
@@ -301,7 +303,6 @@ const styles = StyleSheet.create({
   pressedCard: {
     backgroundColor: colors.accentSoft,
     opacity: 0.92,
-    transform: [{ scale: 0.99 }],
   },
 
   pressed: {
@@ -368,24 +369,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  emptyState: {
-    marginTop: 80,
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-
-  emptyTitle: {
-    marginTop: 12,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  emptySubtitle: {
-    marginTop: 8,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
+  emptySpacing: {
+    marginTop: 24,
   },
 });

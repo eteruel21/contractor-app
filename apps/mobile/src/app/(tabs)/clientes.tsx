@@ -24,9 +24,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { MotionPressable } from "@/components/MotionPressable";
 import {
   colors,
@@ -157,22 +159,18 @@ export default function ClientsScreen() {
   if (!activeCompany) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.emptyTitle}>
-          No hay empresa activa
-        </Text>
+        <LeuretEmptyState
+          icon="business-outline"
+          title="No hay empresa activa"
+          description="Selecciona o crea una empresa para administrar tus clientes."
+          compact
+        />
       </View>
     );
   }
 
   if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
+    return <LeuretLoading message="Cargando clientes…" fullScreen />;
   }
 
   return (
@@ -190,28 +188,15 @@ export default function ClientsScreen() {
           />
         }
         ListEmptyComponent={
-          <Animated.View entering={FadeInUp.duration(360)} style={styles.empty}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name={search.trim() ? "search-outline" : "people-outline"} size={28} color={colors.accent} />
-            </View>
-
-            <Text style={styles.emptyTitle}>
-              {search.trim() ? "Sin coincidencias" : "No hay clientes"}
-            </Text>
-
-            <Text style={styles.emptyText}>
-              {search.trim() ? "Prueba con otro nombre, teléfono, correo o documento." : "Crea tu primer cliente para iniciar proyectos, visitas y presupuestos."}
-            </Text>
-
-            <MotionPressable
-              onPress={() => search.trim() ? setSearch("") : setModalVisible(true)}
-              pressedScale={0.97}
-              style={styles.emptyButton}
-            >
-              <Ionicons name={search.trim() ? "close-outline" : "add"} size={18} color={colors.textLight} />
-              <Text style={styles.emptyButtonText}>{search.trim() ? "Limpiar búsqueda" : "Agregar cliente"}</Text>
-            </MotionPressable>
-          </Animated.View>
+          <LeuretEmptyState
+            icon={search.trim() ? "search-outline" : "people-outline"}
+            title={search.trim() ? "Sin coincidencias" : "No hay clientes"}
+            description={search.trim() ? "Prueba con otro nombre, teléfono, correo o documento." : "Crea tu primer cliente para iniciar proyectos, visitas y presupuestos."}
+            actionLabel={search.trim() ? "Limpiar búsqueda" : "Agregar cliente"}
+            actionIcon={search.trim() ? "close-outline" : "add"}
+            onAction={() => search.trim() ? setSearch("") : setModalVisible(true)}
+            style={styles.emptySpacing}
+          />
         }
         ListFooterComponent={
           <View style={{ height: 24 }} />
@@ -790,60 +775,8 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
 
-  empty: {
-    marginTop: 42,
-    paddingVertical: 48,
-    paddingHorizontal: 24,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    ...shadows.soft,
-  },
-
-  emptyIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
-    backgroundColor: colors.accentSoft,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  emptyTitle: {
-    marginTop: 12,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  emptyText: {
-    maxWidth: 280,
-    marginTop: 7,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-
-  emptyButton: {
-    marginTop: 18,
-    minHeight: 46,
-    paddingHorizontal: 18,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-    ...shadows.glow,
-  },
-
-  emptyButtonText: {
-    color: colors.textLight,
-    fontSize: 13,
-    fontWeight: "900",
+  emptySpacing: {
+    marginTop: 24,
   },
 
   clientCard: {

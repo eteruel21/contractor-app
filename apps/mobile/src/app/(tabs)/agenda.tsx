@@ -12,6 +12,7 @@ import {
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
 import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius, shadows, typography } from "@/constants/theme";
@@ -132,30 +133,15 @@ export default function AgendaScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {appointments.length === 0 ? (
-          <Animated.View entering={FadeInUp.duration(360)} style={styles.emptyState}>
-            <Ionicons
-              name="calendar-clear-outline"
-              size={48}
-              color={colors.steel}
-            />
-
-            <Text style={styles.emptyTitle}>
-              No hay actividades programadas
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Registra citas, visitas técnicas, cobros y trabajos.
-            </Text>
-
-            <Pressable
-              onPress={() => openAppointment("nuevo")}
-              style={styles.emptyButton}
-            >
-              <Text style={styles.emptyButtonText}>
-                Agregar actividad
-              </Text>
-            </Pressable>
-          </Animated.View>
+          <LeuretEmptyState
+            icon="calendar-clear-outline"
+            title="No hay actividades programadas"
+            description="Registra citas, visitas técnicas, cobros y trabajos."
+            actionLabel="Agregar actividad"
+            actionIcon="add"
+            onAction={() => openAppointment("nuevo")}
+            style={styles.emptyStateSpacing}
+          />
         ) : (
           Object.entries(grouped).map(([date, items]) => (
             <View key={date} style={styles.dayGroup}>
@@ -361,44 +347,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyState: {
+  emptyStateSpacing: {
     marginTop: 34,
-    paddingVertical: 54,
-    paddingHorizontal: 24,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    ...shadows.soft,
-  },
-  emptyTitle: {
-    marginTop: 14,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  emptyText: {
-    marginTop: 8,
-    maxWidth: 300,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
-  },
-  emptyButton: {
-    marginTop: 18,
-    minHeight: 46,
-    paddingHorizontal: 18,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyButtonText: {
-    color: colors.textLight,
-    fontSize: 13,
-    fontWeight: "900",
   },
   pressed: {
     opacity: 0.75,

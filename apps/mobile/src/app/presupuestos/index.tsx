@@ -10,17 +10,20 @@ import {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
+import { MotionPressable } from "@/components/MotionPressable";
 
 import {
   colors,
@@ -106,22 +109,13 @@ export default function BudgetsScreen() {
   if (!activeCompany) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.emptyTitle}>
-          No hay empresa activa
-        </Text>
+        <LeuretEmptyState icon="business-outline" title="No hay empresa activa" description="Selecciona o crea una empresa para administrar tus presupuestos." compact />
       </View>
     );
   }
 
   if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
+    return <LeuretLoading message="Cargando presupuestos…" fullScreen />;
   }
 
   return (
@@ -185,25 +179,20 @@ export default function BudgetsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons
-              name="receipt-outline"
-              size={46}
-              color={colors.textSecondary}
-            />
-
-            <Text style={styles.emptyTitle}>
-              No hay presupuestos
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Para crear uno, entra a un cliente, abre un proyecto y presiona Crear presupuesto.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon={search.trim() ? "search-outline" : "receipt-outline"}
+            title={search.trim() ? "Sin coincidencias" : "No hay presupuestos"}
+            description={search.trim() ? "Prueba con otro número, título o estado." : "Crea un presupuesto desde un proyecto para comenzar a cotizar tu trabajo."}
+            actionLabel={search.trim() ? "Limpiar búsqueda" : "Ir a proyectos"}
+            actionIcon={search.trim() ? "close-outline" : "business-outline"}
+            onAction={() => search.trim() ? setSearch("") : router.push("/proyectos" as Href)}
+            style={styles.emptySpacing}
+          />
         }
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <BudgetCard
             budget={item}
+            index={index}
             onPress={() =>
               router.push({
                 pathname: "/presupuestos/[id]",
@@ -221,14 +210,18 @@ export default function BudgetsScreen() {
 
 function BudgetCard({
   budget,
+  index,
   onPress,
 }: {
   budget: Budget;
+  index: number;
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <MotionPressable
+      entering={FadeInUp.delay(index * 45).duration(320)}
       onPress={onPress}
+      pressedScale={0.985}
       style={({ pressed }) => [
         styles.budgetCard,
         pressed && styles.pressed,
@@ -286,7 +279,7 @@ function BudgetCard({
           strong
         />
       </View>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -391,25 +384,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  empty: {
-    marginTop: 90,
-    alignItems: "center",
-  },
-
-  emptyTitle: {
-    marginTop: 12,
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  emptyText: {
-    maxWidth: 300,
-    marginTop: 7,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
-    textAlign: "center",
+  emptySpacing: {
+    marginTop: 24,
   },
 
   budgetCard: {
@@ -494,6 +470,5 @@ const styles = StyleSheet.create({
   pressed: {
     backgroundColor: colors.accentSoft,
     opacity: 0.92,
-    transform: [{ scale: 0.99 }],
   },
 });
