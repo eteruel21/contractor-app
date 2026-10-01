@@ -10,17 +10,20 @@ import {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
+import { MotionPressable } from "@/components/MotionPressable";
 
 import {
   colors,
@@ -144,22 +147,13 @@ export default function ProjectsScreen() {
   if (!activeCompany) {
     return (
       <View style={styles.loading}>
-        <Text style={styles.emptyTitle}>
-          No hay empresa activa
-        </Text>
+        <LeuretEmptyState icon="business-outline" title="No hay empresa activa" description="Selecciona o crea una empresa para administrar tus proyectos." compact />
       </View>
     );
   }
 
   if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
+    return <LeuretLoading message="Cargando proyectos…" fullScreen />;
   }
 
   return (
@@ -219,26 +213,22 @@ export default function ProjectsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons
-              name="business-outline"
-              size={46}
-              color={colors.textSecondary}
-            />
-
-            <Text style={styles.emptyTitle}>
-              No hay proyectos
-            </Text>
-
-            <Text style={styles.emptyText}>
-              Para crear uno, entra a la pestaña de Clientes, selecciona un cliente y presiona Crear proyecto.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon={search.trim() ? "search-outline" : "business-outline"}
+            title={search.trim() ? "Sin coincidencias" : "No hay proyectos"}
+            description={search.trim() ? "Prueba con otro código, nombre, cliente o estado." : "Crea un proyecto desde la ficha de un cliente para comenzar a organizar el trabajo."}
+            actionLabel={search.trim() ? "Limpiar búsqueda" : "Ir a clientes"}
+            actionIcon={search.trim() ? "close-outline" : "people-outline"}
+            onAction={() => search.trim() ? setSearch("") : router.push("/(tabs)/clientes" as Href)}
+            style={styles.emptySpacing}
+          />
         }
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const statusStyle = getStatusColor(item.status);
           return (
-            <Pressable
+            <MotionPressable
+              entering={FadeInUp.delay(index * 45).duration(320)}
+              pressedScale={0.985}
               onPress={() =>
                 router.push({
                   pathname: "/proyectos/[id]",
@@ -303,7 +293,7 @@ export default function ProjectsScreen() {
                   />
                 </View>
               </View>
-            </Pressable>
+            </MotionPressable>
           );
         }}
       />
@@ -386,29 +376,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  empty: {
-    marginTop: 40,
-    padding: 30,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  emptyTitle: {
-    marginTop: 14,
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: "800",
-  },
-
-  emptyText: {
-    marginTop: 8,
-    color: colors.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: "center",
+  emptySpacing: {
+    marginTop: 24,
   },
 
   projectCard: {
@@ -428,7 +397,6 @@ const styles = StyleSheet.create({
   pressed: {
     backgroundColor: colors.accentSoft,
     opacity: 0.92,
-    transform: [{ scale: 0.99 }],
   },
 
   cardHeader: {
