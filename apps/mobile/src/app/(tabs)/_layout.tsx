@@ -5,8 +5,12 @@ import { useEffect, useRef } from "react";
 import {
   type ColorValue,
   StyleSheet,
-  View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 import { colors } from "@/constants/theme";
 
@@ -23,14 +27,31 @@ function TabIcon({
   inactive: IconName;
   color: ColorValue;
 }) {
+  const progress = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withSpring(focused ? 1 : 0, {
+      damping: 16,
+      stiffness: 220,
+      mass: 0.7,
+    });
+  }, [focused, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -2 * progress.value },
+      { scale: 1 + 0.08 * progress.value },
+    ],
+  }));
+
   return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+    <Animated.View style={[styles.iconWrap, focused && styles.iconWrapActive, animatedStyle]}>
       <Ionicons
         name={focused ? active : inactive}
         size={21}
         color={color}
       />
-    </View>
+    </Animated.View>
   );
 }
 
@@ -170,6 +191,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentSoft,
     borderWidth: 1,
     borderColor: colors.glowAccent,
-    transform: [{ translateY: -1 }],
   },
 });
