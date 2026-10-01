@@ -9,8 +9,10 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
@@ -130,7 +132,7 @@ export default function AgendaScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {appointments.length === 0 ? (
-          <View style={styles.emptyState}>
+          <Animated.View entering={FadeInUp.duration(360)} style={styles.emptyState}>
             <Ionicons
               name="calendar-clear-outline"
               size={48}
@@ -153,7 +155,7 @@ export default function AgendaScreen() {
                 Agregar actividad
               </Text>
             </Pressable>
-          </View>
+          </Animated.View>
         ) : (
           Object.entries(grouped).map(([date, items]) => (
             <View key={date} style={styles.dayGroup}>
@@ -161,14 +163,13 @@ export default function AgendaScreen() {
                 {formatDate(date)}
               </Text>
 
-              {items.map((item) => (
-                <Pressable
+              {items.map((item, index) => (
+                <MotionPressable
                   key={item.id}
+                  entering={FadeInUp.delay(index * 45).duration(320)}
                   onPress={() => openAppointment(item.id)}
-                  style={({ pressed }) => [
-                    styles.card,
-                    pressed && styles.pressed,
-                  ]}
+                  pressedScale={0.985}
+                  style={styles.card}
                 >
                   <View style={styles.timeBlock}>
                     <Text style={styles.timeText}>
@@ -222,7 +223,7 @@ export default function AgendaScreen() {
                       color={colors.danger}
                     />
                   </Pressable>
-                </Pressable>
+                </MotionPressable>
               ))}
             </View>
           ))
@@ -361,8 +362,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyState: {
-    paddingVertical: 90,
+    marginTop: 34,
+    paddingVertical: 54,
+    paddingHorizontal: 24,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: "center",
+    ...shadows.soft,
   },
   emptyTitle: {
     marginTop: 14,

@@ -6,7 +6,6 @@ import {
 import {
   Alert,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,8 @@ import {
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius, shadows, typography } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -129,9 +130,10 @@ export default function MoreScreen() {
         </View>
 
         <View style={styles.list}>
-          {options.map((option) => (
-            <Pressable
+          {options.map((option, index) => (
+            <MotionPressable
               key={option.id}
+              entering={FadeInUp.delay(index * 55).duration(320)}
               onPress={option.onPress}
               style={({ pressed }) => [
                 styles.option,
@@ -161,7 +163,7 @@ export default function MoreScreen() {
                 size={21}
                 color={colors.steel}
               />
-            </Pressable>
+            </MotionPressable>
           ))}
         </View>
       </ScrollView>
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
   pressedOption: {
     backgroundColor: colors.surfaceAlt,
     opacity: 0.9,
-    transform: [{ scale: 0.985 }],
   },
 
   iconContainer: {

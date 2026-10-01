@@ -24,8 +24,10 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { MotionPressable } from "@/components/MotionPressable";
 import {
   colors,
   radius,
@@ -188,21 +190,28 @@ export default function ClientsScreen() {
           />
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons
-              name="people-outline"
-              size={44}
-              color={colors.textSecondary}
-            />
+          <Animated.View entering={FadeInUp.duration(360)} style={styles.empty}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name={search.trim() ? "search-outline" : "people-outline"} size={28} color={colors.accent} />
+            </View>
 
             <Text style={styles.emptyTitle}>
-              No hay clientes
+              {search.trim() ? "Sin coincidencias" : "No hay clientes"}
             </Text>
 
             <Text style={styles.emptyText}>
-              Crea tu primer cliente para iniciar proyectos, visitas y presupuestos.
+              {search.trim() ? "Prueba con otro nombre, teléfono, correo o documento." : "Crea tu primer cliente para iniciar proyectos, visitas y presupuestos."}
             </Text>
-          </View>
+
+            <MotionPressable
+              onPress={() => search.trim() ? setSearch("") : setModalVisible(true)}
+              pressedScale={0.97}
+              style={styles.emptyButton}
+            >
+              <Ionicons name={search.trim() ? "close-outline" : "add"} size={18} color={colors.textLight} />
+              <Text style={styles.emptyButtonText}>{search.trim() ? "Limpiar búsqueda" : "Agregar cliente"}</Text>
+            </MotionPressable>
+          </Animated.View>
         }
         ListFooterComponent={
           <View style={{ height: 24 }} />
@@ -210,9 +219,10 @@ export default function ClientsScreen() {
         ListHeaderComponentStyle={{
           marginBottom: 16,
         }}
-        renderItem={({ item }) => (
+        renderItem={({ item, index }) => (
           <ClientCard
             client={item}
+            index={index}
             onPress={() =>
               router.push({
                 pathname: "/clientes/[id]",
@@ -299,12 +309,14 @@ export default function ClientsScreen() {
 
 type ClientCardProps = {
   client: ClientWithDetails;
+  index: number;
   onPress: () => void;
   onDeactivate: () => void;
 };
 
 function ClientCard({
   client,
+  index,
   onPress,
   onDeactivate,
 }: ClientCardProps) {
@@ -314,12 +326,11 @@ function ClientCard({
     ) ?? client.addresses[0];
 
   return (
-    <Pressable
+    <MotionPressable
+      entering={FadeInUp.delay(index * 45).duration(320)}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.clientCard,
-        pressed && styles.pressed,
-      ]}
+      pressedScale={0.985}
+      style={styles.clientCard}
     >
       <View style={styles.clientIcon}>
         <Ionicons
@@ -364,7 +375,7 @@ function ClientCard({
           color={colors.danger}
         />
       </Pressable>
-    </Pressable>
+    </MotionPressable>
   );
 }
 
@@ -780,8 +791,24 @@ const styles = StyleSheet.create({
   },
 
   empty: {
-    marginTop: 90,
+    marginTop: 42,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: "center",
+    ...shadows.soft,
+  },
+
+  emptyIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    backgroundColor: colors.accentSoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   emptyTitle: {
@@ -798,6 +825,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",
+  },
+
+  emptyButton: {
+    marginTop: 18,
+    minHeight: 46,
+    paddingHorizontal: 18,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    ...shadows.glow,
+  },
+
+  emptyButtonText: {
+    color: colors.textLight,
+    fontSize: 13,
+    fontWeight: "900",
   },
 
   clientCard: {

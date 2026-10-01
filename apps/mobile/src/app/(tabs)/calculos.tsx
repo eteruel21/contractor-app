@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { MotionPressable } from "@/components/MotionPressable";
 
 import {
   colors,
@@ -189,9 +191,10 @@ export default function CalculationsScreen() {
         </View>
 
         <View style={styles.grid}>
-          {categories.map((category) => (
-            <Pressable
+          {categories.map((category, index) => (
+            <MotionPressable
               key={category.id}
+              entering={FadeInUp.delay(index * 45).duration(320)}
               disabled={!category.enabled}
               onPress={() => openCategory(category)}
               style={({ pressed }) => [
@@ -253,7 +256,7 @@ export default function CalculationsScreen() {
                   />
                 </View>
               )}
-            </Pressable>
+            </MotionPressable>
           ))}
         </View>
       </ScrollView>
@@ -427,7 +430,6 @@ const styles = StyleSheet.create({
 
   pressedCard: {
     opacity: 0.8,
-    transform: [{ scale: 0.98 }],
   },
 
   cardTop: {
