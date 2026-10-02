@@ -29,7 +29,7 @@ function configureResend(): void {
   Object.assign(mutableEnv, {
     NODE_ENV: "production",
     RESEND_API_KEY: "re_test_api_key",
-    EMAIL_FROM: "Contractor Pro <noreply@example.test>"
+    EMAIL_FROM: "Leuret <noreply@example.test>"
   });
 }
 
@@ -143,7 +143,7 @@ test("email: una entrega Resend exitosa informa sent true", async () => {
 
   assert.equal(
     body.from,
-    "Contractor Pro <noreply@example.test>"
+    "Leuret <noreply@example.test>"
   );
 
   assert.deepEqual(
@@ -153,7 +153,7 @@ test("email: una entrega Resend exitosa informa sent true", async () => {
 
   assert.equal(
     body.subject,
-    "Verifica tu cuenta - Contractor Pro"
+    "Verifica tu cuenta - Leuret"
   );
 });
 
