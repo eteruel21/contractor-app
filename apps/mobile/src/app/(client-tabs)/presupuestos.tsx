@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "expo-router";
+import { type Href, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
@@ -94,11 +96,18 @@ export default function ClientBudgetsScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.budgetCard}>
+          <MotionPressable
+            onPress={() => router.push({
+              pathname: "/cliente-presupuestos/[id]",
+              params: { id: item.id },
+            } as Href)}
+            pressedScale={0.985}
+            style={styles.budgetCard}
+          >
             <View style={styles.cardHeader}>
               <View style={styles.cardInfo}>
                 <Text style={styles.budgetCode}>
-                  {item.quotation_number || "PRESUPUESTO"}
+                  {item.budget_number || "PRESUPUESTO"}
                 </Text>
                 <Text style={styles.projectLabel}>
                   Proyecto: {item.project?.name || "Sin vincular"}
@@ -127,7 +136,7 @@ export default function ClientBudgetsScreen() {
                 {formatMoney(item.total || 0, item.company?.currency_code)}
               </Text>
             </View>
-          </View>
+          </MotionPressable>
         )}
       />
     </SafeAreaView>

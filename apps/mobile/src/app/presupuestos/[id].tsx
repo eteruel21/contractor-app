@@ -271,22 +271,10 @@ export default function BudgetDetailScreen() {
 
               if (invoice) {
                 setAssociatedInvoice(invoice);
-                Alert.alert(
-                  "Factura generada",
-                  `Se ha creado la factura ${invoice.invoice_number} con éxito.`,
-                  [
-                    {
-                      text: "Ver factura",
-                      onPress: () => {
-                        router.push({
-                          pathname: "/facturas/[id]",
-                          params: { id: invoice.id },
-                        } as Href);
-                      },
-                    },
-                    { text: "Aceptar", style: "default" },
-                  ],
-                );
+                router.push({
+                  pathname: "/facturas/[id]",
+                  params: { id: invoice.id },
+                } as Href);
               }
             } catch (err: any) {
               Alert.alert("Error", err?.message || "Ocurrió un error");
