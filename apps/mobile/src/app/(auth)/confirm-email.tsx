@@ -30,17 +30,27 @@ export default function ConfirmEmailScreen() {
   const [resendCaptchaResetKey, setResendCaptchaResetKey] = useState(0);
 
   useEffect(() => {
-    if (params.token) {
-      // The deep-link parameter is an external source that may change while mounted.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTokenInput(params.token);
-    }
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active && params.token) setTokenInput(params.token);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [params.token]);
 
   useEffect(() => {
-    if (params.email) {
-      setEmail(params.email);
-    }
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active && params.email) setEmail(params.email);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [params.email]);
 
   async function handleConfirm() {

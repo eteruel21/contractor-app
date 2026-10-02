@@ -61,12 +61,29 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    void loadDetails();
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active) void loadDetails();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadDetails]);
 
   useEffect(() => {
-    setFullName(profile?.full_name ?? "");
-    setPhone(profile?.phone ?? "");
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setFullName(profile?.full_name ?? "");
+      setPhone(profile?.phone ?? "");
+    });
+
+    return () => {
+      active = false;
+    };
   }, [profile?.id, profile?.updated_at, profile?.full_name, profile?.phone]);
 
   const initial = useMemo(

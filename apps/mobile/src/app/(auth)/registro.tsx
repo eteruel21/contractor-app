@@ -257,7 +257,7 @@ export default function RegisterScreen() {
                   color={colors.surfaceDark}
                 />
               </View>
-              <Text style={brandNameStyle()}>CONTRACTOR PRO</Text>
+              <Text style={brandNameStyle()}>LEURET</Text>
             </View>
           </View>
 

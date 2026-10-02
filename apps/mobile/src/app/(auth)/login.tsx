@@ -41,11 +41,9 @@ export default function LoginScreen() {
   const [showRecovery, setShowRecovery] = useState(false);
   const [recoverySent, setRecoverySent] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
-  const [loginDiagnostic, setLoginDiagnostic] = useState<string | null>(null);
 
   async function handleSignIn() {
     const cleanEmail = email.trim();
-    setLoginDiagnostic("1/3 Botón detectado.");
 
     if (!cleanEmail || !password) {
       Alert.alert(
@@ -66,7 +64,6 @@ export default function LoginScreen() {
 
     try {
       setSubmitting(true);
-      setLoginDiagnostic("2/3 Enviando solicitud a /auth/login...");
 
       const { error } = await signIn(
         cleanEmail,
@@ -74,7 +71,6 @@ export default function LoginScreen() {
         captchaToken,
       );
 
-      setLoginDiagnostic(error ? "ERROR: " + error.message : "3/3 Login aceptado por API. Revisando navegación...");
 
       if (error) {
         Alert.alert(
@@ -93,15 +89,15 @@ export default function LoginScreen() {
     if (!cleanEmail) {
       Alert.alert(
         "Correo requerido",
-        "Introduce tu correo antes de solicitar la recuperaci?n.",
+        "Introduce tu correo antes de solicitar la recuperación.",
       );
       return;
     }
 
     if (!recoveryCaptchaToken) {
       Alert.alert(
-        "Verificaci?n requerida",
-        "Completa la verificaci?n de seguridad para recuperar tu contrase?a.",
+        "Verificación requerida",
+        "Completa la verificación de seguridad para recuperar tu contraseña.",
       );
       return;
     }
@@ -165,7 +161,7 @@ export default function LoginScreen() {
               </View>
 
               <Text style={styles.brandName}>
-                CONTRACTOR PRO
+                LEURET
               </Text>
             </View>
 
@@ -221,16 +217,16 @@ export default function LoginScreen() {
                 </View>
 
                 <Text style={styles.formEyebrow}>
-                  RECUPERACI?N SOLICITADA
+                  RECUPERACIÓN SOLICITADA
                 </Text>
 
                 <Text style={styles.title}>
-                  Solicitud enviada con ?xito
+                  Solicitud enviada con éxito
                 </Text>
 
                 <Text style={styles.subtitle}>
                   Si existe una cuenta asociada a este correo,
-                  recibir?s un enlace para cambiar tu contrase?a.
+                  recibirás un enlace para cambiar tu contraseña.
                 </Text>
 
                 <View
@@ -265,9 +261,9 @@ export default function LoginScreen() {
                     { marginBottom: 22 },
                   ]}
                 >
-                  Revisa tu bandeja de entrada y tambi?n la
+                  Revisa tu bandeja de entrada y también la
                   carpeta de correo no deseado. El enlace es
-                  v?lido durante 1 hora.
+                  válido durante 1 hora.
                 </Text>
 
                 <Pressable
@@ -282,7 +278,7 @@ export default function LoginScreen() {
                   ]}
                 >
                   <Text style={styles.primaryButtonText}>
-                    Volver al inicio de sesi?n
+                    Volver al inicio de sesión
                   </Text>
 
                   <Ionicons
@@ -505,11 +501,6 @@ export default function LoginScreen() {
                   )}
                 </Pressable>
 
-                {loginDiagnostic ? (
-                  <Text style={{ marginTop: 12, textAlign: "center", fontWeight: "700", color: "#B45309" }}>
-                    {loginDiagnostic}
-                  </Text>
-                ) : null}
 
                 <View style={styles.registerRow}>
                   <Text style={styles.registerLabel}>
