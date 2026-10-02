@@ -99,7 +99,7 @@ export default function CreateCompanyScreen() {
               label="Nombre de la empresa"
               value={name}
               onChangeText={setName}
-              placeholder="Ej. TCT Services"
+              placeholder="Ej. Construcciones del Istmo"
               icon="business-outline"
               autoCapitalize="words"
             />
