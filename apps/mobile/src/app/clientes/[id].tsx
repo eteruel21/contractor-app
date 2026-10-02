@@ -405,7 +405,13 @@ export default function ClientDetailScreen() {
         onClose={() =>
           setProjectModalVisible(false)
         }
-        onCreated={() => void loadData(true)}
+        onCreated={(createdProjectId) => {
+          void loadData(true);
+          router.push({
+            pathname: "/proyectos/[id]",
+            params: { id: createdProjectId },
+          } as Href);
+        }}
       />
     </SafeAreaView>
   );
@@ -939,7 +945,7 @@ function CreateProjectModal({
   clientId: string;
   addressId: string | null;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (projectId: string) => void;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] =
@@ -960,7 +966,7 @@ function CreateProjectModal({
     try {
       setSubmitting(true);
 
-      const { error } = await createProject({
+      const { project, error } = await createProject({
         companyId,
         clientId,
         addressId,
@@ -969,10 +975,10 @@ function CreateProjectModal({
         budgetEstimate: estimateNumber,
       });
 
-      if (error) {
+      if (error || !project) {
         Alert.alert(
           "No fue posible crear el proyecto",
-          error,
+          error || "No se recibió el proyecto creado.",
         );
         return;
       }
@@ -981,7 +987,7 @@ function CreateProjectModal({
       setDescription("");
       setBudgetEstimate("");
       onClose();
-      onCreated();
+      onCreated(project.id);
     } finally {
       setSubmitting(false);
     }
