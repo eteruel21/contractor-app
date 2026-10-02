@@ -38,6 +38,7 @@ import {
   radius,
 } from "@/constants/theme";
 
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { useCompany } from "@/contexts/CompanyContext";
 
 import {
@@ -194,16 +195,7 @@ export default function BudgetDetailScreen() {
     );
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando presupuesto…" fullScreen />;
 
   if (!budget) {
     return (
@@ -276,8 +268,8 @@ export default function BudgetDetailScreen() {
                   params: { id: invoice.id },
                 } as Href);
               }
-            } catch (err: any) {
-              Alert.alert("Error", err?.message || "Ocurrió un error");
+            } catch (err: unknown) {
+              Alert.alert("Error", err instanceof Error ? err.message : "Ocurrió un error");
             } finally {
               setGeneratingInvoice(false);
             }

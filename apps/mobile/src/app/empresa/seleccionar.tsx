@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { type Href, router } from "expo-router";
 import {
-    ActivityIndicator,
     Alert,
     FlatList,
     Pressable,
@@ -16,6 +15,7 @@ import {
     colors,
     radius,
 } from "@/constants/theme";
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { useCompany } from "@/contexts/CompanyContext";
 import type { Company } from "@/types/company";
 
@@ -45,16 +45,7 @@ export default function SelectCompanyScreen() {
     }
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando empresas…" fullScreen />;
 
   return (
     <SafeAreaView style={styles.safeArea}>

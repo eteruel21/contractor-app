@@ -2,6 +2,7 @@ import {
   createElement,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { Text, View } from "react-native";
 
@@ -102,7 +103,7 @@ export default function TurnstileChallenge({
   onToken,
   resetKey = 0,
 }: TurnstileChallengeProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerElement, setContainerElement] = useState<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<TurnstileWidgetId | null>(null);
   const onTokenRef = useRef(onToken);
 
@@ -114,7 +115,7 @@ export default function TurnstileChallenge({
     const siteKey =
       process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
-    if (!siteKey || !containerRef.current) {
+    if (!siteKey || !containerElement) {
       onTokenRef.current(null);
       return;
     }
@@ -126,7 +127,7 @@ export default function TurnstileChallenge({
 
     loadTurnstile()
       .then((turnstile) => {
-        if (cancelled || !containerRef.current) {
+        if (cancelled || !containerElement) {
           return;
         }
 
@@ -141,9 +142,9 @@ export default function TurnstileChallenge({
           widgetIdRef.current = null;
         }
 
-        containerRef.current.innerHTML = "";
+        containerElement.innerHTML = "";
 
-        widgetIdRef.current = turnstile.render(containerRef.current, {
+        widgetIdRef.current = turnstile.render(containerElement, {
           sitekey: siteKey,
           action,
           theme: "auto",
@@ -195,11 +196,9 @@ export default function TurnstileChallenge({
 
       widgetIdRef.current = null;
 
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-      }
+      containerElement.innerHTML = "";
     };
-  }, [action, resetKey]);
+  }, [action, containerElement, resetKey]);
 
   const siteKey =
     process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
@@ -221,7 +220,7 @@ export default function TurnstileChallenge({
   }
 
   return createElement("div", {
-    ref: containerRef,
+    ref: setContainerElement,
     style: {
       width: "100%",
       minHeight: 65,

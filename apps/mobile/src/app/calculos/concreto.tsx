@@ -1655,7 +1655,7 @@ const styles = StyleSheet.create({
 
   helpText: {
     flex: 1,
-    color: "#92400E",
+    color: colors.primary,
     fontSize: 12,
     lineHeight: 18,
   },

@@ -1,8 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { type Href, router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
@@ -12,17 +10,20 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
+
 import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
-import { listBudgetsForClient } from "../../services/budget-service";
+import { listBudgetsForClient, type ClientBudgetSummary } from "../../services/budget-service";
 import { formatMoney } from "../../utils/format";
 
 export default function ClientBudgetsScreen() {
   const { profile } = useAuth();
   const profileId = profile?.id;
-  const [budgets, setBudgets] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<ClientBudgetSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -58,13 +59,7 @@ export default function ClientBudgetsScreen() {
     }, [loadBudgets]),
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando presupuestos…" fullScreen />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -87,13 +82,12 @@ export default function ClientBudgetsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="document-text-outline" size={46} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>Sin presupuestos compartidos</Text>
-            <Text style={styles.emptyText}>
-              Las cotizaciones y presupuestos emitidos por tus contratistas aparecerán aquí.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon="document-text-outline"
+            title="Sin presupuestos compartidos"
+            description="Las cotizaciones y presupuestos emitidos por tus contratistas aparecerán aquí."
+            compact
+          />
         }
         renderItem={({ item }) => (
           <MotionPressable
@@ -133,7 +127,7 @@ export default function ClientBudgetsScreen() {
             <View style={styles.cardFooter}>
               <Text style={styles.totalLabel}>Monto total:</Text>
               <Text style={styles.totalValue}>
-                {formatMoney(item.total || 0, item.company?.currency_code)}
+                {formatMoney(item.total || 0, item.company?.currency_code ?? undefined)}
               </Text>
             </View>
           </MotionPressable>
@@ -201,7 +195,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: "#000000",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
@@ -237,12 +231,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.infoSoft,
   },
   statusText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#2563EB",
+    color: colors.primary,
     textTransform: "uppercase",
   },
   divider: {

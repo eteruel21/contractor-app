@@ -316,7 +316,7 @@ export default function AppointmentFormScreen() {
               <Ionicons
                 name="chevron-down-outline"
                 size={20}
-                color="#94A3B8"
+                color={colors.textMuted}
               />
             </Pressable>
 
@@ -478,7 +478,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94A3B8"
+        placeholderTextColor={colors.textMuted}
         multiline={multiline}
         style={[
           styles.input,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.primaryWash,
     color: colors.text,
     fontSize: 14,
   },
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.primaryWash,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -637,10 +637,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.primaryWash,
   },
   choiceActive: {
-    borderColor: "#86EFAC",
+    borderColor: colors.success,
     backgroundColor: colors.primarySoft,
   },
   choiceText: {
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: "#94A3B8",
+    backgroundColor: colors.steel,
   },
   saveButtonText: {
     color: colors.textLight,

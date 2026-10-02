@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
 import { Pressable, type PressableProps, type PressableStateCallbackType } from "react-native";
 import Animated, { useAnimatedStyle, withSpring } from "react-native-reanimated";
 
@@ -7,7 +7,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 type MotionPressableProps = PressableProps & {
   children: ReactNode;
   pressedScale?: number;
-  entering?: any;
+  entering?: ComponentProps<typeof AnimatedPressable>["entering"];
 };
 
 export function MotionPressable({ children, pressedScale = 0.97, style, onPressIn, onPressOut, ...props }: MotionPressableProps) {

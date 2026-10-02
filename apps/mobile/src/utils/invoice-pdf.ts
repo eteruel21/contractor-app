@@ -151,7 +151,7 @@ export function buildInvoiceHtml({
       margin: 0;
       padding: 32px;
       font-family: Arial, Helvetica, sans-serif;
-      color: #0f172a;
+      color: #1E2A3A;
       background: #ffffff;
       font-size: 12px;
     }
@@ -160,7 +160,7 @@ export function buildInvoiceHtml({
       display: flex;
       justify-content: space-between;
       gap: 24px;
-      border-bottom: 3px solid #169b62;
+      border-bottom: 3px solid #E23D3D;
       padding-bottom: 18px;
       margin-bottom: 22px;
     }
@@ -175,12 +175,12 @@ export function buildInvoiceHtml({
     .company-name {
       font-size: 24px;
       font-weight: 800;
-      color: #10251d;
+      color: #1E2A3A;
       margin-bottom: 5px;
     }
 
     .company-meta {
-      color: #475569;
+      color: #5E6D7D;
       line-height: 1.5;
     }
 
@@ -188,12 +188,12 @@ export function buildInvoiceHtml({
       min-width: 210px;
       padding: 16px;
       border-radius: 12px;
-      background: #f1f5f9;
+      background: #EEF1F3;
       text-align: right;
     }
 
     .doc-label {
-      color: #64748b;
+      color: #8FA3B8;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -204,12 +204,12 @@ export function buildInvoiceHtml({
       margin-top: 5px;
       font-size: 22px;
       font-weight: 900;
-      color: #169b62;
+      color: #E23D3D;
     }
 
     .status {
       margin-top: 6px;
-      color: #475569;
+      color: #5E6D7D;
       font-weight: 700;
       text-transform: uppercase;
       font-size: 10px;
@@ -223,7 +223,7 @@ export function buildInvoiceHtml({
     }
 
     .card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #DDD8CF;
       border-radius: 12px;
       padding: 14px;
       background: #ffffff;
@@ -232,7 +232,7 @@ export function buildInvoiceHtml({
     .card-title {
       font-size: 12px;
       font-weight: 800;
-      color: #64748b;
+      color: #8FA3B8;
       text-transform: uppercase;
       margin-bottom: 8px;
     }
@@ -240,12 +240,12 @@ export function buildInvoiceHtml({
     .main-text {
       font-size: 14px;
       font-weight: 800;
-      color: #0f172a;
+      color: #1E2A3A;
       margin-bottom: 4px;
     }
 
     .muted {
-      color: #475569;
+      color: #5E6D7D;
       line-height: 1.45;
     }
 
@@ -256,7 +256,7 @@ export function buildInvoiceHtml({
     }
 
     th {
-      background: #10251d;
+      background: #1E2A3A;
       color: #ffffff;
       text-align: left;
       font-size: 11px;
@@ -264,14 +264,14 @@ export function buildInvoiceHtml({
     }
 
     td {
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid #DDD8CF;
       padding: 10px 8px;
       vertical-align: top;
     }
 
     .section-title {
-      background: #ddf7ea;
-      color: #0b4d3a;
+      background: #E6EBF0;
+      color: #1E2A3A;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -280,7 +280,7 @@ export function buildInvoiceHtml({
     .item-note {
       margin-top: 4px;
       font-size: 11px;
-      color: #64748b;
+      color: #8FA3B8;
       font-style: italic;
     }
 
@@ -310,23 +310,23 @@ export function buildInvoiceHtml({
       display: flex;
       justify-content: space-between;
       padding: 6px 0;
-      color: #475569;
+      color: #5E6D7D;
     }
 
     .total-row.grand-total {
-      border-top: 2px solid #e2e8f0;
+      border-top: 2px solid #DDD8CF;
       padding-top: 10px;
       margin-top: 4px;
       font-size: 16px;
       font-weight: 800;
-      color: #0f172a;
+      color: #1E2A3A;
     }
 
     .footer {
       margin-top: 45px;
-      border-top: 1px solid #e2e8f0;
+      border-top: 1px solid #DDD8CF;
       padding-top: 16px;
-      color: #64748b;
+      color: #8FA3B8;
       text-align: center;
       font-size: 11px;
       line-height: 1.5;
@@ -440,7 +440,7 @@ export async function shareInvoicePdf({
       UTI: "com.adobe.pdf",
     });
     return { error: null };
-  } catch (error: any) {
-    return { error: error?.message ?? "Error desconocido" };
+  } catch (error: unknown) {
+    return { error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }

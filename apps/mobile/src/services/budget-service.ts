@@ -41,6 +41,7 @@ export type ClientBudgetSummary =
 
     company: {
       name: string;
+      currency_code?: string | null;
     } | null;
   };
 
@@ -474,12 +475,12 @@ export async function listBudgetsForClient(
 export async function getClientBudgetDetail(
   budgetId: string
 ): Promise<{
-  budget: (Budget & { sections: BudgetSection[]; items: BudgetItem[]; company?: any; project?: any }) | null;
+  budget: (Budget & { sections: BudgetSection[]; items: BudgetItem[]; company?: { name?: string; currency_code?: string } | null; project?: { name?: string } | null }) | null;
   error: string | null;
 }> {
   try {
     const response = await authenticatedRequest<{
-      budget: BudgetRow & { sections: BudgetSection[]; items: BudgetItemRow[]; company?: any; project?: any };
+      budget: BudgetRow & { sections: BudgetSection[]; items: BudgetItemRow[]; company?: { name?: string; currency_code?: string } | null; project?: { name?: string } | null };
     }>(`/budgets/client/${budgetId}`);
 
     const b = response.budget;

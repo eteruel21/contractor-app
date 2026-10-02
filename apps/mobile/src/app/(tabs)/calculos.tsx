@@ -217,7 +217,7 @@ export default function CalculationsScreen() {
                     color={
                       category.enabled
                         ? colors.primary
-                        : "#94A3B8"
+                        : colors.textMuted
                     }
                   />
                 </View>
@@ -450,14 +450,14 @@ const styles = StyleSheet.create({
   },
 
   disabledCategoryIcon: {
-    backgroundColor: "#E2E8F0",
+    backgroundColor: colors.steelSoft,
   },
 
   comingSoon: {
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: colors.primaryWash,
   },
 
   comingSoonText: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
   },
 
   disabledCardText: {
-    color: "#475569",
+    color: colors.textSecondary,
   },
 
   cardDescription: {

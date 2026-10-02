@@ -78,18 +78,18 @@ export type UserProfileDetails = {
     workMode: string | null;
   } | null;
   associations: {
-    companies: Array<{
+    companies: {
       id: string;
       name: string;
       role: string | null;
       active: boolean;
-    }>;
-    linkedClients: Array<{
+    }[];
+    linkedClients: {
       id: string;
       companyName: string;
       displayName: string;
       active: boolean;
-    }>;
+    }[];
   };
   resources: {
     profileDocuments: ProfileDocumentResource[];

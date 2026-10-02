@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { colors, radius, shadows } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
@@ -104,14 +105,7 @@ export default function CatalogScreen() {
     });
   }, [filter, items, search]);
 
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loaderText}>Cargando precios globales...</Text>
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando precios globales…" fullScreen />;
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import {
   type Href,
   router,
@@ -23,7 +24,7 @@ type OptionItem = {
   id: string;
   title: string;
   description: string;
-  icon: any;
+  icon: ComponentProps<typeof Ionicons>["name"];
   onPress: () => void;
 };
 

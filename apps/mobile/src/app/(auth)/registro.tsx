@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -41,7 +41,7 @@ function openLegalUrl(url: string) {
 }
 
 function getPasswordStrength(pass: string) {
-  if (!pass) return { score: 0, label: "Falta contraseña", color: "#94A3B8" };
+  if (!pass) return { score: 0, label: "Falta contraseña", color: colors.textMuted };
   let score = 0;
   if (pass.length >= 8) score++;
   if (/[A-Z]/.test(pass)) score++;
@@ -49,9 +49,9 @@ function getPasswordStrength(pass: string) {
   if (/[0-9]/.test(pass)) score++;
   if (/[^A-Za-z0-9]/.test(pass)) score++;
 
-  if (score <= 2) return { score, label: "Débil", color: "#EF4444" };
-  if (score <= 4) return { score, label: "Media", color: "#F59E0B" };
-  return { score, label: "Fuerte", color: "#10B981" };
+  if (score <= 2) return { score, label: "Débil", color: colors.danger };
+  if (score <= 4) return { score, label: "Media", color: colors.warning };
+  return { score, label: "Fuerte", color: colors.success };
 }
 
 function PasswordStrengthIndicator({ password }: { password: string }) {
@@ -218,9 +218,9 @@ export default function RegisterScreen() {
           router.replace("/(tabs)/agenda");
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSubmitting(false);
-      showAlert("Error de Registro", err.message || "Ocurrió un error inesperado.");
+      showAlert("Error de Registro", err instanceof Error ? err.message : "Ocurrió un error inesperado.");
     }
   }
 
@@ -257,7 +257,7 @@ export default function RegisterScreen() {
                   color={colors.surfaceDark}
                 />
               </View>
-              <Text style={brandNameStyle()}>CONTRACTOR PRO</Text>
+              <Text style={brandNameStyle()}>LEURET</Text>
             </View>
           </View>
 
@@ -555,11 +555,11 @@ type FormFieldProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
-  icon: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
   keyboardType?: "default" | "email-address" | "phone-pad" | "numeric";
   secureTextEntry?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  rightIcon?: string;
+  rightIcon?: ComponentProps<typeof Ionicons>["name"];
   onRightIconPress?: () => void;
 };
 
@@ -581,7 +581,7 @@ function FormField({
 
       <View style={styles.inputContainer}>
         <Ionicons
-          name={icon as any}
+          name={icon}
           size={20}
           color={colors.textSecondary}
         />
@@ -590,7 +590,7 @@ function FormField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.textMuted}
           keyboardType={keyboardType}
           secureTextEntry={secureTextEntry}
           autoCapitalize={autoCapitalize}
@@ -600,7 +600,7 @@ function FormField({
 
         {rightIcon && (
           <Pressable onPress={onRightIconPress} hitSlop={12}>
-            <Ionicons name={rightIcon as any} size={18} color={colors.textSecondary} />
+            <Ionicons name={rightIcon} size={18} color={colors.textSecondary} />
           </Pressable>
         )}
       </View>
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
 
   selectPlaceholderText: {
     flex: 1,
-    color: "#94A3B8",
+    color: colors.textMuted,
     fontSize: 14,
   },
 
@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: colors.primaryWash,
     padding: 14,
     marginTop: 4,
   },
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
 
   approvalNoticeText: {
     flex: 1,
-    color: "#7B581C",
+    color: colors.primary,
     fontSize: 11,
     lineHeight: 16,
     fontWeight: "700",

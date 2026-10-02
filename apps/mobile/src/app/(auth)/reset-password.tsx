@@ -27,11 +27,15 @@ export default function ResetPasswordScreen() {
   const [resetComplete, setResetComplete] = useState(false);
 
   useEffect(() => {
-    if (params.token) {
-      // The deep-link parameter is an external source that may change while mounted.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTokenInput(params.token);
-    }
+    let active = true;
+
+    void Promise.resolve().then(() => {
+      if (active && params.token) setTokenInput(params.token);
+    });
+
+    return () => {
+      active = false;
+    };
   }, [params.token]);
 
   async function handleResetPassword() {
@@ -76,7 +80,7 @@ export default function ResetPasswordScreen() {
               <Ionicons
                 name="checkmark-circle"
                 size={48}
-                color="#16A34A"
+                color={colors.success}
               />
             </View>
 
@@ -85,7 +89,7 @@ export default function ResetPasswordScreen() {
             </Text>
 
             <Text style={styles.successMessage}>
-              Tu nueva contraseña se guardó correctamente. Ya puedes iniciar sesión en Contractor Pro.
+              Tu nueva contraseña se guardó correctamente. Ya puedes iniciar sesión en Leuret.
             </Text>
 
             <Pressable
@@ -118,7 +122,7 @@ export default function ResetPasswordScreen() {
             </View>
             <Text style={styles.title}>Restablecer Contraseña</Text>
             <Text style={styles.subtitle}>
-              Establece tu nueva contraseña de acceso a Contractor Pro.
+              Establece tu nueva contraseña de acceso a Leuret.
             </Text>
           </View>
 
@@ -157,7 +161,7 @@ export default function ResetPasswordScreen() {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.textInverse} />
               ) : (
                 <Text style={styles.primaryButtonText}>Guardar Nueva Contraseña</Text>
               )}
@@ -255,7 +259,7 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: "#ECFDF3",
+    backgroundColor: colors.successSoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20
@@ -290,7 +294,7 @@ const styles = StyleSheet.create({
     opacity: 0.6
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: "600"
   }

@@ -133,7 +133,7 @@ export function buildBudgetHtml({
       margin: 0;
       padding: 32px;
       font-family: Arial, Helvetica, sans-serif;
-      color: #0f172a;
+      color: #1E2A3A;
       background: #ffffff;
       font-size: 12px;
     }
@@ -142,7 +142,7 @@ export function buildBudgetHtml({
       display: flex;
       justify-content: space-between;
       gap: 24px;
-      border-bottom: 3px solid #2563eb;
+      border-bottom: 3px solid #E23D3D;
       padding-bottom: 18px;
       margin-bottom: 22px;
     }
@@ -150,12 +150,12 @@ export function buildBudgetHtml({
     .company-name {
       font-size: 24px;
       font-weight: 800;
-      color: #0f172a;
+      color: #1E2A3A;
       margin-bottom: 5px;
     }
 
     .company-meta {
-      color: #475569;
+      color: #5E6D7D;
       line-height: 1.5;
     }
 
@@ -163,12 +163,12 @@ export function buildBudgetHtml({
       min-width: 210px;
       padding: 16px;
       border-radius: 12px;
-      background: #f1f5f9;
+      background: #EEF1F3;
       text-align: right;
     }
 
     .doc-label {
-      color: #64748b;
+      color: #8FA3B8;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -179,12 +179,12 @@ export function buildBudgetHtml({
       margin-top: 5px;
       font-size: 22px;
       font-weight: 900;
-      color: #2563eb;
+      color: #E23D3D;
     }
 
     .status {
       margin-top: 6px;
-      color: #475569;
+      color: #5E6D7D;
       font-weight: 700;
     }
 
@@ -196,7 +196,7 @@ export function buildBudgetHtml({
     }
 
     .card {
-      border: 1px solid #e2e8f0;
+      border: 1px solid #DDD8CF;
       border-radius: 12px;
       padding: 14px;
       background: #ffffff;
@@ -205,7 +205,7 @@ export function buildBudgetHtml({
     .card-title {
       font-size: 12px;
       font-weight: 800;
-      color: #64748b;
+      color: #8FA3B8;
       text-transform: uppercase;
       margin-bottom: 8px;
     }
@@ -213,12 +213,12 @@ export function buildBudgetHtml({
     .main-text {
       font-size: 14px;
       font-weight: 800;
-      color: #0f172a;
+      color: #1E2A3A;
       margin-bottom: 4px;
     }
 
     .muted {
-      color: #475569;
+      color: #5E6D7D;
       line-height: 1.45;
     }
 
@@ -229,7 +229,7 @@ export function buildBudgetHtml({
     }
 
     th {
-      background: #0f172a;
+      background: #1E2A3A;
       color: #ffffff;
       text-align: left;
       font-size: 11px;
@@ -237,14 +237,14 @@ export function buildBudgetHtml({
     }
 
     td {
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid #DDD8CF;
       padding: 10px 8px;
       vertical-align: top;
     }
 
     .section-title {
-      background: #e0ecff;
-      color: #1d4ed8;
+      background: #E6EBF0;
+      color: #1E2A3A;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -263,7 +263,7 @@ export function buildBudgetHtml({
     }
 
     .item-note {
-      color: #64748b;
+      color: #8FA3B8;
       margin-top: 4px;
       font-size: 11px;
       line-height: 1.4;
@@ -271,7 +271,7 @@ export function buildBudgetHtml({
 
     .empty-row {
       text-align: center;
-      color: #64748b;
+      color: #8FA3B8;
       font-style: italic;
     }
 
@@ -279,7 +279,7 @@ export function buildBudgetHtml({
       width: 300px;
       margin-left: auto;
       margin-top: 20px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #DDD8CF;
       border-radius: 12px;
       overflow: hidden;
     }
@@ -288,7 +288,7 @@ export function buildBudgetHtml({
       display: flex;
       justify-content: space-between;
       padding: 10px 14px;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid #DDD8CF;
     }
 
     .total-row:last-child {
@@ -296,7 +296,7 @@ export function buildBudgetHtml({
     }
 
     .total-final {
-      background: #2563eb;
+      background: #E23D3D;
       color: #ffffff;
       font-size: 16px;
       font-weight: 900;
@@ -306,16 +306,16 @@ export function buildBudgetHtml({
       margin-top: 24px;
       padding: 14px;
       border-radius: 12px;
-      background: #f8fafc;
-      color: #475569;
+      background: #F6F1E7;
+      color: #5E6D7D;
       line-height: 1.5;
     }
 
     .footer {
       margin-top: 28px;
       padding-top: 12px;
-      border-top: 1px solid #e2e8f0;
-      color: #64748b;
+      border-top: 1px solid #DDD8CF;
+      color: #8FA3B8;
       font-size: 11px;
       text-align: center;
     }
@@ -433,7 +433,7 @@ export function buildBudgetHtml({
   </div>
 
   <div class="footer">
-    Documento generado desde Contractor Pro.
+    Documento generado desde Leuret.
   </div>
 </body>
 </html>

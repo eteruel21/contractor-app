@@ -826,7 +826,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   subtitle: {
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
   },
   section: {
