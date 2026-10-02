@@ -83,7 +83,7 @@ export async function sendVerificationEmail({ to, fullName, token }: Verificatio
     <html>
     <head>
       <meta charset="utf-8">
-      <title>Verifica tu cuenta - Contractor Pro</title>
+      <title>Verifica tu cuenta - Leuret</title>
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
         .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; }
@@ -99,11 +99,11 @@ export async function sendVerificationEmail({ to, fullName, token }: Verificatio
     <body>
       <div class="container">
         <div class="header">
-          <span class="brand">🏗️ Contractor Pro</span>
+          <span class="brand">🏗️ Leuret</span>
         </div>
         <h2 class="title">Verificación de Cuenta</h2>
         <p>Hola, <strong>${name}</strong>:</p>
-        <p>Gracias por registrarte en Contractor Pro. Por favor, confirma tu correo electrónico para activar tu cuenta:</p>
+        <p>Gracias por registrarte en Leuret. Por favor, confirma tu correo electrónico para activar tu cuenta:</p>
         
         <div style="text-align: center; margin: 24px 0;">
           <a href="${deepLink}" class="btn-primary">Abrir en la App Móvil</a>
@@ -114,7 +114,7 @@ export async function sendVerificationEmail({ to, fullName, token }: Verificatio
         <p>O copia tu token de verificación directamente en la aplicación:</p>
         <div class="code-box">${token}</div>
 
-        <p class="footer">Si no creaste esta cuenta, puedes ignorar este mensaje.<br />© Contractor Pro</p>
+        <p class="footer">Si no creaste esta cuenta, puedes ignorar este mensaje.<br />© Leuret</p>
       </div>
     </body>
     </html>
@@ -123,7 +123,7 @@ export async function sendVerificationEmail({ to, fullName, token }: Verificatio
   const text = `
 Hola ${name},
 
-Gracias por registrarte en Contractor Pro. Confirma tu correo para activar tu cuenta.
+Gracias por registrarte en Leuret. Confirma tu correo para activar tu cuenta.
 
 Abrir en App Móvil:
 ${deepLink}
@@ -136,7 +136,7 @@ Token de Verificación: ${token}
 
   return deliverWithResend({
     to,
-    subject: "Verifica tu cuenta - Contractor Pro",
+    subject: "Verifica tu cuenta - Leuret",
     text,
     html
   });
@@ -152,7 +152,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Cambiar contraseña - Contractor Pro</title>
+  <title>Cambiar contraseña - Leuret</title>
 </head>
 
 <body style="margin:0; padding:0; background-color:#f4f7fb;">
@@ -185,7 +185,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
               <p
                 style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:22px; line-height:28px; font-weight:700; color:#ffffff;"
               >
-                Contractor Pro
+                Leuret
               </p>
 
               <p
@@ -215,7 +215,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
               <p
                 style="margin-top:0; margin-right:0; margin-bottom:26px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:15px; line-height:24px; color:#475569;"
               >
-                Recibimos una solicitud para cambiar la contraseña de tu cuenta de Contractor Pro.
+                Recibimos una solicitud para cambiar la contraseña de tu cuenta de Leuret.
                 Utiliza el siguiente botón para establecer una nueva contraseña.
               </p>
 
@@ -241,7 +241,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
               <p
                 style="margin-top:0; margin-right:0; margin-bottom:8px; margin-left:0; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:22px; color:#64748b;"
               >
-                ¿Estás usando Contractor Pro desde tu teléfono?
+                ¿Estás usando Leuret desde tu teléfono?
               </p>
 
               <p
@@ -293,7 +293,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
               <p
                 style="margin:0; font-family:Arial, Helvetica, sans-serif; font-size:12px; line-height:19px; text-align:center; color:#94a3b8;"
               >
-                © 2026 Contractor Pro · LEURET TECH
+                © 2026 Leuret · LEURET TECH
               </p>
             </td>
           </tr>
@@ -308,7 +308,7 @@ export async function sendPasswordResetEmail({ to, token }: PasswordResetEmailIn
   const text = `
 Hola,
 
-Recibimos una solicitud para cambiar la contraseña de tu cuenta de Contractor Pro.
+Recibimos una solicitud para cambiar la contraseña de tu cuenta de Leuret.
 
 Cambiar mi contraseña:
 ${webLink}
@@ -320,13 +320,13 @@ Este enlace vence en 1 hora.
 
 Si no solicitaste este cambio, puedes ignorar este mensaje. Tu contraseña actual seguirá funcionando.
 
-Contractor Pro
+Leuret
 LEURET TECH
   `.trim();
 
   return deliverWithResend({
     to,
-    subject: "Cambia tu contraseña | Contractor Pro",
+    subject: "Cambia tu contraseña | Leuret",
     text,
     html
   });
