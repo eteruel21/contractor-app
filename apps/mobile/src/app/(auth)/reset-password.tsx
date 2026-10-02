@@ -65,7 +65,10 @@ export default function ResetPasswordScreen() {
       setResetComplete(true);
     } catch (error) {
       const err = error as { message?: string };
-      Alert.alert("Error de recuperación", err.message || "El token es inválido o ha expirado.");
+      Alert.alert(
+        "No fue posible cambiar la contraseña",
+        translateResetPasswordError(err.message),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -173,6 +176,36 @@ export default function ResetPasswordScreen() {
   );
 }
 
+function translateResetPasswordError(message?: string): string {
+  const normalized = (message ?? "").toLowerCase();
+
+  if (
+    normalized.includes("expired") ||
+    normalized.includes("invalid token") ||
+    normalized.includes("token invalid") ||
+    normalized.includes("already used")
+  ) {
+    return "El enlace de recuperación es inválido, ya fue utilizado o ha expirado. Solicita uno nuevo e inténtalo nuevamente.";
+  }
+
+  if (
+    normalized.includes("too many requests") ||
+    normalized.includes("rate limit")
+  ) {
+    return "Se realizaron demasiados intentos. Espera unos minutos e inténtalo nuevamente.";
+  }
+
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("network") ||
+    normalized.includes("network request failed") ||
+    normalized.includes("connection")
+  ) {
+    return "No pudimos conectarnos al servidor. Verifica tu conexión e inténtalo nuevamente.";
+  }
+
+  return "No pudimos cambiar tu contraseña. Inténtalo nuevamente o solicita un nuevo enlace de recuperación.";
+}
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,

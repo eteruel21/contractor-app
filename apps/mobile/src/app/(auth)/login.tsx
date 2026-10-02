@@ -555,7 +555,24 @@ function translateAuthError(
     return "Se realizaron demasiados intentos. Inténtalo nuevamente más tarde.";
   }
 
-  return message;
+  if (
+    normalized.includes("failed to fetch") ||
+    normalized.includes("network") ||
+    normalized.includes("network request failed") ||
+    normalized.includes("connection")
+  ) {
+    return "No pudimos conectarnos al servidor. Verifica tu conexión e inténtalo nuevamente.";
+  }
+
+  if (
+    normalized.includes("captcha") ||
+    normalized.includes("turnstile") ||
+    normalized.includes("verification")
+  ) {
+    return "No pudimos completar la verificación de seguridad. Inténtalo nuevamente.";
+  }
+
+  return "No pudimos completar la solicitud. Inténtalo nuevamente.";
 }
 
 const styles = StyleSheet.create({
