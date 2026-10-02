@@ -15,12 +15,12 @@ import { LeuretLoading } from "@/components/LeuretLoading";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
-import { listProjectsForClient } from "../../services/project-service";
+import { listProjectsForClient, type ClientProjectSummary } from "../../services/project-service";
 
 export default function ClientProjectsScreen() {
   const { profile } = useAuth();
   const profileId = profile?.id;
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<ClientProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 

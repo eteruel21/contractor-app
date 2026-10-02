@@ -128,9 +128,15 @@ export default function InvoiceDetailScreen() {
   );
 
   useEffect(() => {
-    // Loading a new route entity intentionally starts the local loading transition.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadInvoice();
+    let active = true;
+
+    Promise.resolve().then(() => {
+      if (active) void loadInvoice();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [loadInvoice]);
 
   const handleShareInvoice = async () => {
@@ -186,8 +192,8 @@ export default function InvoiceDetailScreen() {
               }
 
               setInvoice(updatedInvoice);
-            } catch (err: any) {
-              Alert.alert("Error", err.message);
+            } catch (err: unknown) {
+              Alert.alert("Error", err instanceof Error ? err.message : "Ocurrió un error inesperado.");
             } finally {
               setUpdating(false);
             }

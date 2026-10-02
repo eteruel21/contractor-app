@@ -1,14 +1,10 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { storeSession } from "../api";
 import {
   acceptCompanyInvitation,
   createCompanyInvitation,
-  deleteCompanyMember,
-  getCompanyAuditLogs,
-  listCompanyInvitations,
   listCompanyMembers,
-  revokeCompanyInvitation,
   updateCompanyMemberRole,
-  updateCompanyMemberStatus
 } from "../users-service";
 import { getSystemHealth, updateBasicUserProfile } from "../admin-service";
 
@@ -33,7 +29,6 @@ vi.mock("expo-secure-store", () => ({
   deleteItemAsync: vi.fn()
 }));
 
-import { storeSession } from "../api";
 
 const fetchMock = vi.fn();
 

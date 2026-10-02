@@ -440,7 +440,7 @@ export async function shareInvoicePdf({
       UTI: "com.adobe.pdf",
     });
     return { error: null };
-  } catch (error: any) {
-    return { error: error?.message ?? "Error desconocido" };
+  } catch (error: unknown) {
+    return { error: error instanceof Error ? error.message : "Error desconocido" };
   }
 }

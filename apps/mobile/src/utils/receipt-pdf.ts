@@ -161,9 +161,9 @@ export async function shareReceiptPdf(payment: InvoicePayment): Promise<{
       UTI: "com.adobe.pdf",
     });
     return { error: null };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
-      error: error?.message ?? "No fue posible generar el recibo."
+      error: error instanceof Error ? error.message : "No fue posible generar el recibo."
     };
   }
 }

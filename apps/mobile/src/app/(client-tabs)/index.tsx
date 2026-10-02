@@ -17,12 +17,12 @@ import { LeuretLoading } from "@/components/LeuretLoading";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
-import { getClientContractorCompanies } from "../../services/client-service";
+import { getClientContractorCompanies, type ContractorCompany } from "../../services/client-service";
 
 export default function ClientHomeScreen() {
   const { profile, user, signOut } = useAuth();
   const profileId = profile?.id;
-  const [contractors, setContractors] = useState<any[]>([]);
+  const [contractors, setContractors] = useState<ContractorCompany[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

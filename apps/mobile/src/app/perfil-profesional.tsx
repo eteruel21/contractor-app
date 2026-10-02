@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useReducer, useState } from "react";
+import { type ComponentProps, useReducer, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -280,10 +280,10 @@ export default function ProfessionalProfileScreen() {
         setField(field)(
           uploaded.storagePath
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         showAlert(
           "No se pudo subir el documento",
-          error?.message ||
+          error instanceof Error ? error.message :
             "Inténtalo nuevamente."
         );
       } finally {
@@ -369,8 +369,8 @@ export default function ProfessionalProfileScreen() {
           },
         ]
       );
-    } catch (e: any) {
-      showAlert("Error", e.message || "Error al actualizar perfil.");
+    } catch (e: unknown) {
+      showAlert("Error", e instanceof Error ? e.message : "Error al actualizar perfil.");
     } finally {
       setSaving(false);
     }
@@ -883,7 +883,7 @@ type FormFieldProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
-  icon: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
   keyboardType?: "default" | "email-address" | "phone-pad" | "numeric";
 };
 
@@ -900,7 +900,7 @@ function FormField({
       <Text style={styles.label}>{label}</Text>
 
       <View style={styles.inputContainer}>
-        <Ionicons name={icon as any} size={18} color={colors.textSecondary} />
+        <Ionicons name={icon} size={18} color={colors.textSecondary} />
         <TextInput
           value={value}
           onChangeText={onChangeText}

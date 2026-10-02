@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -218,9 +218,9 @@ export default function RegisterScreen() {
           router.replace("/(tabs)/agenda");
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSubmitting(false);
-      showAlert("Error de Registro", err.message || "Ocurrió un error inesperado.");
+      showAlert("Error de Registro", err instanceof Error ? err.message : "Ocurrió un error inesperado.");
     }
   }
 
@@ -555,11 +555,11 @@ type FormFieldProps = {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
-  icon: string;
+  icon: ComponentProps<typeof Ionicons>["name"];
   keyboardType?: "default" | "email-address" | "phone-pad" | "numeric";
   secureTextEntry?: boolean;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
-  rightIcon?: string;
+  rightIcon?: ComponentProps<typeof Ionicons>["name"];
   onRightIconPress?: () => void;
 };
 
@@ -581,7 +581,7 @@ function FormField({
 
       <View style={styles.inputContainer}>
         <Ionicons
-          name={icon as any}
+          name={icon}
           size={20}
           color={colors.textSecondary}
         />
@@ -600,7 +600,7 @@ function FormField({
 
         {rightIcon && (
           <Pressable onPress={onRightIconPress} hitSlop={12}>
-            <Ionicons name={rightIcon as any} size={18} color={colors.textSecondary} />
+            <Ionicons name={rightIcon} size={18} color={colors.textSecondary} />
           </Pressable>
         )}
       </View>

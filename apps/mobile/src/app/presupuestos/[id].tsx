@@ -268,8 +268,8 @@ export default function BudgetDetailScreen() {
                   params: { id: invoice.id },
                 } as Href);
               }
-            } catch (err: any) {
-              Alert.alert("Error", err?.message || "Ocurrió un error");
+            } catch (err: unknown) {
+              Alert.alert("Error", err instanceof Error ? err.message : "Ocurrió un error");
             } finally {
               setGeneratingInvoice(false);
             }

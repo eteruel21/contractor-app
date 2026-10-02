@@ -17,13 +17,13 @@ import { MotionPressable } from "@/components/MotionPressable";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
-import { listBudgetsForClient } from "../../services/budget-service";
+import { listBudgetsForClient, type ClientBudgetSummary } from "../../services/budget-service";
 import { formatMoney } from "../../utils/format";
 
 export default function ClientBudgetsScreen() {
   const { profile } = useAuth();
   const profileId = profile?.id;
-  const [budgets, setBudgets] = useState<any[]>([]);
+  const [budgets, setBudgets] = useState<ClientBudgetSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -127,7 +127,7 @@ export default function ClientBudgetsScreen() {
             <View style={styles.cardFooter}>
               <Text style={styles.totalLabel}>Monto total:</Text>
               <Text style={styles.totalValue}>
-                {formatMoney(item.total || 0, item.company?.currency_code)}
+                {formatMoney(item.total || 0, item.company?.currency_code ?? undefined)}
               </Text>
             </View>
           </MotionPressable>

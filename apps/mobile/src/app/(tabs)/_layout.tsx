@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Tabs, router, useSegments } from "expo-router";
+import { Tabs, type Href, router, useSegments } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
   type ColorValue,
@@ -15,6 +15,13 @@ import Animated, {
 import { colors } from "@/constants/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const RESTORABLE_TABS = ["calculos", "clientes", "agenda", "mas"] as const;
+type RestorableTab = (typeof RESTORABLE_TABS)[number];
+
+function isRestorableTab(value: string): value is RestorableTab {
+  return (RESTORABLE_TABS as readonly string[]).includes(value);
+}
 
 function TabIcon({
   focused,
@@ -56,7 +63,7 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
-  const segments = useSegments() as any;
+  const segments: readonly string[] = useSegments();
   const hasRestored = useRef(false);
 
   useEffect(() => {
@@ -73,9 +80,9 @@ export default function TabsLayout() {
       if (hasRestored.current) return;
       try {
         const saved = await AsyncStorage.getItem("@contractor-pro:last-tab");
-        if (saved && saved !== "inicio") {
+        if (saved && isRestorableTab(saved)) {
           hasRestored.current = true;
-          router.replace(`/(tabs)/${saved}` as any);
+          router.replace(`/(tabs)/${saved}` as Href);
         } else {
           hasRestored.current = true;
         }
