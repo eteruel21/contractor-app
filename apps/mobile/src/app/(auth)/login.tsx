@@ -30,6 +30,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] =
     useState("");
+  const [loginError, setLoginError] =
+    useState<string | null>(null);
   const [showPassword, setShowPassword] =
     useState(false);
   const [submitting, setSubmitting] =
@@ -45,16 +47,37 @@ export default function LoginScreen() {
   async function handleSignIn() {
     const cleanEmail = email.trim();
 
+    setLoginError(null);
+
     if (!cleanEmail || !password) {
-      Alert.alert(
-        "Datos incompletos",
-        "Introduce tu correo y contraseña.",
-      );
+      const message =
+        "Introduce tu correo y contraseña.";
+
+      setLoginError(message);
+
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Datos incompletos",
+          message,
+        );
+      }
+
       return;
     }
 
     if (!loginCaptchaToken) {
-      Alert.alert("Verificación requerida", "Completa la verificación de seguridad antes de iniciar sesión.");
+      const message =
+        "Completa la verificación de seguridad antes de iniciar sesión.";
+
+      setLoginError(message);
+
+      if (Platform.OS !== "web") {
+        Alert.alert(
+          "Verificación requerida",
+          message,
+        );
+      }
+
       return;
     }
 
@@ -73,10 +96,17 @@ export default function LoginScreen() {
 
 
       if (error) {
-        Alert.alert(
-          "No fue posible iniciar sesión",
-          translateAuthError(error.message),
-        );
+        const friendlyMessage =
+          translateAuthError(error.message);
+
+        setLoginError(friendlyMessage);
+
+        if (Platform.OS !== "web") {
+          Alert.alert(
+            "No fue posible iniciar sesión",
+            friendlyMessage,
+          );
+        }
       }
     } finally {
       setSubmitting(false);
@@ -451,6 +481,20 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
+                {loginError ? (
+                  <View style={styles.loginErrorBox}>
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={18}
+                      color={colors.danger}
+                    />
+
+                    <Text style={styles.loginErrorText}>
+                      {loginError}
+                    </Text>
+                  </View>
+                ) : null}
+
                 <TurnstileChallenge
                   action="login"
                   onToken={setLoginCaptchaToken}
@@ -746,6 +790,27 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     fontSize: 14,
+  },
+
+  loginErrorBox: {
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    backgroundColor: colors.dangerSoft,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+
+  loginErrorText: {
+    flex: 1,
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "700",
   },
 
   forgotButton: {
