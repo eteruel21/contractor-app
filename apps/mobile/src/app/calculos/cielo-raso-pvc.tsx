@@ -314,7 +314,7 @@ function Input({ label, value, onChangeText, placeholder, unit }: {
 }) {
   return <View style={styles.inputGroup}><Text style={styles.inputLabel}>{label}</Text>
     <View style={styles.inputBox}><TextInput value={value} onChangeText={onChangeText}
-      placeholder={placeholder} placeholderTextColor="#94A3B8" keyboardType="decimal-pad"
+      placeholder={placeholder} placeholderTextColor={colors.textMuted} keyboardType="decimal-pad"
       inputMode="decimal" style={styles.input} /><Text style={styles.unit}>{unit}</Text></View></View>;
 }
 

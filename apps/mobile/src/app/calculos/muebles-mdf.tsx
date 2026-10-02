@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: { color: colors.textLight, fontSize: 21, fontWeight: "900" },
-  subtitle: { color: "#CBD5E1", fontSize: 13 },
+  subtitle: { color: colors.textLightMuted, fontSize: 13 },
   section: {
     padding: 18,
     borderRadius: radius.lg,

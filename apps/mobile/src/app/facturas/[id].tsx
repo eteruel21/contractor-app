@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { colors, radius } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
@@ -490,14 +491,7 @@ export default function InvoiceDetailScreen() {
     );
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loaderText}>Cargando factura...</Text>
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando factura…" fullScreen />;
 
   if (!invoice) {
     return (
@@ -963,7 +957,7 @@ export default function InvoiceDetailScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="send-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="send-outline" size={18} color={colors.textInverse} />
                 <Text style={styles.statusOptionButtonText}>Emitir factura</Text>
               </Pressable>
             )}
@@ -978,7 +972,7 @@ export default function InvoiceDetailScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="time-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="time-outline" size={18} color={colors.textInverse} />
                 <Text style={styles.statusOptionButtonText}>Marcar vencida</Text>
               </Pressable>
             )}
@@ -996,7 +990,7 @@ export default function InvoiceDetailScreen() {
                   pressed && styles.pressed,
                 ]}
               >
-                <Ionicons name="close-circle-outline" size={18} color="#FFFFFF" />
+                <Ionicons name="close-circle-outline" size={18} color={colors.textInverse} />
                 <Text style={styles.statusOptionButtonText}>Cancelar factura</Text>
               </Pressable>
             )}
@@ -1868,7 +1862,7 @@ const styles = StyleSheet.create({
   },
 
   statusOptionButtonText: {
-    color: "#FFFFFF",
+    color: colors.textInverse,
     fontSize: 12,
     fontWeight: "900",
   },

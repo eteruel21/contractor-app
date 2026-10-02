@@ -145,7 +145,7 @@ export default function ConfirmEmailScreen() {
               disabled={submitting || success}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.textInverse} />
               ) : (
                 <Text style={styles.primaryButtonText}>Confirmar Cuenta</Text>
               )}
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     opacity: 0.6
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: "600"
   }

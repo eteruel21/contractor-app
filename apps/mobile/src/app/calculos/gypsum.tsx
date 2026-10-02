@@ -345,7 +345,7 @@ function Input({ label, value, onChangeText, placeholder, unit }: {
 }) {
   return <View style={styles.inputGroup}><Text style={styles.inputLabel}>{label}</Text>
     <View style={styles.inputBox}><TextInput value={value} onChangeText={onChangeText}
-      placeholder={placeholder} placeholderTextColor="#94A3B8"
+      placeholder={placeholder} placeholderTextColor={colors.textMuted}
       keyboardType="decimal-pad" inputMode="decimal" style={styles.input} />
       <Text style={styles.unit}>{unit}</Text></View></View>;
 }
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
   heroIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.accent,
     alignItems: "center", justifyContent: "center" },
   title: { color: colors.textLight, fontSize: 21, fontWeight: "900" },
-  subtitle: { color: "#CBD5E1", fontSize: 13, marginTop: 4 },
+  subtitle: { color: colors.textLightMuted, fontSize: 13, marginTop: 4 },
   section: { padding: 18, borderRadius: radius.lg, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, marginBottom: 16 },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: "900" },

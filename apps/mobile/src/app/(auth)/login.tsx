@@ -315,7 +315,7 @@ export default function LoginScreen() {
                       value={email}
                       onChangeText={setEmail}
                       placeholder="correo@empresa.com"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={colors.textMuted}
                       autoCapitalize="none"
                       autoCorrect={false}
                       keyboardType="email-address"
@@ -397,7 +397,7 @@ export default function LoginScreen() {
                       value={email}
                       onChangeText={setEmail}
                       placeholder="correo@empresa.com"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={colors.textMuted}
                       autoCapitalize="none"
                       autoCorrect={false}
                       keyboardType="email-address"
@@ -423,7 +423,7 @@ export default function LoginScreen() {
                       value={password}
                       onChangeText={setPassword}
                       placeholder="Tu contraseña"
-                      placeholderTextColor="#94A3B8"
+                      placeholderTextColor={colors.textMuted}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
                       textContentType="password"

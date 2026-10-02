@@ -2,6 +2,7 @@ import {
   createBudgetFromProject,
   listBudgetsByProject,
 } from "@/services/budget-service";
+import { LeuretLoading } from "@/components/LeuretLoading";
 import type { Budget } from "@/types/budget";
 import {
   formatMoney,
@@ -347,13 +348,7 @@ export default function ProjectDetailScreen() {
     );
   }
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando proyecto…" fullScreen />;
 
   if (!project) {
     return (
@@ -596,7 +591,7 @@ export default function ProjectDetailScreen() {
                 style={styles.saveSmallButton}
               >
                 {uploadingPhoto ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                  <ActivityIndicator color={colors.textInverse} size="small" />
                 ) : (
                   <Text style={styles.saveSmallButtonText}>Subir Foto Privada</Text>
                 )}

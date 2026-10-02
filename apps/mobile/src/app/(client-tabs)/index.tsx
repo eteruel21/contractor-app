@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -12,6 +11,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
@@ -121,21 +123,14 @@ export default function ClientHomeScreen() {
         <Text style={styles.sectionTitle}>Mis Contratistas / Proveedores</Text>
 
         {loading ? (
-          <ActivityIndicator
-            size="large"
-            color={colors.primary}
-            style={styles.loader}
-          />
+          <LeuretLoading message="Cargando proveedores…" compact />
         ) : contractors.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="business-outline" size={42} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>Sin proveedores vinculados</Text>
-            <Text style={styles.emptyText}>
-              Pídele a tu contratista que registre tu correo electrónico (
-              {user?.email || "el que usaste al registrarte"}) para poder
-              vincularte de forma automática.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon="business-outline"
+            title="Sin proveedores vinculados"
+            description={`Pídele a tu contratista que registre tu correo electrónico (${user?.email || "el que usaste al registrarte"}) para vincularte automáticamente.`}
+            compact
+          />
         ) : (
           contractors.map((company) => (
             <View key={company.id} style={styles.companyCard}>
@@ -189,7 +184,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   welcome: {
-    color: "#94A3B8",
+    color: colors.textMuted,
     fontSize: 14,
   },
   name: {
@@ -202,7 +197,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: colors.dangerSoft,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -228,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 16,
     borderRadius: radius.md,
-    backgroundColor: "#DCFCE7",
+    backgroundColor: colors.successSoft,
     marginBottom: 24,
     gap: 12,
   },

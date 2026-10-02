@@ -1,12 +1,11 @@
 import { type Href, router } from "expo-router";
 import { useEffect } from "react";
 import {
-    ActivityIndicator,
     StyleSheet,
-    Text,
     View,
 } from "react-native";
 
+import { LeuretLoading } from "@/components/LeuretLoading";
 import { colors } from "@/constants/theme";
 import { useCompany } from "@/contexts/CompanyContext";
 
@@ -35,14 +34,7 @@ export default function CompanyIndexScreen() {
 
   return (
     <View style={styles.container}>
-      <ActivityIndicator
-        size="large"
-        color={colors.primary}
-      />
-
-      <Text style={styles.text}>
-        Preparando empresa...
-      </Text>
+      <LeuretLoading message="Preparando empresa…" compact />
     </View>
   );
 }

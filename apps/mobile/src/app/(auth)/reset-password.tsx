@@ -80,7 +80,7 @@ export default function ResetPasswordScreen() {
               <Ionicons
                 name="checkmark-circle"
                 size={48}
-                color="#16A34A"
+                color={colors.success}
               />
             </View>
 
@@ -161,7 +161,7 @@ export default function ResetPasswordScreen() {
               disabled={submitting}
             >
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.textInverse} />
               ) : (
                 <Text style={styles.primaryButtonText}>Guardar Nueva Contraseña</Text>
               )}
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     width: 82,
     height: 82,
     borderRadius: 41,
-    backgroundColor: "#ECFDF3",
+    backgroundColor: colors.successSoft,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     opacity: 0.6
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.textInverse,
     fontSize: 16,
     fontWeight: "600"
   }

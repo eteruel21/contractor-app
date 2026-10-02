@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   subtitle: {
-    color: "#CBD5E1",
+    color: colors.textLightMuted,
     fontSize: 13,
   },
   section: {
@@ -995,8 +995,8 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     borderRadius: radius.md,
-    backgroundColor: "#FFF7ED",
-    color: "#9A3412",
+    backgroundColor: colors.warningSoft,
+    color: colors.primary,
     fontSize: 12,
     lineHeight: 18,
   },

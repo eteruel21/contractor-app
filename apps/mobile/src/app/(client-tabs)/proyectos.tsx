@@ -1,8 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   RefreshControl,
@@ -11,6 +9,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { LeuretEmptyState } from "@/components/LeuretEmptyState";
+import { LeuretLoading } from "@/components/LeuretLoading";
 
 import { colors, radius } from "../../constants/theme";
 import { useAuth } from "../../contexts/AuthContext";
@@ -55,13 +56,7 @@ export default function ClientProjectsScreen() {
     }, [loadProjects]),
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  if (loading) return <LeuretLoading message="Cargando proyectos…" fullScreen />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -84,13 +79,12 @@ export default function ClientProjectsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="business-outline" size={46} color="#94A3B8" />
-            <Text style={styles.emptyTitle}>No tienes proyectos activos</Text>
-            <Text style={styles.emptyText}>
-              Los proyectos compartidos por tus contratistas se listarán aquí.
-            </Text>
-          </View>
+          <LeuretEmptyState
+            icon="business-outline"
+            title="No tienes proyectos activos"
+            description="Los proyectos compartidos por tus contratistas se listarán aquí."
+            compact
+          />
         }
         renderItem={({ item }) => (
           <View style={styles.projectCard}>
@@ -202,7 +196,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: "#000000",
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.03,
     shadowRadius: 6,
