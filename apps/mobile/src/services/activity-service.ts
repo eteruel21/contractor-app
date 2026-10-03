@@ -43,14 +43,14 @@ function mapServerActivityToAppointment(act: ServerActivity): Appointment {
     clientId: act.client_id || "",
     clientName: clientName || "",
     date: act.date,
-    time: act.start_time,
-    endTime: act.end_time || act.start_time,
+    time: act.start_time.slice(0, 5),
+    endTime: (act.end_time || act.start_time).slice(0, 5),
     type: act.type,
     status: act.status,
     address: act.address || "",
     notes: act.notes || "",
     reminderMinutes: act.reminder_minutes ?? 15,
-    notificationId: `notif-${act.id}`,
+    notificationId: "",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -70,7 +70,12 @@ export async function fetchCompanyActivities(
     if (queryString) url += `?${queryString}`;
 
     const res = await authenticatedRequest<{ activities: ServerActivity[] }>(url);
-    const items = res.activities.map(mapServerActivityToAppointment);
+    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
+    const notificationById = new Map(cached.map((item) => [item.id, item.notificationId]));
+    const items = res.activities.map((activity) => ({
+      ...mapServerActivityToAppointment(activity),
+      notificationId: notificationById.get(activity.id) ?? ""
+    }));
 
     if (!filters || (!filters.date && !filters.projectId && !filters.clientId)) {
       await saveLocalData(APPOINTMENTS_KEY, items);
@@ -97,99 +102,63 @@ export async function createRemoteActivity(
   data: Omit<Appointment, "id" | "createdAt" | "updatedAt">,
   projectId?: string
 ): Promise<Appointment> {
-  try {
-    const res = await authenticatedRequest<{ activity: ServerActivity }>(
-      `/companies/${companyId}/activities`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          companyId,
-          clientId: data.clientId || null,
-          projectId: projectId || null,
-          title: data.title,
-          type: data.type,
-          status: data.status,
-          date: data.date,
-          startTime: data.time,
-          endTime: data.endTime,
-          address: data.address,
-          notes: data.notes,
-          reminderMinutes: data.reminderMinutes
-        })
-      }
-    );
-
-    const appointment = mapServerActivityToAppointment(res.activity);
-    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-    await saveLocalData(APPOINTMENTS_KEY, [appointment, ...cached.filter((c) => c.id !== appointment.id)]);
-    return appointment;
-  } catch {
-    const now = new Date().toISOString();
-    const fallbackId = `local-${Date.now()}`;
-    const appointment: Appointment = {
-      ...data,
-      id: fallbackId,
-      createdAt: now,
-      updatedAt: now
-    };
-    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-    await saveLocalData(APPOINTMENTS_KEY, [appointment, ...cached]);
-    return appointment;
-  }
+  const res = await authenticatedRequest<{ activity: ServerActivity }>(
+    `/companies/${companyId}/activities`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        companyId,
+        clientId: data.clientId || null,
+        projectId: projectId || null,
+        title: data.title,
+        type: data.type,
+        status: data.status,
+        date: data.date,
+        startTime: data.time,
+        endTime: data.endTime,
+        address: data.address,
+        notes: data.notes,
+        reminderMinutes: data.reminderMinutes
+      })
+    }
+  );
+  const appointment: Appointment = { ...mapServerActivityToAppointment(res.activity), notificationId: data.notificationId };
+  const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
+  await saveLocalData(APPOINTMENTS_KEY, [appointment, ...cached.filter((item) => item.id !== appointment.id)]);
+  return appointment;
 }
 
 export async function updateRemoteActivity(
   companyId: string,
   id: string,
   data: Partial<Appointment>
-): Promise<Appointment | null> {
-  try {
-    const res = await authenticatedRequest<{ activity: ServerActivity }>(
-      `/companies/${companyId}/activities/${id}`,
-      {
-        method: "PUT",
-        body: JSON.stringify({
-          title: data.title,
-          type: data.type,
-          status: data.status,
-          date: data.date,
-          startTime: data.time,
-          endTime: data.endTime,
-          address: data.address,
-          notes: data.notes,
-          reminderMinutes: data.reminderMinutes
-        })
-      }
-    );
-
-    const updated = mapServerActivityToAppointment(res.activity);
-    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-    const index = cached.findIndex((item) => item.id === id);
-    if (index >= 0) {
-      cached[index] = updated;
-      await saveLocalData(APPOINTMENTS_KEY, cached);
+): Promise<Appointment> {
+  const res = await authenticatedRequest<{ activity: ServerActivity }>(
+    `/companies/${companyId}/activities/${id}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        title: data.title,
+        type: data.type,
+        status: data.status,
+        date: data.date,
+        startTime: data.time,
+        endTime: data.endTime,
+        address: data.address,
+        notes: data.notes,
+        reminderMinutes: data.reminderMinutes
+      })
     }
-    return updated;
-  } catch {
-    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-    const index = cached.findIndex((item) => item.id === id);
-    if (index >= 0) {
-      cached[index] = { ...cached[index], ...data, updatedAt: new Date().toISOString() };
-      await saveLocalData(APPOINTMENTS_KEY, cached);
-      return cached[index];
-    }
-    return null;
-  }
+  );
+  const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
+  const existing = cached.find((item) => item.id === id);
+  const updated: Appointment = { ...mapServerActivityToAppointment(res.activity), notificationId: data.notificationId ?? existing?.notificationId ?? "" };
+  await saveLocalData(APPOINTMENTS_KEY, [updated, ...cached.filter((item) => item.id !== id)]);
+  return updated;
 }
 
 export async function deleteRemoteActivity(companyId: string, id: string): Promise<void> {
-  try {
-    await authenticatedRequest(`/companies/${companyId}/activities/${id}`, {
-      method: "DELETE"
-    });
-  } catch {}
-
+  await authenticatedRequest(`/companies/${companyId}/activities/${id}`, { method: "DELETE" });
   const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-  const updated = cached.filter((item) => item.id !== id);
-  await saveLocalData(APPOINTMENTS_KEY, updated);
+  await saveLocalData(APPOINTMENTS_KEY, cached.filter((item) => item.id !== id));
 }

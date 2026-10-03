@@ -46,19 +46,14 @@ function createId(): string {
 }
 
 export async function getAppointments(companyId?: string, projectId?: string): Promise<Appointment[]> {
+  let items: Appointment[];
   if (companyId) {
-    return await fetchCompanyActivities(companyId, { projectId });
+    items = await fetchCompanyActivities(companyId, { projectId });
+  } else {
+    const localItems = await loadLocalData<Appointment[]>(APPOINTMENTS_KEY);
+    items = Array.isArray(localItems) ? localItems : [];
   }
-
-  const items = await loadLocalData<Appointment[]>(APPOINTMENTS_KEY);
-
-  if (!Array.isArray(items)) return [];
-
-  return items.sort((a, b) =>
-    `${a.date}T${a.time}`.localeCompare(
-      `${b.date}T${b.time}`,
-    ),
-  );
+  return [...items].sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
 }
 
 export async function getAppointmentById(
@@ -70,49 +65,27 @@ export async function getAppointmentById(
 }
 
 export async function saveAppointment(
-  data: Omit<
-    Appointment,
-    "id" | "createdAt" | "updatedAt"
-  >,
+  data: Omit<Appointment, "id" | "createdAt" | "updatedAt">,
   id?: string,
   companyId?: string,
   projectId?: string
 ): Promise<Appointment> {
   if (companyId) {
-    if (id && !id.startsWith("local-")) {
-      const updated = await updateRemoteActivity(companyId, id, data);
-      if (updated) return updated;
-    } else {
-      return await createRemoteActivity(companyId, data, projectId);
-    }
+    if (id && !id.startsWith("local-")) return await updateRemoteActivity(companyId, id, data);
+    return await createRemoteActivity(companyId, data, projectId);
   }
-
   const items = await getAppointments();
   const now = new Date().toISOString();
-
   if (id) {
     const index = items.findIndex((item) => item.id === id);
-
     if (index >= 0) {
-      const updated: Appointment = {
-        ...items[index],
-        ...data,
-        updatedAt: now,
-      };
-
+      const updated: Appointment = { ...items[index], ...data, updatedAt: now };
       items[index] = updated;
       await saveLocalData(APPOINTMENTS_KEY, items);
       return updated;
     }
   }
-
-  const created: Appointment = {
-    ...data,
-    id: createId(),
-    createdAt: now,
-    updatedAt: now,
-  };
-
+  const created: Appointment = { ...data, id: createId(), createdAt: now, updatedAt: now };
   await saveLocalData(APPOINTMENTS_KEY, [...items, created]);
   return created;
 }
@@ -123,11 +96,10 @@ export async function deleteAppointment(
 ): Promise<Appointment[]> {
   if (companyId && !id.startsWith("local-")) {
     await deleteRemoteActivity(companyId, id);
+    return await getAppointments(companyId);
   }
-
   const items = await getAppointments();
   const updated = items.filter((item) => item.id !== id);
-
   await saveLocalData(APPOINTMENTS_KEY, updated);
   return updated;
 }

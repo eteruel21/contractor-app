@@ -57,7 +57,11 @@ export default function AgendaScreen() {
     useCallback(() => {
       let active = true;
 
-      void getAppointments(activeCompany?.id).then((items) => {
+      if (!activeCompany?.id) {
+        setAppointments([]);
+        return () => { active = false; };
+      }
+      void getAppointments(activeCompany.id).then((items) => {
         if (active) setAppointments(items);
       });
 
@@ -86,8 +90,14 @@ export default function AgendaScreen() {
   }
 
   async function removeAppointment(item: Appointment) {
-    await cancelScheduledNotification(item.notificationId);
-    setAppointments(await deleteAppointment(item.id, activeCompany?.id));
+    if (!activeCompany?.id) { Alert.alert("Empresa requerida", "Selecciona una empresa activa."); return; }
+    try {
+      const items = await deleteAppointment(item.id, activeCompany.id);
+      try { await cancelScheduledNotification(item.notificationId); } catch {}
+      setAppointments(items);
+    } catch (error) {
+      Alert.alert("No se pudo eliminar", error instanceof Error ? error.message : "Inténtalo nuevamente.");
+    }
   }
 
   function confirmDelete(item: Appointment) {
