@@ -202,39 +202,41 @@ export default function AppointmentFormScreen() {
       return;
     }
 
+    if (!activeCompany?.id) { Alert.alert("Empresa requerida", "Selecciona una empresa activa antes de guardar."); return; }
+
     const appointmentDate = parseAppointmentDate(
       form.date,
       form.time,
     );
 
     if (!appointmentDate) {
-      Alert.alert(
-        "Fecha inválida",
-        "Usa el formato AAAA-MM-DD y una hora válida.",
-      );
+      Alert.alert("Fecha inválida", "Usa el formato AAAA-MM-DD y una hora válida.");
       return;
     }
 
+    const endAppointmentDate = parseAppointmentDate(form.date, form.endTime);
+    if (!endAppointmentDate || endAppointmentDate <= appointmentDate) {
+      Alert.alert("Horario inválido", "La hora final debe ser posterior a la hora inicial.");
+      return;
+    }
+
+    let scheduledNotificationId = "";
+
     try {
       setSaving(true);
-
-      await cancelScheduledNotification(
-        form.notificationId,
-      );
 
       const reminderMinutes = Math.max(
         Number(form.reminderMinutes) || 0,
         0,
       );
 
-      let notificationId = "";
 
       if (
         form.status !== "cancelled" &&
         form.status !== "completed" &&
         appointmentDate.getTime() > Date.now()
       ) {
-        notificationId =
+        scheduledNotificationId =
           await scheduleAppointmentNotification({
             title: form.title.trim(),
             body: form.clientName
@@ -258,14 +260,19 @@ export default function AppointmentFormScreen() {
           address: form.address.trim(),
           notes: form.notes.trim(),
           reminderMinutes,
-          notificationId,
+          notificationId: scheduledNotificationId,
         },
         isNew ? undefined : id,
-        activeCompany?.id,
+        activeCompany.id,
       );
+
+      if (form.notificationId && form.notificationId !== scheduledNotificationId) {
+        try { await cancelScheduledNotification(form.notificationId); } catch {}
+      }
 
       router.back();
     } catch (error) {
+      if (scheduledNotificationId) { try { await cancelScheduledNotification(scheduledNotificationId); } catch {} }
       console.error(error);
       Alert.alert(
         "No se pudo guardar",
