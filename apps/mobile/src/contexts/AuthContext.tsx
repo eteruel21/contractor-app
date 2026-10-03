@@ -40,7 +40,7 @@ type SignUpInput = {
   fullName: string;
   firstName: string;
   lastName: string;
-  phone?: string;
+  phone: string;
   email: string;
   password: string;
   captchaToken: string;
@@ -85,6 +85,7 @@ type AuthError = {
 type AuthResult = {
   error: AuthError | null;
   requiresEmailConfirmation?: boolean;
+  emailDeliverySucceeded?: boolean;
 };
 
 type UpdateProfileInput = {
@@ -297,7 +298,7 @@ export function AuthProvider({
             lastName:
               input.lastName.trim(),
             phone:
-              input.phone?.trim() || "",
+              input.phone.trim(),
             email:
               input.email
                 .trim()
@@ -317,12 +318,18 @@ export function AuthProvider({
               input.registrationDevice
           });
 
-        applySession(nextSession);
+        if (nextSession.requiresEmailConfirmation) {
+          applySession(null);
+        } else {
+          applySession(nextSession);
+        }
 
         return {
           error: null,
           requiresEmailConfirmation:
-            !!nextSession.requiresEmailConfirmation
+            !!nextSession.requiresEmailConfirmation,
+          emailDeliverySucceeded:
+            nextSession.emailDeliverySucceeded
         };
       } catch (error) {
         return {

@@ -77,7 +77,7 @@ test("resetPasswordApi: respeta el contrato token y newPassword", async () => {
   });
 });
 
-test("register: no presenta como enviado un correo cuya entrega falló", async () => {
+test("register: conserva la cuenta cuando falla el correo de verificación", async () => {
   fetchMock.mockResolvedValueOnce(
     successfulResponse({
       requiresEmailConfirmation: true,
@@ -86,23 +86,27 @@ test("register: no presenta como enviado un correo cuya entrega falló", async (
     })
   );
 
-  await expect(
-    register({
-      fullName: "Usuario Prueba",
-      firstName: "Usuario",
-      lastName: "Prueba",
-      email: "user@example.test",
-      password: "Password123!",
-      captchaToken: "test-captcha-token",
-      province: "Panamá",
-      district: "Panamá",
-      corregimiento: "Bella Vista",
-      termsAccepted: true,
-      notificationsOptIn: false,
-      registrationDevice: "test"
-    })
-  ).rejects.toMatchObject({
-    status: 503,
-    message: "La cuenta fue creada, pero el correo no pudo enviarse."
+  const result = await register({
+    fullName: "Usuario Prueba",
+    firstName: "Usuario",
+    lastName: "Prueba",
+    phone: "+507 6000-0000",
+    email: "user@example.test",
+    password: "Password123!",
+    captchaToken: "test-captcha-token",
+    province: "Panamá",
+    district: "Panamá",
+    corregimiento: "Bella Vista",
+    termsAccepted: true,
+    notificationsOptIn: false,
+    registrationDevice: "test"
   });
+
+  expect(
+    result.requiresEmailConfirmation
+  ).toBe(true);
+
+  expect(
+    result.emailDeliverySucceeded
+  ).toBe(false);
 });

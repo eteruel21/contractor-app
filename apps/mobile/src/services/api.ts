@@ -113,6 +113,7 @@ export type StoredSession = {
   user: AppProfile | null;
   requiresApproval: boolean;
   requiresEmailConfirmation?: boolean;
+  emailDeliverySucceeded?: boolean;
 };
 
 type AuthResponse = {
@@ -198,7 +199,8 @@ function toStoredSession(
     sessionId: response.sessionId || "",
     user: response.user || null,
     requiresApproval: !!response.requiresApproval,
-    requiresEmailConfirmation: response.requiresEmailConfirmation
+    requiresEmailConfirmation: response.requiresEmailConfirmation,
+    emailDeliverySucceeded: response.emailDeliverySucceeded
   };
 }
 
@@ -284,7 +286,7 @@ export type RegisterInput = {
   fullName: string;
   firstName: string;
   lastName: string;
-  phone?: string;
+  phone: string;
   email: string;
   password: string;
   captchaToken: string;
@@ -309,16 +311,6 @@ export async function register(
       }
     );
 
-  if (
-    response.requiresEmailConfirmation &&
-    response.emailDeliverySucceeded === false
-  ) {
-    throw new ApiError(
-      response.message ||
-        "La cuenta fue creada, pero el correo de verificación no pudo enviarse. Solicita un nuevo enlace más tarde.",
-      503
-    );
-  }
 
   const session = toStoredSession(response);
   if (!session.requiresEmailConfirmation) {
