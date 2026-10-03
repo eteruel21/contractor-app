@@ -1,8 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, type Href } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
 
   Image,
   Pressable,
@@ -33,6 +32,11 @@ import {
 } from "@/constants/theme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompany } from "@/contexts/CompanyContext";
+import { fetchCompanyActivities } from "@/services/activity-service";
+import { listClients } from "@/services/client-service";
+import { listInvoices } from "@/services/invoice-service";
+import { listProjectsByCompany } from "@/services/project-service";
+import type { Appointment } from "@/utils/appointment-storage";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -146,6 +150,11 @@ function SectionHeader({
   );
 }
 
+type DashboardState = { projectCount: number; activeProjectCount: number; clientCount: number; invoiceCount: number; balanceDue: number; nextActivity: Appointment | null; loading: boolean; error: boolean; };
+const EMPTY_DASHBOARD: DashboardState = { projectCount: 0, activeProjectCount: 0, clientCount: 0, invoiceCount: 0, balanceDue: 0, nextActivity: null, loading: false, error: false };
+function formatMoney(amount: number): string { return `B/. ${amount.toFixed(2)}`; }
+function formatActivityDate(date: string): string { const value = new Date(`${date}T12:00:00`); return Number.isNaN(value.getTime()) ? date : new Intl.DateTimeFormat("es-PA",{weekday:"short",day:"numeric",month:"short"}).format(value); }
+
 export default function HomeScreen() {
   const { profile } = useAuth();
   const { activeCompany } = useCompany();
@@ -155,6 +164,25 @@ export default function HomeScreen() {
 
   const initial = firstName.charAt(0).toUpperCase();
   const companyName = activeCompany?.name || "Leuret";
+
+  const [dashboard, setDashboard] = useState<DashboardState>(EMPTY_DASHBOARD);
+
+  useEffect(() => {
+    const companyId = activeCompany?.id;
+    if (!companyId) { setDashboard(EMPTY_DASHBOARD); return; }
+    let mounted = true;
+    setDashboard((current) => ({ ...current, loading: true, error: false }));
+    void Promise.all([listProjectsByCompany(companyId), listClients(companyId), listInvoices(companyId), fetchCompanyActivities(companyId)]).then(([projectsResult, clientsResult, invoicesResult, activities]) => {
+      if (!mounted) return;
+      const activeProjects = projectsResult.projects.filter((project) => project.status !== "completed" && project.status !== "cancelled");
+      const invoices = invoicesResult.invoices.filter((invoice) => invoice.status !== "cancelled");
+      const balanceDue = invoices.reduce((total, invoice) => total + Math.max(Number(invoice.balance_due ?? 0), 0), 0);
+      const currentTime = new Date();
+      const nextActivity = activities.filter((activity) => activity.status === "scheduled" || activity.status === "confirmed").filter((activity) => { const date = new Date(`${activity.date}T${activity.time}`); return !Number.isNaN(date.getTime()) && date >= currentTime; }).sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))[0] ?? null;
+      setDashboard({ projectCount: projectsResult.projects.length, activeProjectCount: activeProjects.length, clientCount: clientsResult.clients.length, invoiceCount: invoices.length, balanceDue, nextActivity, loading: false, error: Boolean(projectsResult.error || clientsResult.error || invoicesResult.error) });
+    }).catch(() => { if (mounted) setDashboard((current) => ({ ...current, loading: false, error: true })); });
+    return () => { mounted = false; };
+  }, [activeCompany?.id]);
 
   const now = new Date();
   const hour = now.getHours();
@@ -173,10 +201,7 @@ export default function HomeScreen() {
   }).format(now);
 
   const handleInvoices = () => {
-    Alert.alert(
-      "Facturación",
-      "Este acceso se conectará al nuevo módulo financiero de Leuret.",
-    );
+    router.push("/facturas" as Href);
   };
 
   return (
@@ -267,38 +292,22 @@ export default function HomeScreen() {
 
             <View style={styles.metrics}>
               <View style={styles.metric}>
-                <Text style={styles.metricValue}>10</Text>
-                <Text style={styles.metricLabel}>
-                  Calculadoras
-                </Text>
+                <Text style={styles.metricValue}>{dashboard.loading ? "" : dashboard.projectCount}</Text>
+                <Text style={styles.metricLabel}>Proyectos</Text>
               </View>
 
               <View style={styles.metricDivider} />
 
               <View style={styles.metric}>
-                <View style={styles.metricOnline}>
-                  <View style={styles.onlineDot} />
-                  <Text style={styles.metricValueSmall}>
-                    Activo
-                  </Text>
-                </View>
-
-                <Text style={styles.metricLabel}>
-                  Estado
-                </Text>
+                <Text style={styles.metricValue}>{dashboard.loading ? "" : dashboard.clientCount}</Text>
+                <Text style={styles.metricLabel}>Clientes</Text>
               </View>
 
               <View style={styles.metricDivider} />
 
               <View style={styles.metric}>
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={22}
-                  color={colors.accent}
-                />
-                <Text style={styles.metricLabel}>
-                  Protegido
-                </Text>
+                <Text style={styles.metricValue}>{dashboard.loading ? "" : dashboard.invoiceCount}</Text>
+                <Text style={styles.metricLabel}>Facturas</Text>
               </View>
             </View>
           </Animated.View>
@@ -388,7 +397,7 @@ export default function HomeScreen() {
                     Proyectos
                   </Text>
                   <Text style={styles.operationText}>
-                    Revisa avances y trabajos activos.
+                    {dashboard.loading ? "Actualizando proyectos..." : dashboard.projectCount === 0 ? "Todavía no tienes proyectos." : `${dashboard.activeProjectCount} activos de ${dashboard.projectCount}.`}
                   </Text>
                 </View>
 
@@ -426,15 +435,9 @@ export default function HomeScreen() {
                     Finanzas
                   </Text>
                   <Text style={styles.operationText}>
-                    Facturas, cobros y saldos.
+                    {dashboard.loading ? "Actualizando facturación..." : dashboard.balanceDue > 0 ? `Por cobrar: ${formatMoney(dashboard.balanceDue)}` : "Sin saldos pendientes."}
                   </Text>
-                </View>
-
-                <View style={styles.soonBadge}>
-                  <Text style={styles.soonText}>
-                    PRÓXIMO
-                  </Text>
-                </View>
+                </View>`n                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
             </View>
           </Animated.View>
@@ -470,12 +473,11 @@ export default function HomeScreen() {
 
               <View style={styles.agendaCopy}>
                 <Text style={styles.agendaTitle}>
-                  Tu agenda está libre
+                  {dashboard.nextActivity ? dashboard.nextActivity.title : "Tu agenda está libre"}
                 </Text>
 
                 <Text style={styles.agendaText}>
-                  Tus próximas visitas, trabajos y
-                  recordatorios aparecerán aquí.
+                  {dashboard.nextActivity ? `${formatActivityDate(dashboard.nextActivity.date)}  ${dashboard.nextActivity.time.slice(0,5)}${dashboard.nextActivity.clientName ? `  ${dashboard.nextActivity.clientName}` : ""}` : "Tus próximas visitas, trabajos y recordatorios aparecerán aquí."}
                 </Text>
               </View>
 
@@ -499,11 +501,11 @@ export default function HomeScreen() {
               </Text>
 
               <Text style={styles.pulseTitle}>
-                Todo listo para trabajar
+                {dashboard.loading ? "Actualizando tu espacio" : dashboard.error ? "Revisa la sincronización" : "Todo listo para trabajar"}
               </Text>
 
               <Text style={styles.pulseText}>
-                Tu espacio está sincronizado y preparado.
+                {dashboard.loading ? "Estamos cargando la información más reciente." : dashboard.error ? "Parte de la información no pudo actualizarse." : "Tu información está actualizada y preparada."}
               </Text>
             </View>
 
