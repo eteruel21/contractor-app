@@ -72,7 +72,7 @@ function PasswordStrengthIndicator({ password }: { password: string }) {
         />
       </View>
       <Text style={[styles.strengthText, { color: strength.color }]}>
-        Seguridad: {strength.label}
+        Recomendación de seguridad: {strength.label}
       </Text>
     </View>
   );
@@ -104,6 +104,8 @@ export default function RegisterScreen() {
   const [showProvinceModal, setShowProvinceModal] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
+  const [registerError, setRegisterError] =
+    useState<string | null>(null);
 
   const PROVINCES = [
     "Bocas del Toro",
@@ -124,103 +126,258 @@ export default function RegisterScreen() {
     setShowProvinceModal(true);
   };
 
+  function presentRegisterError(
+    title: string,
+    message: string,
+  ) {
+    setRegisterError(message);
+
+    if (Platform.OS !== "web") {
+      showAlert(title, message);
+    }
+  }
+
   async function handleRegisterClick() {
-    if (!firstName.trim() || !lastName.trim()) {
-      showAlert("Campos requeridos", "Introduce tu nombre y apellido.");
+    setRegisterError(null);
+
+    const cleanFirstName =
+      firstName.trim();
+
+    const cleanLastName =
+      lastName.trim();
+
+    const cleanPhone =
+      phone.trim();
+
+    const cleanEmail =
+      email.trim().toLowerCase();
+
+    const cleanDistrict =
+      district.trim();
+
+    const cleanCorregimiento =
+      corregimiento.trim();
+
+    const phoneDigits =
+      cleanPhone.replace(/\D/g, "");
+
+    if (
+      !cleanFirstName ||
+      !cleanLastName
+    ) {
+      presentRegisterError(
+        "Campos requeridos",
+        "Introduce tu nombre y apellido.",
+      );
       return;
     }
 
-    if (!phone.trim()) {
-      showAlert("Teléfono requerido", "Introduce tu número de teléfono.");
+    if (
+      phoneDigits.length < 7 ||
+      phoneDigits.length > 15
+    ) {
+      presentRegisterError(
+        "Teléfono inválido",
+        "Introduce un número de teléfono válido de 7 a 15 dígitos.",
+      );
       return;
     }
 
-    if (!email.trim()) {
-      showAlert("Correo requerido", "Introduce tu correo electrónico.");
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        cleanEmail,
+      )
+    ) {
+      presentRegisterError(
+        "Correo inválido",
+        "Introduce un correo electrónico válido.",
+      );
       return;
     }
 
-    if (!province || !district.trim() || !corregimiento.trim()) {
-      showAlert("Ubicación requerida", "Completa los datos de tu provincia, distrito y corregimiento.");
+    if (
+      !province ||
+      !cleanDistrict ||
+      !cleanCorregimiento
+    ) {
+      presentRegisterError(
+        "Ubicación requerida",
+        "Completa los datos de tu provincia, distrito y corregimiento.",
+      );
       return;
     }
 
-    if (password.length < 8) {
-      showAlert("Contraseña insegura", "La contraseña debe tener al menos 8 caracteres.");
+    if (
+      password.length < 8 ||
+      password.length > 72
+    ) {
+      presentRegisterError(
+        "Contraseña inválida",
+        "La contraseña debe tener entre 8 y 72 caracteres.",
+      );
       return;
     }
 
-    if (password !== confirmPassword) {
-      showAlert("Las contraseñas no coinciden", "Verifica la contraseña introducida.");
+    if (
+      password !==
+      confirmPassword
+    ) {
+      presentRegisterError(
+        "Las contraseñas no coinciden",
+        "Verifica la contraseña introducida.",
+      );
       return;
     }
 
     if (!termsAccepted) {
-      showAlert("Aviso legal", "Debes aceptar los términos y condiciones de servicio.");
+      presentRegisterError(
+        "Aviso legal",
+        "Debes aceptar los términos y condiciones de servicio y la política de privacidad.",
+      );
       return;
     }
 
     if (!captchaToken) {
-      showAlert("Protección contra robots", "Completa la verificación de seguridad para continuar.");
+      presentRegisterError(
+        "Protección contra robots",
+        "Completa la verificación de seguridad para continuar.",
+      );
       return;
     }
 
-    const currentCaptchaToken = captchaToken;
+    const currentCaptchaToken =
+      captchaToken;
+
     setCaptchaToken(null);
-    setCaptchaResetKey((current) => current + 1);
+
+    setCaptchaResetKey(
+      (current) => current + 1,
+    );
 
     try {
       setSubmitting(true);
 
-      const deviceDetail = `${Platform.OS === "web" ? "Navegador Web" : Platform.OS === "ios" ? "Dispositivo iOS" : "Dispositivo Android"} (${Platform.Version})`;
-      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      const deviceDetail =
+        `${
+          Platform.OS === "web"
+            ? "Navegador Web"
+            : Platform.OS === "ios"
+              ? "Dispositivo iOS"
+              : "Dispositivo Android"
+        } (${Platform.Version})`;
 
-      const { error, requiresEmailConfirmation } = await signUp({
+      const fullName =
+        `${cleanFirstName} ${cleanLastName}`;
+
+      const {
+        error,
+        requiresEmailConfirmation,
+        emailDeliverySucceeded,
+      } = await signUp({
         fullName,
-        firstName,
-        lastName,
-        phone,
-        email,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        phone: cleanPhone,
+        email: cleanEmail,
         password,
-        captchaToken: currentCaptchaToken,
+        captchaToken:
+          currentCaptchaToken,
         role: accountRole,
         province,
-        district,
-        corregimiento,
+        district: cleanDistrict,
+        corregimiento:
+          cleanCorregimiento,
         termsAccepted,
         notificationsOptIn,
-        registrationDevice: deviceDetail,
+        registrationDevice:
+          deviceDetail,
       });
 
       if (error) {
-        setSubmitting(false);
-        showAlert("No fue posible crear la cuenta", translateRegisterError(error.message));
+        presentRegisterError(
+          "No fue posible crear la cuenta",
+          translateRegisterError(
+            error.message,
+          ),
+        );
         return;
       }
 
-      setSubmitting(false);
+      if (
+        requiresEmailConfirmation
+      ) {
+        if (
+          emailDeliverySucceeded ===
+          false
+        ) {
+          showAlert(
+            "Cuenta creada",
+            "Tu cuenta fue creada, pero no pudimos enviar el correo de verificación. En la siguiente pantalla podrás solicitar un nuevo enlace.",
+            [
+              {
+                text: "Continuar",
+                onPress: () =>
+                  router.replace({
+                    pathname:
+                      "/confirm-email",
+                    params: {
+                      email: cleanEmail,
+                    },
+                  }),
+              },
+            ],
+          );
 
-      if (requiresEmailConfirmation) {
+          return;
+        }
+
         showAlert(
           "Registro recibido",
           "Revisa tu correo para confirmar la cuenta. Después, los contratistas deberán completar su perfil profesional antes de esperar la aprobación del administrador.",
           [
             {
               text: "Confirmar correo",
-              onPress: () => router.replace({ pathname: "/confirm-email", params: { email: email.trim().toLowerCase() } } ),
+              onPress: () =>
+                router.replace({
+                  pathname:
+                    "/confirm-email",
+                  params: {
+                    email: cleanEmail,
+                  },
+                }),
             },
-          ]
+          ],
+        );
+
+        return;
+      }
+
+      if (
+        accountRole ===
+        "contractor"
+      ) {
+        router.replace(
+          "/perfil-profesional",
         );
       } else {
-        if (accountRole === "contractor") {
-          router.replace("/perfil-profesional");
-        } else {
-          router.replace("/(tabs)/agenda");
-        }
+        router.replace(
+          "/(tabs)/agenda",
+        );
       }
     } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "";
+
+      presentRegisterError(
+        "No fue posible crear la cuenta",
+        translateRegisterError(
+          message,
+        ),
+      );
+    } finally {
       setSubmitting(false);
-      showAlert("Error de Registro", err instanceof Error ? err.message : "Ocurrió un error inesperado.");
     }
   }
 
@@ -473,6 +630,20 @@ export default function RegisterScreen() {
               </Text>
             </Pressable>
 
+            {registerError ? (
+              <View style={styles.registerErrorBox}>
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={18}
+                  color={colors.danger}
+                />
+
+                <Text style={styles.registerErrorText}>
+                  {registerError}
+                </Text>
+              </View>
+            ) : null}
+
             <TurnstileChallenge
               action="register"
               onToken={setCaptchaToken}
@@ -608,22 +779,102 @@ function FormField({
   );
 }
 
-function translateRegisterError(message: string): string {
-  const normalized = message.toLowerCase();
+function translateRegisterError(
+  message: string,
+): string {
+  const normalized =
+    message.toLowerCase();
 
-  if (normalized.includes("user already registered")) {
+  if (
+    normalized.includes(
+      "user already registered",
+    ) ||
+    normalized.includes(
+      "already exists",
+    ) ||
+    normalized.includes(
+      "ya existe una cuenta",
+    )
+  ) {
     return "Ya existe una cuenta registrada con ese correo.";
   }
 
-  if (normalized.includes("password should be at least")) {
-    return "La contraseña no cumple con la longitud mínima de 8 caracteres.";
-  }
-
-  if (normalized.includes("invalid email")) {
+  if (
+    normalized.includes(
+      "invalid email",
+    ) ||
+    normalized.includes(
+      "correo inválido",
+    )
+  ) {
     return "El correo electrónico no es válido.";
   }
 
-  return message;
+  if (
+    normalized.includes(
+      "teléfono",
+    ) ||
+    normalized.includes(
+      "phone",
+    )
+  ) {
+    return "El número de teléfono no es válido.";
+  }
+
+  if (
+    normalized.includes(
+      "password",
+    ) ||
+    normalized.includes(
+      "contraseña",
+    )
+  ) {
+    return "La contraseña debe tener entre 8 y 72 caracteres.";
+  }
+
+  if (
+    normalized.includes(
+      "captcha",
+    ) ||
+    normalized.includes(
+      "turnstile",
+    ) ||
+    normalized.includes(
+      "robots",
+    ) ||
+    normalized.includes(
+      "verification",
+    )
+  ) {
+    return "No pudimos completar la verificación de seguridad. Inténtalo nuevamente.";
+  }
+
+  if (
+    normalized.includes(
+      "too many requests",
+    ) ||
+    normalized.includes(
+      "rate limit",
+    )
+  ) {
+    return "Se realizaron demasiados intentos. Espera unos minutos e inténtalo nuevamente.";
+  }
+
+  if (
+    normalized.includes(
+      "failed to fetch",
+    ) ||
+    normalized.includes(
+      "network",
+    ) ||
+    normalized.includes(
+      "connection",
+    )
+  ) {
+    return "No pudimos conectarnos al servidor. Verifica tu conexión e inténtalo nuevamente.";
+  }
+
+  return "No pudimos crear tu cuenta. Revisa los datos e inténtalo nuevamente.";
 }
 
 function brandNameStyle() {
@@ -919,6 +1170,27 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "900",
     textDecorationLine: "underline",
+  },
+
+  registerErrorBox: {
+    marginBottom: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    backgroundColor: colors.dangerSoft,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+
+  registerErrorText: {
+    flex: 1,
+    color: colors.danger,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "700",
   },
 
   approvalNotice: {

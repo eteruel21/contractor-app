@@ -26,7 +26,7 @@ const databaseEnvironment = process.env.TEST_DATABASE_URL
 
 const testEnvironment = {
   NODE_ENV: "test",
-  DATABASE_MODE: "postgres",
+  DATABASE_MODE: process.env.DATABASE_MODE ?? (process.env.TEST_DATABASE_URL ? "postgres" : "hyperdrive"),
   ...databaseEnvironment
 } satisfies Record<string, string>;
 

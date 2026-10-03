@@ -22,9 +22,12 @@ export const registerSchema = z.object({
   phone: z
     .string()
     .trim()
+    .min(7)
     .max(30)
-    .optional()
-    .default(""),
+    .refine((value) => {
+      const digits = value.replace(/\D/g, "");
+      return digits.length >= 7 && digits.length <= 15;
+    }, "Teléfono inválido."),
 
   email: z
     .string()
