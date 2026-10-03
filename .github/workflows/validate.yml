@@ -49,6 +49,8 @@ jobs:
         run: npm run test:worker-runtime -w apps/api
 
       - name: 6. Run non-destructive API tests
+        env:
+          DATABASE_MODE: hyperdrive
         run: |
           npm --workspace apps/api run test -- \
             src/auth/__tests__/registration-schema.test.ts \
