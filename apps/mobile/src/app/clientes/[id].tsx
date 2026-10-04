@@ -35,11 +35,14 @@ import { LeuretLoading } from "@/components/LeuretLoading";
 import { useCompany } from "@/contexts/CompanyContext";
 import {
   addClientAddress,
+  createClientContact,
   deleteClientAddress,
+  deleteClientContact,
   getClientById,
   setPrimaryClientAddress,
   updateClient,
   updateClientAddress,
+  updateClientContact,
 } from "@/services/client-service";
 import {
   createProject,
@@ -47,9 +50,11 @@ import {
 } from "@/services/project-service";
 import type {
   ClientAddress,
+  ClientContact,
   ClientWithDetails,
 } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
+import { validateClientAddress, validateClientContact, validateClientIdentity } from "@/utils/client-validation";
 import type { Project } from "@/types/project";
 import { getProjectStatusLabel } from "@/types/project";
 
@@ -80,6 +85,8 @@ export default function ClientDetailScreen() {
     useState(false);
   const [projectModalVisible, setProjectModalVisible] =
     useState(false);
+  const [contactModalVisible, setContactModalVisible] = useState(false);
+  const [editingContact, setEditingContact] = useState<ClientContact | null>(null);
 
   const primaryAddress = useMemo(() => {
     if (!client) return null;
@@ -203,6 +210,28 @@ export default function ClientDetailScreen() {
       return;
     }
 
+    await loadData(true);
+  }
+
+  function openNewContact() { setEditingContact(null); setContactModalVisible(true); }
+  function openEditContact(contact: ClientContact) { setEditingContact(contact); setContactModalVisible(true); }
+  function closeContactModal() { setContactModalVisible(false); setEditingContact(null); }
+
+  function handleDeleteContact(contact: ClientContact) {
+    Alert.alert("Eliminar contacto", `¿Deseas eliminar ${contact.name}?`, [{ text: "Cancelar", style: "cancel" }, { text: "Eliminar", style: "destructive", onPress: () => void confirmDeleteContact(contact) }]);
+  }
+
+  async function confirmDeleteContact(contact: ClientContact) {
+    if (!activeCompany || !client) return;
+    const { error } = await deleteClientContact({ companyId: activeCompany.id, clientId: client.id, contactId: contact.id });
+    if (error) { Alert.alert("No fue posible eliminar el contacto", error); return; }
+    await loadData(true);
+  }
+
+  async function handleSetPrimaryContact(contact: ClientContact) {
+    if (!activeCompany || !client) return;
+    const { error } = await updateClientContact({ companyId: activeCompany.id, clientId: client.id, contactId: contact.id, isPrimary: true });
+    if (error) { Alert.alert("No fue posible cambiar el contacto principal", error); return; }
     await loadData(true);
   }
 
@@ -331,6 +360,20 @@ export default function ClientDetailScreen() {
         </InfoSection>
 
         <InfoSection
+          title="Contactos"
+          actionLabel="Agregar"
+          onAction={openNewContact}
+        >
+          {client.contacts.length === 0 ? (
+            <EmptySmall text="Este cliente no tiene contactos." />
+          ) : (
+            client.contacts.map((contact) => (
+              <ContactCard key={contact.id} contact={contact} onMakePrimary={() => void handleSetPrimaryContact(contact)} onEdit={() => openEditContact(contact)} onDelete={() => handleDeleteContact(contact)} />
+            ))
+          )}
+        </InfoSection>
+
+        <InfoSection
           title="Proyectos"
           actionLabel="Crear"
           onAction={() =>
@@ -377,6 +420,10 @@ export default function ClientDetailScreen() {
           onClose={() => setEditingAddress(null)}
           onUpdated={() => void loadData(true)}
         />
+      ) : null}
+
+      {contactModalVisible ? (
+        <ContactModal visible companyId={activeCompany.id} clientId={client.id} contact={editingContact} onClose={closeContactModal} onUpdated={() => void loadData(true)} />
       ) : null}
 
       <AddAddressModal
@@ -537,6 +584,21 @@ function AddressCard({
   );
 }
 
+function ContactCard({ contact, onMakePrimary, onEdit, onDelete }: { contact: ClientContact; onMakePrimary: () => void; onEdit: () => void; onDelete: () => void }) {
+  return (
+    <View style={styles.addressCard}>
+      <View style={styles.cardTopRow}>
+        <Text style={styles.cardTitle}>{contact.name}</Text>
+        {contact.is_primary ? <View style={styles.badge}><Text style={styles.badgeText}>Principal</Text></View> : <Pressable onPress={onMakePrimary}><Text style={styles.linkText}>Hacer principal</Text></Pressable>}
+      </View>
+      {contact.position ? <Text style={styles.cardMuted}>{contact.position}</Text> : null}
+      {contact.phone ? <Text style={styles.cardBody}>{contact.phone}</Text> : null}
+      {contact.email ? <Text style={styles.cardMuted}>{contact.email}</Text> : null}
+      <View style={styles.addressActions}><Pressable onPress={onEdit}><Text style={styles.linkText}>Editar</Text></Pressable><Pressable onPress={onDelete}><Text style={styles.dangerText}>Eliminar</Text></Pressable></View>
+    </View>
+  );
+}
+
 function ProjectCard({
   project,
   onPress,
@@ -625,6 +687,8 @@ function EditClientModal({
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSave() {
+    const validation = validateClientIdentity(client.client_type, firstName, lastName, businessName, email);
+    if (validation) { Alert.alert("Revisa los datos", validation); return; }
     try {
       setSubmitting(true);
 
@@ -756,6 +820,8 @@ function EditAddressModal({
 
   async function handleSave() {
     if (!address) return;
+    const validation = validateClientAddress(addressText);
+    if (validation) { Alert.alert("Revisa la dirección", validation); return; }
 
     try {
       setSubmitting(true);
@@ -860,6 +926,8 @@ function AddAddressModal({
     useState(false);
 
   async function handleSave() {
+    const validation = validateClientAddress(address);
+    if (validation) { Alert.alert("Revisa la dirección", validation); return; }
     try {
       setSubmitting(true);
 
@@ -920,6 +988,33 @@ function AddAddressModal({
         placeholder="Punto de referencia"
         multiline
       />
+    </FormModal>
+  );
+}
+
+function ContactModal({ visible, companyId, clientId, contact, onClose, onUpdated }: { visible: boolean; companyId: string; clientId: string; contact: ClientContact | null; onClose: () => void; onUpdated: () => void }) {
+  const [name, setName] = useState(contact?.name ?? "");
+  const [position, setPosition] = useState(contact?.position ?? "");
+  const [email, setEmail] = useState(contact?.email ?? "");
+  const [phone, setPhone] = useState(contact?.phone ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  async function handleSave() {
+    const validation = validateClientContact(name, email);
+    if (validation) { Alert.alert("Revisa los datos", validation); return; }
+    try {
+      setSubmitting(true);
+      const result = contact ? await updateClientContact({ companyId, clientId, contactId: contact.id, name, position, email, phone, isPrimary: contact.is_primary }) : await createClientContact({ companyId, clientId, name, position, email, phone, isPrimary: false });
+      if (result.error) { Alert.alert(contact ? "No fue posible actualizar el contacto" : "No fue posible crear el contacto", result.error); return; }
+      onClose();
+      onUpdated();
+    } finally { setSubmitting(false); }
+  }
+  return (
+    <FormModal visible={visible} title={contact ? "Editar contacto" : "Nuevo contacto"} onClose={onClose} onSave={() => void handleSave()} submitting={submitting}>
+      <FormField label="Nombre" value={name} onChangeText={setName} placeholder="Nombre del contacto" />
+      <FormField label="Cargo / puesto" value={position} onChangeText={setPosition} placeholder="Ej. Administrador, compras..." />
+      <FormField label="Teléfono" value={phone} onChangeText={setPhone} placeholder="Teléfono" />
+      <FormField label="Correo" value={email} onChangeText={setEmail} placeholder="correo@ejemplo.com" />
     </FormModal>
   );
 }

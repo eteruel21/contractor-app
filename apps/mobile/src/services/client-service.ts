@@ -4,6 +4,7 @@ import {
 import type {
   Client,
   ClientAddress,
+  ClientContact,
   ClientType,
   ClientWithDetails
 } from "@/types/client";
@@ -397,6 +398,27 @@ export async function deleteClientAddress(
       error: errorMessage(error)
     };
   }
+}
+
+export async function createClientContact(input: { companyId: string; clientId: string; name: string; position?: string; email?: string; phone?: string; isPrimary?: boolean }): Promise<{ contact: ClientContact | null; error: string | null }> {
+  try {
+    const response = await authenticatedRequest<{ contact: ClientContact }>(`/clients/${input.clientId}/contacts`, { method: "POST", body: JSON.stringify({ companyId: input.companyId, name: input.name.trim(), position: input.position?.trim() || "", email: input.email?.trim() || "", phone: input.phone?.trim() || "", isPrimary: Boolean(input.isPrimary) }) });
+    return { contact: response.contact, error: null };
+  } catch (error) { return { contact: null, error: errorMessage(error) }; }
+}
+
+export async function updateClientContact(input: { companyId: string; clientId: string; contactId: string; name?: string; position?: string; email?: string; phone?: string; isPrimary?: boolean }): Promise<{ contact: ClientContact | null; error: string | null }> {
+  try {
+    const response = await authenticatedRequest<{ contact: ClientContact }>(`/clients/${input.clientId}/contacts/${input.contactId}`, { method: "PATCH", body: JSON.stringify({ companyId: input.companyId, name: input.name?.trim(), position: input.position?.trim(), email: input.email?.trim(), phone: input.phone?.trim(), isPrimary: input.isPrimary }) });
+    return { contact: response.contact, error: null };
+  } catch (error) { return { contact: null, error: errorMessage(error) }; }
+}
+
+export async function deleteClientContact(input: { companyId: string; clientId: string; contactId: string }): Promise<{ error: string | null }> {
+  try {
+    await authenticatedRequest(`/clients/${input.clientId}/contacts/${input.contactId}?companyId=${encodeURIComponent(input.companyId)}`, { method: "DELETE" });
+    return { error: null };
+  } catch (error) { return { error: errorMessage(error) }; }
 }
 
 export async function getClientContractorCompanies(

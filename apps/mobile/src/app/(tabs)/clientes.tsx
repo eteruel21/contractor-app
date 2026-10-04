@@ -47,6 +47,7 @@ import type {
   ClientWithDetails,
 } from "@/types/client";
 import { getClientDisplayName } from "@/types/client";
+import { validateClientAddress, validateClientIdentity } from "@/utils/client-validation";
 
 export default function ClientsScreen() {
   const { activeCompany } = useCompany();
@@ -410,6 +411,9 @@ function CreateClientModal({
   }
 
   async function handleCreate() {
+    const validation = validateClientIdentity(clientType, firstName, lastName, businessName, email);
+    if (validation) { Alert.alert("Revisa los datos", validation); return; }
+    if (address.trim()) { const addressValidation = validateClientAddress(address); if (addressValidation) { Alert.alert("Revisa la dirección", addressValidation); return; } }
     try {
       setSubmitting(true);
 
