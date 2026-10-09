@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, type Href } from "expo-router";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect, type Href } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import {
 
   Image,
@@ -167,7 +167,7 @@ export default function HomeScreen() {
 
   const [dashboard, setDashboard] = useState<DashboardState>(EMPTY_DASHBOARD);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     const companyId = activeCompany?.id;
     if (!companyId) { setDashboard(EMPTY_DASHBOARD); return; }
     let mounted = true;
@@ -182,7 +182,7 @@ export default function HomeScreen() {
       setDashboard({ projectCount: projectsResult.projects.length, activeProjectCount: activeProjects.length, clientCount: clientsResult.clients.length, invoiceCount: invoices.length, balanceDue, nextActivity, loading: false, error: Boolean(projectsResult.error || clientsResult.error || invoicesResult.error) });
     }).catch(() => { if (mounted) setDashboard((current) => ({ ...current, loading: false, error: true })); });
     return () => { mounted = false; };
-  }, [activeCompany?.id]);
+  }, [activeCompany?.id]));
 
   const now = new Date();
   const hour = now.getHours();
@@ -437,7 +437,8 @@ export default function HomeScreen() {
                   <Text style={styles.operationText}>
                     {dashboard.loading ? "Actualizando facturación..." : dashboard.balanceDue > 0 ? `Por cobrar: ${formatMoney(dashboard.balanceDue)}` : "Sin saldos pendientes."}
                   </Text>
-                </View>`n                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
               </Pressable>
             </View>
           </Animated.View>
