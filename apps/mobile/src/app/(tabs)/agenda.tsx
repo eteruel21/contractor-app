@@ -61,9 +61,19 @@ export default function AgendaScreen() {
         setAppointments([]);
         return () => { active = false; };
       }
-      void getAppointments(activeCompany.id).then((items) => {
-        if (active) setAppointments(items);
-      });
+      void getAppointments(activeCompany.id)
+        .then((items) => {
+          if (active) setAppointments(items);
+        })
+        .catch((error) => {
+          if (!active) return;
+          console.error("[Agenda] Error de sincronizacion:", error);
+          setAppointments([]);
+          Alert.alert(
+            "Error de sincronizacion",
+            "No fue posible cargar las actividades. Revisa tu conexion e intenta nuevamente."
+          );
+        });
 
       return () => {
         active = false;
