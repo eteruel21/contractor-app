@@ -360,9 +360,7 @@ export default function RegisterScreen() {
           "/perfil-profesional",
         );
       } else {
-        router.replace(
-          "/(tabs)/agenda",
-        );
+        router.replace("/pendiente");
       }
     } catch (err: unknown) {
       const message =
