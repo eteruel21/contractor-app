@@ -39,19 +39,15 @@ export async function uploadProjectPhoto(
   companyId: string,
   projectId: string,
   input: UploadPhotoInput
-): Promise<ProjectPhoto | null> {
-  try {
-    const res = await authenticatedRequest<{ photo: ProjectPhoto }>(
-      `/companies/${companyId}/projects/${projectId}/photos`,
-      {
-        method: "POST",
-        body: JSON.stringify(input)
-      }
-    );
-    return res.photo;
-  } catch {
-    return null;
-  }
+): Promise<ProjectPhoto> {
+  const res = await authenticatedRequest<{ photo: ProjectPhoto }>(
+    `/companies/${companyId}/projects/${projectId}/photos`,
+    {
+      method: "POST",
+      body: JSON.stringify(input)
+    }
+  );
+  return res.photo;
 }
 
 export async function deleteProjectPhoto(

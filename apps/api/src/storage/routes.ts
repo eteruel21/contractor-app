@@ -16,10 +16,10 @@ import {
 import { pool } from "../db/pool.js";
 
 const uploadPhotoSchema = z.object({
-  fileName: z.string().min(1),
-  fileData: z.string().min(1), // Base64 encoded string
-  mimeType: z.string().default("image/jpeg"),
-  caption: z.string().optional().nullable(),
+  fileName: z.string().trim().min(1).max(180),
+  fileData: z.string().min(1).max(8_000_000),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]).default("image/jpeg"),
+  caption: z.string().trim().max(1000).optional().nullable(),
   taskId: z.string().uuid().optional().nullable(),
   isPrivate: z.boolean().default(true)
 });
@@ -133,6 +133,9 @@ export async function registerStorageRoutes(app: FastifyInstance): Promise<void>
       }
 
       const buffer = Buffer.from(parsedBody.data.fileData.replace(/^data:image\/\w+;base64,/, ""), "base64");
+      if (buffer.length > 5 * 1024 * 1024) {
+        return reply.status(413).send({ message: "La foto excede el tamaño máximo permitido de 5 MB." });
+      }
       const storagePath = buildSecureStorageKey(parsedParams.data.companyId, parsedParams.data.projectId, parsedBody.data.fileName);
 
       await uploadStorageFile({
