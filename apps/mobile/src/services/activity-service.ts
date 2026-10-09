@@ -32,6 +32,10 @@ export type ServerActivity = {
 
 const APPOINTMENTS_KEY = "@contractor-pro/appointments";
 
+function companyAppointmentsKey(companyId: string): string {
+  return `${APPOINTMENTS_KEY}/company/${companyId}`;
+}
+
 function mapServerActivityToAppointment(act: ServerActivity): Appointment {
   const clientName = act.client
     ? act.client.business_name || `${act.client.first_name || ""} ${act.client.last_name || ""}`.trim()
@@ -70,7 +74,7 @@ export async function fetchCompanyActivities(
     if (queryString) url += `?${queryString}`;
 
     const res = await authenticatedRequest<{ activities: ServerActivity[] }>(url);
-    const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
+    const cached = (await loadLocalData<Appointment[]>(companyAppointmentsKey(companyId))) || [];
     const notificationById = new Map(cached.map((item) => [item.id, item.notificationId]));
     const items = res.activities.map((activity) => ({
       ...mapServerActivityToAppointment(activity),
@@ -78,12 +82,12 @@ export async function fetchCompanyActivities(
     }));
 
     if (!filters || (!filters.date && !filters.projectId && !filters.clientId)) {
-      await saveLocalData(APPOINTMENTS_KEY, items);
+      await saveLocalData(companyAppointmentsKey(companyId), items);
     }
 
     return items;
   } catch {
-    const cached = await loadLocalData<Appointment[]>(APPOINTMENTS_KEY);
+    const cached = await loadLocalData<Appointment[]>(companyAppointmentsKey(companyId));
     let items = Array.isArray(cached) ? cached : [];
 
     if (filters?.date) {
@@ -123,8 +127,8 @@ export async function createRemoteActivity(
     }
   );
   const appointment: Appointment = { ...mapServerActivityToAppointment(res.activity), notificationId: data.notificationId };
-  const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-  await saveLocalData(APPOINTMENTS_KEY, [appointment, ...cached.filter((item) => item.id !== appointment.id)]);
+  const cached = (await loadLocalData<Appointment[]>(companyAppointmentsKey(companyId))) || [];
+  await saveLocalData(companyAppointmentsKey(companyId), [appointment, ...cached.filter((item) => item.id !== appointment.id)]);
   return appointment;
 }
 
@@ -138,6 +142,8 @@ export async function updateRemoteActivity(
     {
       method: "PUT",
       body: JSON.stringify({
+
+        clientId: data.clientId === undefined ? undefined : (data.clientId || null),
         title: data.title,
         type: data.type,
         status: data.status,
@@ -150,15 +156,15 @@ export async function updateRemoteActivity(
       })
     }
   );
-  const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
+  const cached = (await loadLocalData<Appointment[]>(companyAppointmentsKey(companyId))) || [];
   const existing = cached.find((item) => item.id === id);
   const updated: Appointment = { ...mapServerActivityToAppointment(res.activity), notificationId: data.notificationId ?? existing?.notificationId ?? "" };
-  await saveLocalData(APPOINTMENTS_KEY, [updated, ...cached.filter((item) => item.id !== id)]);
+  await saveLocalData(companyAppointmentsKey(companyId), [updated, ...cached.filter((item) => item.id !== id)]);
   return updated;
 }
 
 export async function deleteRemoteActivity(companyId: string, id: string): Promise<void> {
   await authenticatedRequest(`/companies/${companyId}/activities/${id}`, { method: "DELETE" });
-  const cached = (await loadLocalData<Appointment[]>(APPOINTMENTS_KEY)) || [];
-  await saveLocalData(APPOINTMENTS_KEY, cached.filter((item) => item.id !== id));
+  const cached = (await loadLocalData<Appointment[]>(companyAppointmentsKey(companyId))) || [];
+  await saveLocalData(companyAppointmentsKey(companyId), cached.filter((item) => item.id !== id));
 }
