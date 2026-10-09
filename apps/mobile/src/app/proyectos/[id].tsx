@@ -78,6 +78,7 @@ import {
 } from "@/services/activity-service";
 import { API_URL } from "@/services/api";
 import type { Appointment } from "@/utils/appointment-storage";
+import { prepareProjectPhoto, type ProjectPhotoSource } from "@/utils/project-photo-picker";
 
 export default function ProjectDetailScreen() {
   const params = useLocalSearchParams<{
@@ -275,31 +276,30 @@ export default function ProjectDetailScreen() {
     }
   }
 
-  async function handleUploadDemoPhoto() {
+  async function handleUploadPhoto(source: ProjectPhotoSource) {
     if (!activeCompany || !project) return;
 
     try {
       setUploadingPhoto(true);
-
-      // SVG/PNG placeholder data for project photo upload
-      const sampleBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      const prepared = await prepareProjectPhoto(source);
+      if (!prepared) return;
 
       const photo = await uploadProjectPhoto(activeCompany.id, project.id, {
-        fileName: `foto-${Date.now()}.png`,
-        fileData: sampleBase64,
-        mimeType: "image/png",
+        fileName: prepared.fileName,
+        fileData: prepared.fileData,
+        mimeType: prepared.mimeType,
         caption: newPhotoCaption.trim() || "Foto de avance de obra",
         isPrivate: true
       });
 
-      if (photo) {
-        setPhotos([photo, ...photos]);
-        setNewPhotoCaption("");
-        setShowPhotoForm(false);
-        Alert.alert("Foto agregada", "La imagen se guardó de forma privada con URL firmada temporal.");
-      } else {
-        Alert.alert("Error", "No se pudo subir la foto.");
-      }
+      if (!photo) throw new Error("El servidor no devolvió la foto guardada.");
+
+      setPhotos((current) => [photo, ...current]);
+      setNewPhotoCaption("");
+      setShowPhotoForm(false);
+      Alert.alert("Foto agregada", "La foto se guardó correctamente en el almacenamiento privado.");
+    } catch (error) {
+      Alert.alert("No fue posible subir la foto", error instanceof Error ? error.message : "Ocurrió un error inesperado.");
     } finally {
       setUploadingPhoto(false);
     }
@@ -565,7 +565,7 @@ export default function ProjectDetailScreen() {
         </InfoSection>
 
         {/* Fotos de Proyecto y Almacenamiento Privado */}
-        <InfoSection title="Fotos de proyecto (URLs Firmadas)">
+        <InfoSection title="Fotos del proyecto">
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionBadge}>{photos.length} fotos</Text>
             <Pressable
@@ -585,17 +585,22 @@ export default function ProjectDetailScreen() {
                 onChangeText={setNewPhotoCaption}
                 placeholder="Descripción de la foto..."
               />
-              <Pressable
-                onPress={() => void handleUploadDemoPhoto()}
-                disabled={uploadingPhoto}
-                style={styles.saveSmallButton}
-              >
-                {uploadingPhoto ? (
+              {uploadingPhoto ? (
+                <View style={styles.saveSmallButton}>
                   <ActivityIndicator color={colors.textInverse} size="small" />
-                ) : (
-                  <Text style={styles.saveSmallButtonText}>Subir Foto Privada</Text>
-                )}
-              </Pressable>
+                </View>
+              ) : (
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <Pressable onPress={() => void handleUploadPhoto("camera")} style={[styles.saveSmallButton, { flex: 1 }]}>
+                    <Ionicons name="camera-outline" size={18} color={colors.textInverse} />
+                    <Text style={styles.saveSmallButtonText}>Tomar foto</Text>
+                  </Pressable>
+                  <Pressable onPress={() => void handleUploadPhoto("library")} style={[styles.saveSmallButton, { flex: 1 }]}>
+                    <Ionicons name="images-outline" size={18} color={colors.textInverse} />
+                    <Text style={styles.saveSmallButtonText}>Galería</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           )}
 

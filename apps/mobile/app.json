@@ -42,7 +42,15 @@
       "expo-web-browser",
       "expo-font",
       "expo-secure-store",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite que Leuret acceda a tus fotos para adjuntarlas a proyectos.",
+          "cameraPermission": "Permite que Leuret use la cámara para registrar fotos de proyectos.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
