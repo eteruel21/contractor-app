@@ -47,7 +47,7 @@ export function Sidebar({ activeTab, setActiveTab, pendingUsersCount, email, onS
     <aside className="sidebar">
       <div className="sidebar-brand">
         <Briefcase size={24} />
-        <span>Contractor Pro</span>
+        <span>LEURET</span>
       </div>
       <nav className="nav-links">
         <NavButton icon={<LayoutDashboard />} label="Resumen" tab="dashboard" active={activeTab} onClick={setActiveTab} />

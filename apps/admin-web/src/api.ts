@@ -20,6 +20,9 @@ function getApiUrl(): string {
 const API_URL = getApiUrl();
 
 const SESSION_KEY =
+  "leuret.admin-session.v1";
+
+const LEGACY_SESSION_KEY =
   "contractor-pro.admin-session.v1";
 
 export type AdminUser = {
@@ -117,21 +120,44 @@ function saveSession(
     SESSION_KEY,
     JSON.stringify(session)
   );
+
+  localStorage.removeItem(
+    LEGACY_SESSION_KEY
+  );
 }
 
 function readStoredSession():
   AdminSession | null {
-  const value =
+  const currentValue =
     localStorage.getItem(
       SESSION_KEY
     );
 
+  const legacyValue =
+    localStorage.getItem(
+      LEGACY_SESSION_KEY
+    );
+
+  const value =
+    currentValue ??
+    legacyValue;
+
   if (!value) return null;
 
   try {
-    return JSON.parse(
-      value
-    ) as AdminSession;
+    const session =
+      JSON.parse(
+        value
+      ) as AdminSession;
+
+    if (
+      !currentValue &&
+      legacyValue
+    ) {
+      saveSession(session);
+    }
+
+    return session;
   } catch {
     clearSession();
     return null;
@@ -141,6 +167,10 @@ function readStoredSession():
 function clearSession(): void {
   localStorage.removeItem(
     SESSION_KEY
+  );
+
+  localStorage.removeItem(
+    LEGACY_SESSION_KEY
   );
 }
 

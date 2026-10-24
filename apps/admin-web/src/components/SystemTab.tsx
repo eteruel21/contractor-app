@@ -85,7 +85,7 @@ export function SystemTab({
       link.href = url;
 
       link.download =
-        `contractor-data-export-${new Date()
+        `leuret-data-export-${new Date()
           .toISOString()
           .slice(0, 10)
         }.json`;
