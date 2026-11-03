@@ -295,21 +295,62 @@ export async function authenticatedRequest<T>(
     );
   }
 
+  if (
+    response.status === 401 &&
+    !retry
+  ) {
+    clearSession();
+  }
+
+  if (
+    response.status === 403 &&
+    path.startsWith("/admin/")
+  ) {
+    clearSession();
+  }
+
   return readResponse<T>(response);
 }
 
-function ensureSuperAdmin(
+async function revokeUnauthorizedAdminSession(
   session: AdminSession
-): AdminSession {
+): Promise<void> {
+  try {
+    await fetch(
+      API_URL + "/auth/logout",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type":
+            "application/json",
+          Authorization:
+            "Bearer " + session.accessToken
+        }
+      }
+    );
+  } catch {
+    // La revocacion remota es de mejor esfuerzo.
+  } finally {
+    clearSession();
+  }
+}
+
+async function ensureSuperAdmin(
+  session: AdminSession
+): Promise<AdminSession> {
   if (
     !session.user.active ||
     session.user.role !==
     "super_admin"
   ) {
-    clearSession();
+    await revokeUnauthorizedAdminSession(
+      session
+    );
 
     throw new ApiError(
-      "Esta cuenta no es superadministradora.",
+      "Esta cuenta no tiene acceso al panel de administracion.",
       403
     );
   }
@@ -338,7 +379,7 @@ export async function loginAdmin(
     );
 
   const session =
-    ensureSuperAdmin(
+    await ensureSuperAdmin(
       toSession(response)
     );
 
@@ -364,7 +405,7 @@ export async function restoreAdminSession():
     stored;
 
   const session =
-    ensureSuperAdmin({
+    await ensureSuperAdmin({
       ...refreshed,
       user: current.user
     });
