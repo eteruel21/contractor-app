@@ -1,0 +1,443 @@
+# LEURET — ROADMAP OFICIAL
+### Plataforma SaaS de Gestión Empresarial y Soluciones para la Construcción
+
+**Empresa desarrolladora:** LEURET TECH  
+**Plataforma:** LEURET  
+**Versión del roadmap:** 1.1  
+**Fecha:** 5 de noviembre de 2026  
+**Mercado inicial:** República de Panamá  
+**Estado:** Plan estratégico aprobado
+
+---
+
+## 1. VISIÓN GENERAL
+
+LEURET es una plataforma tecnológica desarrollada por LEURET TECH, orientada a contratistas, profesionales independientes, empresas de construcción y proveedores de servicios.
+
+Su objetivo es integrar en un solo ecosistema digital herramientas para:
+
+- Administración de empresas y clientes.
+- Gestión comercial y presupuestos.
+- Planificación y seguimiento de proyectos.
+- Facturación y control financiero.
+- Cálculos técnicos y estimación de materiales.
+- Análisis de costos y rentabilidad.
+- Automatización de procesos.
+- Inteligencia artificial aplicada a operaciones empresariales.
+- Integración con servicios externos.
+
+LEURET será desarrollada como una solución SaaS escalable, modular y multiplataforma.
+
+## 2. DECISIONES ESTRATÉGICAS APROBADAS
+
+### D01 — Mercado inicial
+
+La comercialización de LEURET comenzará en Panamá.
+
+Se priorizarán las necesidades de empresas y profesionales panameños, considerando:
+
+- Balboa y dólar estadounidense.
+- ITBMS y configuraciones tributarias aplicables.
+- Catálogos de materiales y servicios locales.
+- Unidades de medida utilizadas en Panamá.
+- Integraciones comerciales disponibles en el país.
+- Requisitos legales y de protección de datos.
+
+La arquitectura deberá facilitar futuras expansiones internacionales.
+
+### D02 — Lanzamiento público
+
+LEURET no será lanzada comercialmente al público hasta completar los requisitos P0 y P1.
+
+El lanzamiento requerirá:
+
+1. Validación de funcionalidades críticas.
+2. Seguridad y aislamiento de datos entre empresas.
+3. Integración real frontend–API.
+4. Cumplimiento de privacidad y derechos de usuarios.
+5. Infraestructura de producción estable.
+6. Pruebas automatizadas y funcionales satisfactorias.
+7. Verificación de respaldos y recuperación.
+8. Aprobación final de la dirección de LEURET TECH.
+
+Podrán realizarse pruebas piloto controladas antes del lanzamiento público.
+
+### D03 — Primera ampliación funcional
+
+La primera ampliación prioritaria será el módulo de **Análisis de Precios Unitarios (APU)**.
+
+Su desarrollo comenzará después de cumplir las condiciones de estabilización establecidas en este roadmap.
+
+### D04 — Política de producción
+
+Toda modificación deberá desarrollarse, evaluarse y probarse antes de integrarse a producción.
+
+No se modificarán los entornos productivos sin autorización.
+
+---
+
+## 3. ARQUITECTURA Y ENTORNOS
+
+### Aplicación profesional — LEURET Pro
+
+**URL:** https://app.leurettech.com
+
+Funciones principales:
+
+- Registro y autenticación.
+- Gestión de perfiles y empresas.
+- Administración de clientes.
+- Catálogos de materiales y servicios.
+- Calculadoras técnicas.
+- Presupuestos y cotizaciones.
+- Gestión de proyectos.
+- Agenda y actividades.
+- Facturación y cobros.
+- Reportes y documentos.
+
+### Administración — LEURET Admin
+
+**URL:** https://admin.leurettech.com
+
+Funciones previstas:
+
+- Gestión de usuarios y empresas.
+- Administración de roles y permisos.
+- Planes comerciales y suscripciones.
+- Configuración global.
+- Monitoreo de actividad.
+- Gestión de incidencias.
+- Administración de cumplimiento legal.
+- Analítica operativa.
+
+### Backend — LEURET API
+
+**URL:** https://api.leurettech.com
+
+Responsabilidades:
+
+- Procesamiento de operaciones.
+- Autenticación y autorización.
+- Conectividad con bases de datos.
+- Seguridad multiempresa.
+- Gestión de información.
+- Integración de servicios externos.
+- Control de solicitudes y errores.
+- Auditoría y monitoreo.
+
+### Aplicación móvil — LEURET
+
+Tecnologías: React Native y Expo.
+
+La aplicación móvil deberá mantener una experiencia consistente con la versión web y sincronizar información mediante la API.
+
+### Sitio corporativo
+
+**URL:** https://leurettech.com
+
+Responsable de la presencia institucional y comercial de LEURET TECH.
+
+---
+
+## 4. ROADMAP DE DESARROLLO
+
+| Hito | Objetivo | Estado de planificación |
+|---|---|---|
+| M1 | Autenticación, seguridad y API | Validación pendiente |
+| M2 | Integración completa de módulos web | Validación pendiente |
+| M3 | Administración y cumplimiento legal | Validación pendiente |
+| M4 | Infraestructura e integraciones de producción | Validación pendiente |
+| M5 | Aplicación móvil funcional | Validación pendiente |
+| M6 | Lanzamiento comercial en Panamá | Condicionado a P0/P1 |
+| M7 | Ampliación funcional, comenzando por APU | Planificado |
+
+Los estados operativos deberán actualizarse utilizando evidencia del repositorio, pruebas y despliegues.
+
+No se declarará completado ningún hito únicamente por la existencia de código o documentación.
+
+---
+
+## 5. PRIORIDADES P0 — REQUISITOS CRÍTICOS
+
+### P0-01 — Integración frontend–API
+Garantizar que todos los módulos críticos utilicen datos reales y persistentes.
+
+### P0-02 — Términos de Uso y Política de Privacidad
+Verificar disponibilidad, aceptación y registro del consentimiento cuando corresponda.
+
+### P0-03 — Exportación de datos
+Permitir que los usuarios autorizados exporten su información de forma segura.
+
+### P0-04 — Eliminación de cuentas
+Implementar eliminación y anonimización conforme a las políticas de retención y obligaciones legales aplicables.
+
+### P0-05 — Autenticación y autorización
+Validar roles, permisos, sesiones y recuperación de acceso.
+
+### P0-06 — Seguridad multiempresa
+Garantizar que ninguna empresa pueda acceder a información de otra sin autorización.
+
+### P0-07 — Integraciones esenciales
+Verificar los servicios indispensables para operar en producción.
+
+### P0-08 — Estabilidad operativa
+Resolver errores que impidan ejecutar procesos críticos.
+
+---
+
+## 6. PRIORIDADES P1 — PREPARACIÓN COMERCIAL
+
+- Validación de políticas RLS.
+- Protección CAPTCHA mediante Cloudflare Turnstile.
+- Correos transaccionales.
+- Almacenamiento seguro de documentos.
+- Notificaciones mediante Expo Push.
+- Respaldos y restauración.
+- Monitoreo y alertas.
+- Automatización CI/CD.
+- Pruebas end-to-end.
+- Rendimiento y optimización.
+- Accesibilidad y experiencia de usuario.
+- Gestión segura de variables y secretos.
+
+Todos los elementos P0/P1 deberán contar con criterios de aceptación y evidencia de cumplimiento antes del lanzamiento público.
+
+---
+
+## 7. PRIMERA AMPLIACIÓN — ANÁLISIS DE PRECIOS UNITARIOS (APU)
+
+### Objetivo
+
+Desarrollar un módulo especializado que permita calcular y gestionar costos unitarios de actividades de construcción.
+
+### Funciones previstas
+
+**Materiales**
+- Catálogos de materiales.
+- Unidades y cantidades.
+- Precios unitarios.
+- Desperdicios y factores de consumo.
+- Precios por proveedor.
+
+**Mano de obra**
+- Categorías laborales.
+- Tarifas por hora o jornada.
+- Rendimientos.
+- Cuadrillas de trabajo.
+- Costos asociados.
+
+**Equipos y herramientas**
+- Costos por hora o jornada.
+- Alquileres.
+- Consumo operativo.
+- Rendimientos de equipos.
+
+**Análisis económico**
+- Costos directos.
+- Costos indirectos.
+- Administración.
+- Imprevistos.
+- Utilidad.
+- Impuestos configurables.
+- Precio final por unidad.
+
+**Integraciones internas**
+- Presupuestos.
+- Catálogos.
+- Proyectos.
+- Clientes.
+- Documentos PDF y Excel.
+
+### Requisitos técnicos
+
+- Arquitectura modular.
+- Persistencia mediante API y base de datos.
+- Separación de información por empresa.
+- Historial de modificaciones de precios.
+- Versionado de análisis.
+- Precisión decimal adecuada para operaciones monetarias.
+- Pruebas automáticas de cálculos.
+- Capacidad futura de utilizar catálogos internacionales.
+
+**Estado:** Aprobado estratégicamente. Pendiente de especificación detallada e implementación.
+
+---
+
+## 8. EVOLUCIÓN FUNCIONAL FUTURA
+
+### Gestión empresarial
+- CRM.
+- Suscripciones.
+- Control financiero.
+- Cuentas por cobrar.
+- Facturación recurrente.
+- Aprobación digital de cotizaciones.
+
+### Construcción y proyectos
+- Inventario de materiales.
+- Cronogramas de obra.
+- Gestión de trabajadores.
+- Control de costos.
+- Análisis de rentabilidad.
+- Reportes fotográficos.
+- Seguimiento físico y financiero.
+
+### Herramientas técnicas
+- Nuevas calculadoras.
+- Catálogos regionales de precios.
+- Estimación de materiales.
+- Documentación técnica.
+- Generación avanzada de reportes.
+
+### Inteligencia artificial
+- Asistente técnico LEURET.
+- Presupuestos asistidos.
+- Análisis de documentos.
+- Recomendaciones de materiales.
+- Automatización administrativa.
+- Proyecciones de costos.
+
+### Integraciones
+- Pasarelas de pago.
+- Facturación electrónica.
+- WhatsApp Business.
+- Calendarios.
+- Mapas y geolocalización.
+- Proveedores.
+- Servicios de almacenamiento.
+- Analítica empresarial.
+
+Estas funciones constituyen oportunidades de evolución y no compromisos de lanzamiento.
+
+---
+
+## 9. EXPANSIÓN INTERNACIONAL
+
+La expansión se realizará después de validar la operación comercial en Panamá.
+
+Se deberán evaluar:
+
+1. Demanda comercial del país objetivo.
+2. Normativa y protección de datos.
+3. Impuestos y facturación electrónica.
+4. Monedas y métodos de pago.
+5. Catálogos y precios regionales.
+6. Unidades de medida.
+7. Idiomas y localización.
+8. Infraestructura y costos operativos.
+
+La arquitectura buscará permitir configuraciones regionales sin duplicar innecesariamente el producto.
+
+---
+
+## 10. CONTROL DE CALIDAD Y PUBLICACIÓN
+
+Se establece el siguiente flujo:
+
+**Planificación → Desarrollo → Revisión de código → Pruebas → Validación → Despliegue → Monitoreo.**
+
+Cada cambio deberá disponer, según su impacto, de:
+
+- Referencia a issue o requerimiento.
+- Rama de desarrollo.
+- Pull Request.
+- Validaciones automáticas.
+- Pruebas funcionales.
+- Revisión de seguridad.
+- Evidencia de despliegue.
+- Procedimiento de reversión cuando corresponda.
+
+Un Pull Request fusionado no constituye por sí mismo evidencia de funcionamiento en producción.
+
+---
+
+## 11. AUDITORÍA Y SEGUIMIENTO CONTINUO
+
+### Informe diario
+
+Verificar:
+
+- Nuevos commits.
+- Pull Requests.
+- Issues.
+- CI/CD.
+- Bloqueos P0/P1.
+- Estado de entornos.
+- Integraciones.
+- Prioridades inmediatas.
+
+### Auditoría semanal
+
+Evaluar:
+
+- Arquitectura.
+- Seguridad.
+- Integraciones.
+- Regresiones.
+- Experiencia de usuario.
+- Rendimiento.
+- Nuevas funcionalidades.
+- Evolución del roadmap.
+- Oportunidades de monetización.
+
+### Evaluación mensual
+
+Revisar:
+
+- Escalabilidad.
+- Costos operativos.
+- Deuda técnica.
+- Disponibilidad.
+- Riesgos comerciales.
+- Crecimiento del producto.
+
+---
+
+## 12. CRITERIOS DE EVIDENCIA
+
+Las auditorías clasificarán los hallazgos como:
+
+- **CONFIRMADO:** evidencia actual verificable.
+- **INFERIDO:** análisis técnico todavía sin validación completa.
+- **NO VERIFICADO:** ausencia de evidencia o acceso.
+- **BLOQUEADO:** impedimento concreto para avanzar.
+
+Los hitos se marcarán como completados solamente cuando sus criterios de aceptación se hayan satisfecho.
+
+---
+
+## 13. OBJETIVOS ESTRATÉGICOS
+
+**Corto plazo**
+
+Completar P0/P1, validar estabilidad y preparar el lanzamiento en Panamá.
+
+**Mediano plazo**
+
+Comercializar LEURET y ampliar sus herramientas con el módulo APU.
+
+**Largo plazo**
+
+Consolidar LEURET como un ecosistema tecnológico SaaS escalable, con funciones empresariales avanzadas, automatización e inteligencia artificial, preparado para operar internacionalmente.
+
+---
+
+## 14. CONTROL DE DECISIONES
+
+| Código | Decisión | Estado |
+|---|---|---|
+| D01 | Lanzamiento inicial en Panamá | Aprobada |
+| D02 | Publicación tras completar P0/P1 | Aprobada |
+| D03 | APU como primera ampliación | Aprobada |
+| D04 | Cambios productivos sujetos a autorización | Vigente |
+
+**Responsable estratégico:** Dirección de LEURET TECH.
+
+**Repositorio técnico actual:** `eteruel21/contractor-app`
+
+El identificador técnico del repositorio podrá renombrarse posteriormente mediante un proceso controlado, sin afectar innecesariamente las integraciones existentes.
+
+---
+
+**LEURET TECH**  
+*Desarrollo de software, soluciones empresariales y tecnología aplicada a la construcción.*
