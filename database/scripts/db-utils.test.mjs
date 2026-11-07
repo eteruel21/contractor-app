@@ -10,6 +10,7 @@ import test from "node:test";
 
 import {
   checksum,
+  detectMigrationDrift,
   legacyCrLfChecksum,
   postgresClientConfig,
   storedChecksumMatches,
@@ -318,6 +319,96 @@ test(
         "0".repeat(64),
       ),
       false,
+    );
+  },
+);
+
+test(
+  "detecta migraciones pendientes, alteradas y remotas sin archivo",
+  () => {
+    const firstContents =
+      "BEGIN;\nSELECT 1;\nCOMMIT;\n";
+
+    const secondContents =
+      "BEGIN;\nSELECT 2;\nCOMMIT;\n";
+
+    const files = [
+      {
+        filename: "001_first.sql",
+        contents: firstContents,
+      },
+      {
+        filename: "002_second.sql",
+        contents: secondContents,
+      },
+    ];
+
+    const appliedRows = [
+      {
+        filename: "001_first.sql",
+        checksum: "0".repeat(64),
+      },
+      {
+        filename: "999_remote_only.sql",
+        checksum: checksum("remote"),
+      },
+    ];
+
+    const drift = detectMigrationDrift(
+      files,
+      appliedRows,
+    );
+
+    assert.deepEqual(
+      drift.pending.map((file) => file.filename),
+      ["002_second.sql"],
+    );
+
+    assert.deepEqual(
+      drift.checksumMismatches.map(
+        (file) => file.filename,
+      ),
+      ["001_first.sql"],
+    );
+
+    assert.deepEqual(
+      drift.unexpectedHistory.map(
+        (row) => row.filename,
+      ),
+      ["999_remote_only.sql"],
+    );
+  },
+);
+
+test(
+  "acepta un historial de migraciones completamente sincronizado",
+  () => {
+    const contents =
+      "BEGIN;\nSELECT 1;\nCOMMIT;\n";
+
+    const drift = detectMigrationDrift(
+      [
+        {
+          filename: "001_synced.sql",
+          contents,
+        },
+      ],
+      [
+        {
+          filename: "001_synced.sql",
+          checksum: checksum(contents),
+        },
+      ],
+    );
+
+    assert.deepEqual(drift.pending, []);
+    assert.deepEqual(
+      drift.checksumMismatches,
+      [],
+    );
+    assert.deepEqual(
+      drift.unexpectedHistory,
+      [],
     );
   },
 );
