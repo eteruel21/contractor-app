@@ -52,7 +52,13 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
       stdio: "pipe"
     });
 
-    // 4. Verificar historial de migraciones
+    // 4. Confirmar que el modo CI no detecta deriva tras migrar.
+    execSync("node --env-file-if-exists=database/.env database/scripts/migrate.mjs --check", {
+      env: { ...process.env, MIGRATOR_DATABASE_URL: migratorUrl.toString() },
+      stdio: "pipe"
+    });
+
+    // 5. Verificar historial de migraciones
     const migratorClient = new Client({ connectionString: migratorUrl.toString() });
     await migratorClient.connect();
 
@@ -68,7 +74,7 @@ test("T-055: Ejecutar migraciones automáticamente desde cero", async () => {
 
       assert.equal(res.rowCount, filesInDir.length, `Se esperaban ${filesInDir.length} migraciones aplicadas`);
 
-      // 5. Validar llaves foráneas y estado del esquema
+      // 6. Validar llaves foráneas y estado del esquema
       const validateFkSqlPath = path.join(process.cwd(), "database", "scripts", "validate_foreign_keys.sql");
       if (fs.existsSync(validateFkSqlPath)) {
         const validateSql = fs.readFileSync(validateFkSqlPath, "utf8");

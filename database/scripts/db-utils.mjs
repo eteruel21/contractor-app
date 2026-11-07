@@ -314,6 +314,47 @@ export function storedChecksumMatches(
   );
 }
 
+export function detectMigrationDrift(
+  files,
+  appliedRows,
+) {
+  const filesByName = new Map(
+    files.map((file) => [file.filename, file]),
+  );
+
+  const appliedByName = new Map(
+    appliedRows.map((row) => [row.filename, row]),
+  );
+
+  const pending = files.filter(
+    (file) => !appliedByName.has(file.filename),
+  );
+
+  const checksumMismatches = files.filter(
+    (file) => {
+      const applied = appliedByName.get(file.filename);
+
+      return Boolean(
+        applied &&
+          !storedChecksumMatches(
+            file.contents,
+            applied.checksum,
+          ),
+      );
+    },
+  );
+
+  const unexpectedHistory = appliedRows.filter(
+    (row) => !filesByName.has(row.filename),
+  );
+
+  return {
+    pending,
+    checksumMismatches,
+    unexpectedHistory,
+  };
+}
+
 export async function readSqlFiles(directoryName) {
   const directory = path.join(databaseRoot, directoryName);
   const filenames = (await readdir(directory))

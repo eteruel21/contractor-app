@@ -45,10 +45,13 @@ jobs:
       - name: 4. Typecheck all workspaces
         run: npm run typecheck
 
-      - name: 5. Smoke test API Worker runtime
+      - name: 5. Test database migration tooling
+        run: npm run test:database-unit
+
+      - name: 6. Smoke test API Worker runtime
         run: npm run test:worker-runtime -w apps/api
 
-      - name: 6. Run non-destructive API tests
+      - name: 7. Run non-destructive API tests
         env:
           DATABASE_MODE: hyperdrive
         run: |
@@ -60,19 +63,19 @@ jobs:
             src/services/__tests__/email-delivery.test.ts \
             src/security/__tests__/redaction.test.ts
 
-      - name: 7. Test mobile app
+      - name: 8. Test mobile app
         run: npm run test -w apps/mobile
 
-      - name: 8. Build API backend
+      - name: 9. Build API backend
         run: npm run build:api
 
-      - name: 9. Build admin web application
+      - name: 10. Build admin web application
         run: npm run build:admin
 
-      - name: 10. Build mobile web application
+      - name: 11. Build mobile web application
         run: npm run build:mobile
 
-      - name: 11. Verify production client configuration
+      - name: 12. Verify production client configuration
         run: |
           test -n "$VITE_API_URL"
           test -n "$EXPO_PUBLIC_API_URL"

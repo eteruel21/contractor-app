@@ -1,6 +1,7 @@
 import pg from "pg";
 
 import {
+  detectMigrationDrift,
   ensureHistoryTables,
   postgresClientConfig,
   readSqlFiles,
@@ -15,6 +16,7 @@ const { Client } = pg;
 const migratorDatabaseUrl = requireEnv("MIGRATOR_DATABASE_URL");
 const client = new Client(postgresClientConfig(migratorDatabaseUrl));
 const statusOnly = process.argv.includes("--status");
+const checkOnly = process.argv.includes("--check");
 
 function stripSupabaseManagedSchemaMetadata(sql, connectionString) {
   const parsedUrl = new URL(connectionString);
@@ -36,7 +38,22 @@ function stripSupabaseManagedSchemaMetadata(sql, connectionString) {
 
 try {
   await client.connect();
-  await ensureHistoryTables(client);
+
+  if (checkOnly) {
+    const historyTableResult = await client.query(
+      "SELECT to_regclass('app_migrations.schema_migrations')::text AS history_table",
+    );
+
+    if (!historyTableResult.rows[0]?.history_table) {
+      throw new Error(
+        "No existe app_migrations.schema_migrations. " +
+          "La verificación no crea objetos ni modifica la base de datos.",
+      );
+    }
+  }
+  else {
+    await ensureHistoryTables(client);
+  }
 
   await withAdvisoryLock(client, "contractor-app:migrations", async () => {
     const files = await readSqlFiles("migrations");
@@ -61,6 +78,55 @@ try {
     const applied = new Map(
       appliedResult.rows.map((row) => [row.filename, row]),
     );
+
+    if (checkOnly) {
+      const drift = detectMigrationDrift(
+        files,
+        appliedResult.rows,
+      );
+
+      for (const file of files) {
+        const previous = applied.get(file.filename);
+        const checksumMatches = previous &&
+          storedChecksumMatches(
+            file.contents,
+            previous.checksum,
+          );
+
+        const state = !previous
+          ? "pendiente"
+          : checksumMatches
+            ? "aplicada "
+            : "alterada ";
+
+        console.log(`${state} ${file.filename}`);
+      }
+
+      for (const row of drift.unexpectedHistory) {
+        console.log(`sin_archivo ${row.filename}`);
+      }
+
+      const hasDrift =
+        drift.pending.length > 0 ||
+        drift.checksumMismatches.length > 0 ||
+        drift.unexpectedHistory.length > 0;
+
+      if (hasDrift) {
+        console.error(
+          "Deriva de migraciones detectada: " +
+            `${drift.pending.length} pendiente(s), ` +
+            `${drift.checksumMismatches.length} checksum(s) distinto(s), ` +
+            `${drift.unexpectedHistory.length} registro(s) sin archivo.`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(
+        `Sin deriva: ${files.length} migraciones coinciden con la base de datos.`,
+      );
+      return;
+    }
 
     for (const file of files) {
       const previous = applied.get(file.filename);
